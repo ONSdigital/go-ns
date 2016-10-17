@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -14,12 +15,15 @@ import (
 var Namespace = "service-namespace"
 
 // HumanReadable, if true, outputs log events in a human readable format
-var HumanReadable = func() bool {
-	if len(os.Getenv("HUMAN_LOG")) > 0 {
-		return true
-	}
-	return false
-}()
+var HumanReadable bool
+
+func init() {
+	configureHumanReadable()
+}
+
+func configureHumanReadable() {
+	HumanReadable, _ = strconv.ParseBool(os.Getenv("HUMAN_LOG"))
+}
 
 // Data contains structured log data
 type Data map[string]interface{}
@@ -67,7 +71,9 @@ func (r *responseCapture) Flush() {
 }
 
 // Event records an event
-func Event(name string, context string, data Data) {
+var Event = event
+
+func event(name string, context string, data Data) {
 	m := map[string]interface{}{
 		"created":   time.Now(),
 		"event":     name,
@@ -82,48 +88,56 @@ func Event(name string, context string, data Data) {
 		m["data"] = data
 	}
 
-	b, _ := json.Marshal(&m)
-
 	if HumanReadable {
-		ctx := ""
-		if len(context) > 0 {
-			ctx = "[" + context + "] "
-		}
-		msg := ""
-		if message, ok := data["message"]; ok {
-			msg = ": " + fmt.Sprintf("%s", message)
-			delete(data, "message")
-		}
-		if name == "error" && len(msg) == 0 {
-			if err, ok := data["error"]; ok {
-				msg = ": " + fmt.Sprintf("%s", err)
-				delete(data, "error")
-			}
-		}
-		col := ansi.DefaultFG
-		switch name {
-		case "error":
-			col = ansi.LightRed
-		case "trace":
-			col = ansi.Blue
-		case "debug":
-			col = ansi.Green
-		case "request":
-			col = ansi.Cyan
-		case "data-integrity":
-			col = ansi.LightMagenta
-		}
-		fmt.Fprint(os.Stdout, col)
-		fmt.Fprintf(os.Stdout, "%s%s %s%s%s%s\n", col, m["created"], ctx, name, msg, ansi.DefaultFG)
-		if data != nil {
-			for k, v := range data {
-				fmt.Fprintf(os.Stdout, "  -> %s: %+v\n", k, v)
-			}
-		}
+		printHumanReadable(name, context, data, m)
 		return
 	}
 
+	b, err := json.Marshal(&m)
+	if err != nil {
+		// This should never happen
+		// FIXME: not sure what we should do here
+	}
+
 	fmt.Fprintf(os.Stdout, "%s\n", b)
+}
+
+func printHumanReadable(name, context string, data Data, m map[string]interface{}) {
+	ctx := ""
+	if len(context) > 0 {
+		ctx = "[" + context + "] "
+	}
+	msg := ""
+	if message, ok := data["message"]; ok {
+		msg = ": " + fmt.Sprintf("%s", message)
+		delete(data, "message")
+	}
+	if name == "error" && len(msg) == 0 {
+		if err, ok := data["error"]; ok {
+			msg = ": " + fmt.Sprintf("%s", err)
+			delete(data, "error")
+		}
+	}
+	col := ansi.DefaultFG
+	switch name {
+	case "error":
+		col = ansi.LightRed
+	case "trace":
+		col = ansi.Blue
+	case "debug":
+		col = ansi.Green
+	case "request":
+		col = ansi.Cyan
+	case "data-integrity":
+		col = ansi.LightMagenta
+	}
+	fmt.Fprint(os.Stdout, col)
+	fmt.Fprintf(os.Stdout, "%s%s %s%s%s%s\n", col, m["created"], ctx, name, msg, ansi.DefaultFG)
+	if data != nil {
+		for k, v := range data {
+			fmt.Fprintf(os.Stdout, "  -> %s: %+v\n", k, v)
+		}
+	}
 }
 
 // ErrorC is a structured error message with context
