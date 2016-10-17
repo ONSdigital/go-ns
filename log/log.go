@@ -128,10 +128,8 @@ func printHumanReadable(name, context string, data Data, m map[string]interface{
 		col = ansi.Green
 	case "request":
 		col = ansi.Cyan
-	case "data-integrity":
-		col = ansi.LightMagenta
 	}
-	fmt.Fprint(os.Stdout, col)
+
 	fmt.Fprintf(os.Stdout, "%s%s %s%s%s%s\n", col, m["created"], ctx, name, msg, ansi.DefaultFG)
 	if data != nil {
 		for k, v := range data {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mgutz/ansi"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -307,5 +309,60 @@ func TestEvent(t *testing.T) {
 		So(m, ShouldContainKey, "data")
 		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
 		So(m["data"].(map[string]interface{})["foo"], ShouldEqual, "bar")
+	})
+}
+
+type humanReadableTest struct {
+	name, context string
+	data          Data
+	m             map[string]interface{}
+	result        string
+}
+
+func TestPrintHumanReadable(t *testing.T) {
+	now := time.Now()
+	var tests = []humanReadableTest{
+		{
+			"name", "context", Data{"foo": "bar"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s%s\n  -> %s: %+v\n", ansi.DefaultFG, now, "context", "name", ansi.DefaultFG, "foo", "bar"),
+		},
+		{
+			"name", "context", Data{"message": "test message"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.DefaultFG, now, "context", "name", "test message", ansi.DefaultFG),
+		},
+		{
+			"error", "context", Data{"error": errors.New("test error")},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightRed, now, "context", "error", "test error", ansi.DefaultFG),
+		},
+		{
+			"trace", "context", Data{"message": "test message"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Blue, now, "context", "trace", "test message", ansi.DefaultFG),
+		},
+		{
+			"debug", "context", Data{"message": "test message"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Green, now, "context", "debug", "test message", ansi.DefaultFG),
+		},
+		{
+			"request", "context", Data{"message": "test message"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Cyan, now, "context", "request", "test message", ansi.DefaultFG),
+		},
+	}
+
+	Convey("printHumanReadable should output human readable log messages", t, func() {
+		Namespace = "namespace"
+		HumanReadable = true
+
+		for _, test := range tests {
+			stdout := captureOutput(func() {
+				printHumanReadable(test.name, test.context, test.data, test.m)
+			})
+			So(stdout, ShouldEqual, test.result)
+		}
 	})
 }
