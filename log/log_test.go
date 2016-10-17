@@ -1,7 +1,11 @@
 package log
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +18,29 @@ import (
 var dummyHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 })
+
+func captureOutput(f func()) string {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() {
+		os.Stdout = stdout
+	}()
+
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	f()
+
+	w.Close()
+	out := <-outC
+	return out
+}
 
 func TestHumanLog(t *testing.T) {
 	Convey("HUMAN_LOG environment variable should configure human log output", t, func() {
@@ -255,5 +282,30 @@ func TestTrace(t *testing.T) {
 		So(eventContext, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
+	})
+}
+
+func TestEvent(t *testing.T) {
+	Convey("event should output JSON", t, func() {
+		Namespace = "namespace"
+
+		stdout := captureOutput(func() {
+			event("test", "context", Data{"foo": "bar"})
+		})
+		var m map[string]interface{}
+		err := json.Unmarshal([]byte(stdout), &m)
+		So(err, ShouldBeNil)
+		log.Println(err)
+
+		So(m, ShouldContainKey, "created")
+		So(m, ShouldContainKey, "event")
+		So(m["event"], ShouldEqual, "test")
+		So(m, ShouldContainKey, "namespace")
+		So(m["namespace"], ShouldEqual, "namespace")
+		So(m, ShouldContainKey, "context")
+		So(m["context"], ShouldEqual, "context")
+		So(m, ShouldContainKey, "data")
+		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
+		So(m["data"].(map[string]interface{})["foo"], ShouldEqual, "bar")
 	})
 }
