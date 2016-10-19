@@ -1,4 +1,4 @@
-go-ns [![Build Status](https://travis-ci.org/ONSdigital/go-ns.svg?branch=master)](https://travis-ci.org/ONSdigital/go-ns)
+go-ns [![Build Status](https://travis-ci.org/ONSdigital/go-ns.svg?branch=master)](https://travis-ci.org/ONSdigital/go-ns) [![GoDoc](https://godoc.org/github.com/ONSdigital/go-ns?status.svg)](https://godoc.org/github.com/ONSdigital/go-ns)
 =====
 
 Common Go code for ONS apps.
