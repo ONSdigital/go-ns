@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -297,7 +296,6 @@ func TestEvent(t *testing.T) {
 		var m map[string]interface{}
 		err := json.Unmarshal([]byte(stdout), &m)
 		So(err, ShouldBeNil)
-		log.Println(err)
 
 		So(m, ShouldContainKey, "created")
 		So(m, ShouldContainKey, "event")
@@ -309,6 +307,29 @@ func TestEvent(t *testing.T) {
 		So(m, ShouldContainKey, "data")
 		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
 		So(m["data"].(map[string]interface{})["foo"], ShouldEqual, "bar")
+	})
+
+	Convey("event with invalid data value should fail", t, func() {
+		Namespace = "namespace"
+		HumanReadable = false
+
+		stdout := captureOutput(func() {
+			event("test", "context", Data{"foo": func() {}})
+		})
+		var m map[string]interface{}
+		err := json.Unmarshal([]byte(stdout), &m)
+		So(err, ShouldBeNil)
+
+		So(m, ShouldContainKey, "created")
+		So(m, ShouldContainKey, "event")
+		So(m["event"], ShouldEqual, "log_error")
+		So(m, ShouldContainKey, "namespace")
+		So(m["namespace"], ShouldEqual, "namespace")
+		So(m, ShouldContainKey, "context")
+		So(m["context"], ShouldEqual, "context")
+		So(m, ShouldContainKey, "data")
+		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
+		So(m["data"].(map[string]interface{})["error"], ShouldEqual, "json: unsupported type: func()")
 	})
 }
 
@@ -364,5 +385,15 @@ func TestPrintHumanReadable(t *testing.T) {
 			})
 			So(stdout, ShouldEqual, test.result)
 		}
+	})
+
+	Convey("event should call printHumanReadable if HumanReadable is set", t, func() {
+		Namespace = "namespace"
+		HumanReadable = true
+		stdout := captureOutput(func() {
+			event("debug", "context", Data{"message": "test message"})
+		})
+		endWith := fmt.Sprintf("[%s] %s: %s%s\n", "context", "debug", "test message", ansi.DefaultFG)
+		So(stdout, ShouldEndWith, endWith)
 	})
 }

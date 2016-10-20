@@ -96,7 +96,15 @@ func event(name string, context string, data Data) {
 	b, err := json.Marshal(&m)
 	if err != nil {
 		// This should never happen
-		// FIXME: not sure what we should do here
+		// We'll log the error (which for our purposes, can't fail), which
+		// gives us an indication we have something to investigate
+		b, _ = json.Marshal(map[string]interface{}{
+			"created":   time.Now(),
+			"event":     "log_error",
+			"namespace": Namespace,
+			"context":   context,
+			"data":      map[string]interface{}{"error": err.Error()},
+		})
 	}
 
 	fmt.Fprintf(os.Stdout, "%s\n", b)
