@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -16,6 +17,7 @@ var Namespace = "service-namespace"
 
 // HumanReadable, if true, outputs log events in a human readable format
 var HumanReadable bool
+var hrMutex sync.Mutex
 
 func init() {
 	configureHumanReadable()
@@ -111,6 +113,9 @@ func event(name string, context string, data Data) {
 }
 
 func printHumanReadable(name, context string, data Data, m map[string]interface{}) {
+	hrMutex.Lock()
+	defer hrMutex.Unlock()
+
 	ctx := ""
 	if len(context) > 0 {
 		ctx = "[" + context + "] "
