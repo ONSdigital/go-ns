@@ -1,11 +1,11 @@
 package response
 
 import (
+	"encoding/json"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"encoding/json"
 )
 
 type child struct {
@@ -16,28 +16,33 @@ type parent struct {
 	Name  string `json:"name"`
 	Child child  `json:"child"`
 }
-
 type mockOnsJSONEncoder struct {
-	invocationArgs  []interface{}
+	encodeCalls     int
 	mockedBehaviour func(w http.ResponseWriter, value interface{}, status int) error
 }
 
-func mockEncoderInit() *mockOnsJSONEncoder {
-	impl := onsJSONEncoder{}
-	return &mockOnsJSONEncoder{invocationArgs: make([]interface{}, 0), mockedBehaviour: impl.writeResponseJSON}
-}
-
 func (mock *mockOnsJSONEncoder) writeResponseJSON(w http.ResponseWriter, value interface{}, status int) error {
-	mock.invocationArgs = append(mock.invocationArgs, value)
+	mock.encodeCalls++
 	return mock.mockedBehaviour(w, value, status)
 }
 
-func TestWriteJSON(t *testing.T) {
+func initMock() *mockOnsJSONEncoder {
+	actualImpl := &onsJSONEncoder{}
+	mock := &mockOnsJSONEncoder{
+		encodeCalls: 0,
+		mockedBehaviour: func(w http.ResponseWriter, value interface{}, status int) error {
+			return actualImpl.writeResponseJSON(w, value, status)
+		},
+	}
+	jsonResponseEncoder = mock
+	return mock
+}
+
+func TestWriteJSONResponse(t *testing.T) {
 	var input parent
 	var statusCode int
 	var rec *httptest.ResponseRecorder
-	mock := mockEncoderInit()
-	jsonResponseEncoder = mock
+	mock := initMock()
 
 	Convey("Given a valid responseWriter, response value and status code", t, func() {
 		input = parent{Name: "Hello World!", Child: child{Name: "Bob!"}}
@@ -51,73 +56,50 @@ func TestWriteJSON(t *testing.T) {
 				var actual parent
 				json.Unmarshal(rec.Body.Bytes(), &actual)
 				So(actual, ShouldResemble, input)
-
-				Convey("The response http status code is correct.", func() {
-					So(rec.Code, ShouldEqual, statusCode)
-
-					Convey("The response content type header is 'application/json'", func() {
-						So(rec.Header().Get(contentTypeHeader), ShouldEqual, contentTypeJSON)
-
-						Convey("And the JSON encoder is called with the expected args the correct number of times.", func() {
-							So(len(mock.invocationArgs), ShouldEqual, 1)
-							So(mock.invocationArgs[0], ShouldResemble, input)
-						})
-					})
-				})
 			})
 
+			Convey("And the response http status code matches the parameter passed in.", func() {
+				So(rec.Code, ShouldEqual, statusCode)
+			})
+
+			Convey("And the response content type header is 'application/json'", func() {
+				So(rec.Header().Get(contentTypeHeader), ShouldEqual, contentTypeJSON)
+			})
+
+			Convey("And the encoder is invoked the expected number of times.", func() {
+				So(mock.encodeCalls, ShouldEqual, 4)
+			})
 		})
 	})
-
-
-
-	/*		Convey("When the encoder is invoked", t, func() {
-				WriteJSON(rec, input, http.StatusOK)
-
-				Convey("The response body is as expected", t, func() {
-					var actual parent
-					json.Unmarshal(rec.Body.Bytes(), &actual)
-					So(actual, ShouldResemble, input)
-				})
-			})
-		})*/
 }
 
-/*	Convey("Should Write value to response as JSON, set the expected http response status code & set the content "+
-		"type header with the expected value", t, func() {
-		rec := httptest.NewRecorder()
-		mock := mockEncoderInit()
-		jsonResponseEncoder = mock
+func TestWriteJSONResponseWithInvalidData(t *testing.T) {
+	var invalidInput interface{}
+	var statusCode int
+	var rec *httptest.ResponseRecorder
+	mock := initMock()
 
-		input := parent{Name: "Hello World!", Child: child{Name: "Bob!"}}
-
-		WriteJSON(rec, input, http.StatusOK)
-
-		var actual parent
-		json.Unmarshal(rec.Body.Bytes(), &actual)
-
-		So(actual, ShouldResemble, input)
-		So(rec.Code, ShouldEqual, http.StatusOK)
-		So(rec.Header().Get(contentTypeHeader), ShouldEqual, contentTypeJSON)
-		So(len(mock.invocationArgs), ShouldEqual, 1)
-		So(mock.invocationArgs[0], ShouldResemble, input)
-	})
-
-	Convey("Should return internal server error http status if the writer cannot successfully "+
-		"write to the response", t, func() {
-		mock := mockEncoderInit()
-		jsonResponseEncoder = mock
-
-		rec := httptest.NewRecorder()
-
-		// a function cannot be marshaled into JSON is an will cause he JSON encoder to throw an error.
-		arg := func() string {
+	Convey("Given a valid responseWriter, an invalid response value and a valid status code", t, func() {
+		rec = httptest.NewRecorder()
+		invalidInput = func() string {
 			return "HelloWorld"
 		}
+		statusCode = http.StatusInternalServerError
 
-		WriteJSON(rec, arg, http.StatusOK)
+		Convey("When the encoder is invoked", func() {
+			WriteJSON(rec, invalidInput, http.StatusOK)
 
-		So(rec.Code, ShouldEqual, http.StatusInternalServerError)
-		So(rec.Header().Get(contentTypeHeader), ShouldEqual, contentTypeJSON)
-		So(len(mock.invocationArgs), ShouldEqual, 1)
-	})*/
+			Convey("And the response content type header is 'application/json'", func() {
+				So(rec.Header().Get(contentTypeHeader), ShouldEqual, contentTypeJSON)
+			})
+
+			Convey("Then an http internal server error status is written to the response.", func() {
+				So(rec.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+
+			Convey("And the encoder is invoked the expected number of times.", func() {
+				So(mock.encodeCalls, ShouldEqual, 3)
+			})
+		})
+	})
+}
