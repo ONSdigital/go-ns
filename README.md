@@ -3,7 +3,7 @@ go-ns [![Build Status](https://travis-ci.org/ONSdigital/go-ns.svg?branch=master)
 
 Common Go code for ONS apps:
 
-* Common HTTP handlers for healthcheck, requestID and timeout handling
+* Common HTTP handlers for healthcheck, requestID, reverse proxy and timeout handling
 * A logger which supports structured context-based logging
 
 ### Licence
