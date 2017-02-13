@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/zebedee/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -25,7 +24,7 @@ var responseStub *http.Response
 var errorStub error
 var dataStub []byte
 var pageTypeStub string
-var onsErrorStub *common.ONSError
+var onsErrorStub *zebedeeRequestError
 var responseBodyReadErrStub error
 var responseBodyBytesStub []byte
 
@@ -60,8 +59,7 @@ func TestGetData(t *testing.T) {
 		errorStub = errors.New("Zebedee get data error")
 		dataStub = make([]byte, 0)
 		pageTypeStub = ""
-		onsErrorStub = common.NewONSError(errorStub, zebedeeGetError)
-		onsErrorStub.AddParameter(requestContextIDParam, requestContextID)
+
 		data, pageType, err := zebedeeClient.GetData("/", requestContextID)
 
 		ShouldEqual(data, dataStub)
@@ -72,13 +70,7 @@ func TestGetData(t *testing.T) {
 	Convey("Should return empty data & page type and appropriate error if Zebedee returns an unexpected status code.", t, func() {
 
 		// Set stub data to return for this test case.
-		onsErrorStub = &common.ONSError{RootError: errors.New("Unexpected Response status code")}
-		onsErrorStub = common.NewONSError(errors.New("Unexpected Response status code"), incorrectStatusCodeErrDesc)
-		onsErrorStub.AddParameter("zebedeeURI", "/data")
-		onsErrorStub.AddParameter("query", "/")
-		onsErrorStub.AddParameter("expectedStatusCode", 200)
-		onsErrorStub.AddParameter("actualStatusCode", 500)
-		onsErrorStub.AddParameter(requestContextIDParam, requestContextID)
+		onsErrorStub = &zebedeeRequestError{errors.New("Unexpected response code"), zebedeeRequestErrorData{"actualStatusCode": 500, "expectedStatusCode": 200, "query": "/", "zebedeeURI": "/data"}}
 		errorStub = nil
 		responseStub = &http.Response{StatusCode: 500}
 		dataStub = make([]byte, 0)
@@ -88,7 +80,7 @@ func TestGetData(t *testing.T) {
 		data, pageType, err := zebedeeClient.GetData("/", requestContextID)
 
 		// assert results.
-		So(err, ShouldResemble, onsErrorStub)
+		So(err, ShouldResemble, *onsErrorStub)
 		So(0, ShouldEqual, bytes.Compare(data, dataStub))
 		So(pageType, ShouldEqual, pageTypeStub)
 	})
@@ -100,8 +92,7 @@ func TestGetData(t *testing.T) {
 		dataStub = []byte("")
 		rootErr := errors.New("it broked")
 		pageTypeStub = ""
-		onsErrorStub = common.NewONSError(rootErr, "error reading response body")
-		onsErrorStub.AddParameter(requestContextIDParam, requestContextID)
+		onsErrorStub = &zebedeeRequestError{errors.New("Error reading response body"), nil}
 
 		responseStub = &http.Response{StatusCode: 200}
 		responseStub.Header = make(map[string][]string, 0)
@@ -112,7 +103,7 @@ func TestGetData(t *testing.T) {
 
 		data, pageType, err := zebedeeClient.GetData("/", requestContextID)
 
-		So(err, ShouldResemble, onsErrorStub)
+		So(err, ShouldResemble, *onsErrorStub)
 		So(data, ShouldResemble, dataStub)
 		So(pageType, ShouldEqual, pageTypeStub)
 	})
@@ -125,7 +116,6 @@ func TestGetData(t *testing.T) {
 
 		dataStub = []byte(body)
 		pageTypeStub = HomePage
-		onsErrorStub = nil
 
 		responseStub = &http.Response{StatusCode: 200}
 		responseStub.Header = make(map[string][]string, 0)
@@ -136,7 +126,7 @@ func TestGetData(t *testing.T) {
 
 		data, pageType, err := zebedeeClient.GetData("/", requestContextID)
 
-		So(err, ShouldResemble, onsErrorStub)
+		So(err, ShouldBeNil)
 		So(data, ShouldResemble, dataStub)
 		So(pageType, ShouldEqual, pageTypeStub)
 	})
@@ -195,11 +185,11 @@ func TestGetParents(t *testing.T) {
 		responseBody := "I am an error."
 		var expectedParents []model.ContentNode
 
-		onsErrorStub = errorWithReqContextID(errors.New("Unexpected Response status code"), incorrectStatusCodeErrDesc, requestContextID)
-		onsErrorStub.AddParameter("expectedStatusCode", 200)
-		onsErrorStub.AddParameter("actualStatusCode", 500)
-		onsErrorStub.AddParameter("zebedeeURI", zebedeeURI+breadcrumbAPI)
-		onsErrorStub.AddParameter(requestContextIDParam, requestContextID)
+		onsErrorStub = &zebedeeRequestError{errors.New("Unexpected response code"), zebedeeRequestErrorData{
+			"zebedeeURI":         zebedeeURI + breadcrumbAPI,
+			"expectedStatusCode": 200,
+			"actualStatusCode":   500,
+		}}
 
 		pageTypeStub = HomePage
 		responseStub = &http.Response{StatusCode: 500}
@@ -211,7 +201,7 @@ func TestGetParents(t *testing.T) {
 
 		result, err := zebedeeClient.GetParents("/", requestContextID)
 		So(result, ShouldResemble, expectedParents)
-		So(err, ShouldResemble, onsErrorStub)
+		So(err, ShouldResemble, *onsErrorStub)
 	})
 
 	Convey("Should error if response body is invalid.", t, func() {
@@ -221,7 +211,7 @@ func TestGetParents(t *testing.T) {
 		responseBody := "I am an error."
 		var expectedParents []model.ContentNode
 
-		onsErrorStub = errorWithReqContextID(errors.New(""), "error unmarshalling zebedee contentNodes", requestContextID)
+		// onsErrorStub = errorWithReqContextID(errors.New(""), "error unmarshalling zebedee contentNodes", requestContextID)
 		pageTypeStub = HomePage
 		responseStub = &http.Response{StatusCode: 200}
 		responseStub.Header = make(map[string][]string, 0)
@@ -232,7 +222,7 @@ func TestGetParents(t *testing.T) {
 
 		result, err := zebedeeClient.GetParents("/", requestContextID)
 		So(result, ShouldResemble, expectedParents)
-		So(err.Parameters, ShouldResemble, onsErrorStub.Parameters)
+		So(err.Error(), ShouldEqual, "error unmarshaling zebedee content nodes")
 	})
 }
 
