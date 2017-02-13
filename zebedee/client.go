@@ -74,14 +74,14 @@ func (zebedee *Client) GetData(uri string, requestContextID string) (data []byte
 	var response *http.Response
 
 	request, error := zebedee.buildGetRequest(dataAPI, requestContextID, []parameter{{name: uriParam, value: uri}})
-	if err != nil {
-		return data, pageType, zebedeeRequestError{err, nil}
+	if error != nil {
+		return data, pageType, zebedeeRequestError{error, nil}
 	}
 
 	response, error = zebedee.httpClient.Do(request)
 
 	if error != nil {
-		return data, pageType, zebedeeRequestError{err, nil}
+		return data, pageType, zebedeeRequestError{error, nil}
 	}
 
 	if response.StatusCode != 200 {
