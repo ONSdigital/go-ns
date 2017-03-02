@@ -17,14 +17,10 @@ import (
 // configurable middleware and timeouts, and shuts down cleanly
 // on SIGINT/SIGTERM
 type Server struct {
-	*http.Server
+	http.Server
 	Middleware      map[string]alice.Constructor
 	MiddlewareOrder []string
-	Router          http.Handler
 	Alice           *alice.Chain
-	BindAddr        string
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
 	CertFile        string
 	KeyFile         string
 }
@@ -38,22 +34,26 @@ func New(bindAddr string, router http.Handler) *Server {
 	}
 
 	return &Server{
-		Server:          nil,
+		Alice:           nil,
 		Middleware:      middleware,
 		MiddlewareOrder: []string{"RequestID", "Log", "Timeout"},
-		Router:          router,
-		Alice:           nil,
-		BindAddr:        bindAddr,
-		ReadTimeout:     5 * time.Second,
-		WriteTimeout:    10 * time.Second,
+		Server: http.Server{
+			Handler:           router,
+			Addr:              bindAddr,
+			ReadTimeout:       5 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			ReadHeaderTimeout: 0,
+			IdleTimeout:       0,
+			MaxHeaderBytes:    0,
+		},
 	}
 }
 
-func (s Server) prep() error {
+func (s *Server) prep() {
 	sigs := make(chan os.Signal, 1)
 	go func() {
 		<-sigs
-		err := s.Server.Shutdown(nil)
+		err := s.Shutdown(nil)
 		if err != nil {
 			log.Error(err, nil)
 		}
@@ -69,16 +69,7 @@ func (s Server) prep() error {
 		panic("middleware not found: " + v)
 	}
 
-	alice := alice.New(m...).Then(s.Router)
-
-	s.Server = &http.Server{
-		Addr:         s.BindAddr,
-		Handler:      alice,
-		ReadTimeout:  s.ReadTimeout,
-		WriteTimeout: s.WriteTimeout,
-	}
-
-	return nil
+	s.Server.Handler = alice.New(m...).Then(s.Handler)
 }
 
 // ListenAndServe sets up SIGINT/SIGTERM signals, builds the middleware
@@ -88,10 +79,8 @@ func (s Server) prep() error {
 // using ListenAndServeTLS. Otherwise ListenAndServe is used.
 //
 // Specifying one of CertFile/KeyFile without the other will panic.
-func (s Server) ListenAndServe() error {
-	if err := s.prep(); err != nil {
-		return err
-	}
+func (s *Server) ListenAndServe() error {
+	s.prep()
 
 	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
 		if len(s.CertFile) == 0 || len(s.KeyFile) == 0 {
@@ -101,4 +90,11 @@ func (s Server) ListenAndServe() error {
 	}
 
 	return s.Server.ListenAndServe()
+}
+
+// ListenAndServeTLS sets KeyFile and CertFile, then calls ListenAndServe
+func (s *Server) ListenAndServeTLS(certFile, keyFile string) error {
+	s.KeyFile = keyFile
+	s.CertFile = certFile
+	return s.ListenAndServe()
 }
