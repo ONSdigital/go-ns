@@ -135,6 +135,8 @@ func printHumanReadable(name, context string, data Data, m map[string]interface{
 	switch name {
 	case "error":
 		col = ansi.LightRed
+	case "info":
+		col = ansi.LightCyan
 	case "trace":
 		col = ansi.Blue
 	case "debug":
@@ -213,4 +215,25 @@ func TraceR(req *http.Request, message string, data Data) {
 // Trace is a structured trace message
 func Trace(message string, data Data) {
 	TraceC("", message, data)
+}
+
+// InfoC is a structured info message with context
+func InfoC(context string, message string, data Data) {
+	if data == nil {
+		data = Data{}
+	}
+	if _, ok := data["message"]; !ok {
+		data["message"] = message
+	}
+	Event("info", context, data)
+}
+
+// InfoR is a structured info message for a request
+func InfoR(req *http.Request, message string, data Data) {
+	InfoC(Context(req), message, data)
+}
+
+// Info is a structured info message
+func Info(message string, data Data) {
+	InfoC("", message, data)
 }
