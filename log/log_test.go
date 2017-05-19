@@ -286,6 +286,50 @@ func TestTrace(t *testing.T) {
 	})
 }
 
+func TestInfo(t *testing.T) {
+	oldEvent := Event
+	defer func() {
+		Event = oldEvent
+	}()
+
+	var eventName, eventContext string
+	var eventData Data
+	Event = func(name string, context string, data Data) {
+		eventName = name
+		eventContext = context
+		eventData = data
+	}
+
+	Convey("Info", t, func() {
+		Info("test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("InfoC", t, func() {
+		InfoC("context", "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventContext, ShouldEqual, "context")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("InfoR", t, func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		So(err, ShouldBeNil)
+
+		req.Header.Set("X-Request-Id", "test-request-id")
+
+		InfoR(req, "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventContext, ShouldEqual, "test-request-id")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+}
+
 func TestEvent(t *testing.T) {
 	Convey("event should output JSON", t, func() {
 		Namespace = "namespace"
@@ -367,6 +411,11 @@ func TestPrintHumanReadable(t *testing.T) {
 			"debug", "context", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
 			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Green, now, "context", "debug", "test message", ansi.DefaultFG),
+		},
+		{
+			"info", "context", Data{"message": "test message"},
+			map[string]interface{}{"created": now},
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightCyan, now, "context", "info", "test message", ansi.DefaultFG),
 		},
 		{
 			"request", "context", Data{"message": "test message"},
