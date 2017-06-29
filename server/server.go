@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/ONSdigital/go-ns/handlers/requestID"
@@ -50,16 +49,6 @@ func New(bindAddr string, router http.Handler) *Server {
 }
 
 func (s *Server) prep() {
-	sigs := make(chan os.Signal, 1)
-	go func() {
-		<-sigs
-		err := s.Shutdown(nil)
-		if err != nil {
-			log.Error(err, nil)
-		}
-	}()
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
 	var m []alice.Constructor
 	for _, v := range s.MiddlewareOrder {
 		if mw, ok := s.Middleware[v]; ok {
@@ -81,15 +70,30 @@ func (s *Server) prep() {
 // Specifying one of CertFile/KeyFile without the other will panic.
 func (s *Server) ListenAndServe() error {
 	s.prep()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, os.Kill)
 
 	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
 		if len(s.CertFile) == 0 || len(s.KeyFile) == 0 {
 			panic("either CertFile/KeyFile must be blank, or both provided")
 		}
-		return s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile)
+		go func() {
+			if err := s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile); err != nil {
+				log.Error(err, nil)
+				os.Exit(1)
+			}
+		}()
+	} else {
+		go func() {
+			if err := s.Server.ListenAndServe(); err != nil {
+				log.Error(err, nil)
+				os.Exit(1)
+			}
+		}()
 	}
 
-	return s.Server.ListenAndServe()
+	<-stop
+	return s.Shutdown(nil)
 }
 
 // ListenAndServeTLS sets KeyFile and CertFile, then calls ListenAndServe
