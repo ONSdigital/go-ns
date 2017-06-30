@@ -90,12 +90,11 @@ func TestNew(t *testing.T) {
 			s := New(":0", h)
 
 			go func() {
-				s.ListenAndServeTLS("certFile", "keyFile")
+				s.ListenAndServeTLS("testdata/certFile", "testdata/keyFile")
 			}()
 			time.Sleep(time.Millisecond * 20)
-			So(s.CertFile, ShouldEqual, "certFile")
-			So(s.KeyFile, ShouldEqual, "keyFile")
-			s.Shutdown(nil)
+			So(s.CertFile, ShouldEqual, "testdata/certFile")
+			So(s.KeyFile, ShouldEqual, "testdata/keyFile")
 		})
 
 		Convey("ListenAndServeTLS with only CertFile should panic", func() {
@@ -137,8 +136,6 @@ func TestNew(t *testing.T) {
 		So(res, ShouldNotBeNil)
 		res.Body.Close()
 		So(res.StatusCode, ShouldEqual, 200)
-
-		s.Shutdown(nil)
 	})
 
 }
