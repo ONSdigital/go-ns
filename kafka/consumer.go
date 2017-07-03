@@ -14,7 +14,7 @@ type Consumer struct {
 	Closer   chan bool
 }
 
-func NewConsumer(brokers []string, topic string) Consumer {
+func NewConsumer(brokers []string, topic string, offset int64) Consumer {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 	master, err := sarama.NewConsumer(brokers, config)
@@ -22,7 +22,7 @@ func NewConsumer(brokers []string, topic string) Consumer {
 		panic(err)
 	}
 
-	consumer, err := master.ConsumePartition(topic, 0, sarama.OffsetNewest)
+	consumer, err := master.ConsumePartition(topic, 0, offset)
 	if err != nil {
 		panic(err)
 	}
