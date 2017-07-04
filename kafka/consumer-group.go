@@ -34,16 +34,12 @@ func (M Message) Commit() {
 	//log.Printf("Offset : %d, Partition : %d", M.message.Offset, M.message.Partition)
 }
 
-func SetMaxMessageSize(maxSize int32) {
-	sarama.MaxRequestSize = maxSize
-	sarama.MaxResponseSize = maxSize
-}
-
-func NewConsumerGroup(brokers []string, topic string, group string) (*ConsumerGroup, error) {
+func NewConsumerGroup(brokers []string, topic string, group string, offset int64) (*ConsumerGroup, error) {
 	config := cluster.NewConfig()
 	config.Group.Return.Notifications = true
 	config.Consumer.Return.Errors = true
 	config.Consumer.MaxWaitTime = 50 * time.Millisecond
+	config.Consumer.Offsets.Initial = offset
 
 	consumer, err := cluster.NewConsumer(brokers, group, []string{topic}, config)
 	if err != nil {
