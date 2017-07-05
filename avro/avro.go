@@ -23,11 +23,6 @@ func ErrUnsupportedType(typ reflect.Kind) error {
 	return fmt.Errorf("Unsupported interface type: %v", typ)
 }
 
-// ErrInvalidFieldName returned when the field name does not exist in avro schema
-func ErrInvalidFieldName(field string) error {
-	return errors.New("Incorrect field " + field + ", unable to get value for field")
-}
-
 // ErrUnsupportedFieldType is returned for unsupported field types.
 var ErrUnsupportedFieldType = errors.New("Unsupported field type")
 
@@ -62,10 +57,7 @@ func (schema *Schema) Marshal(s interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	record, err := getRecord(avroSchema, v, typ)
-	if err != nil {
-		return nil, err
-	}
+	record := getRecord(avroSchema, v, typ)
 
 	writer := avro.NewGenericDatumWriter()
 	writer.SetSchema(avroSchema)
@@ -141,7 +133,7 @@ func generateDecodedRecord(schema string, message []byte) (*avro.GenericRecord, 
 	return decodedRecord, nil
 }
 
-func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro.GenericRecord, error) {
+func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) *avro.GenericRecord {
 	record := avro.NewGenericRecord(avroSchema)
 
 	for i := 0; i < v.NumField(); i++ {
@@ -164,7 +156,7 @@ func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro
 		}
 	}
 
-	return record, nil
+	return record
 }
 
 func isValidType(kind reflect.Kind) bool {
