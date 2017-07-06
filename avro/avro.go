@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
-	avro "github.com/go-avro/avro"
-	"github.com/ian-kent/go-log/log"
+	"github.com/go-avro/avro"
 )
 
 // Schema contains the schema definition necessary to generate an avro record
@@ -177,7 +176,6 @@ func isValidType(kind reflect.Kind) bool {
 func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v, vp reflect.Value) error {
 	decodedRecord, err := generateDecodedRecord(schema, message)
 	if err != nil {
-		log.Error(err, nil)
 		return err
 	}
 
