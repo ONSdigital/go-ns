@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
-	avro "github.com/go-avro"
+	avro "github.com/go-avro/avro"
 	"github.com/ian-kent/go-log/log"
 )
 
