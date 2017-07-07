@@ -2,6 +2,7 @@ package zebedee
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,23 +29,29 @@ import (
 type Client interface {
 	Get(path string) ([]byte, error)
 	GetLanding(path string) (*datasetLandingPageStatic.Page, error)
+	SetAccessToken(token string)
 }
 
 type client struct {
-	zebedeeURL string
-	client     *http.Client
+	zebedeeURL  string
+	client      *http.Client
+	accessToken string
 }
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
 // with a valid status
 type ErrInvalidZebedeeResponse struct {
-	responseCode int
-	path         string
+	err  error
+	data zebedeeRequestErrorData
 }
 
+type zebedeeRequestErrorData map[string]interface{}
+
 func (e ErrInvalidZebedeeResponse) Error() string {
-	return fmt.Sprintf("invalid response from zebedee: %s - status %d", e.path, e.responseCode)
+	return e.err.Error()
 }
+
+var _ error = ErrInvalidZebedeeResponse{}
 
 // NewClient creates a new Zebedee Client
 func NewClient(url string) Client {
@@ -98,10 +105,19 @@ func (c client) GetLanding(path string) (*datasetLandingPageStatic.Page, error) 
 	return c.populateStaticLandingPageModel(*dlp)
 }
 
+func (c client) SetAccessToken(token string) {
+	log.Debug("adding access token to client", log.Data{"token": token})
+	c.accessToken = token
+}
+
 func (c client) get(path string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(c.accessToken) > 0 {
+		req.Header.Set("X-Florence-Token", c.accessToken)
 	}
 
 	resp, err := c.client.Do(req)
@@ -111,7 +127,11 @@ func (c client) get(path string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, c.zebedeeURL + path}
+		return nil, ErrInvalidZebedeeResponse{errors.New("unexpected response from zebedee"), zebedeeRequestErrorData{
+			"zebedeeURI":         req.URL.Path,
+			"expectedStatusCode": 200,
+			"actualStatusCode":   resp.StatusCode,
+		}}
 	}
 
 	return ioutil.ReadAll(resp.Body)
