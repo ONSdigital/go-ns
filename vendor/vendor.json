@@ -15,6 +15,18 @@
 			"revisionTime": "2017-04-25T22:40:50Z"
 		},
 		{
+			"checksumSHA1": "27kaxcKYfEk52ZVUU5wtfndQVAY=",
+			"path": "github.com/goamz/goamz/aws",
+			"revision": "c35091c30f44b7f151ec9028b895465a191d1ea7",
+			"revisionTime": "2017-02-10T23:16:58Z"
+		},
+		{
+			"checksumSHA1": "hAxHwewBLl3xg9DFxWrz697htI8=",
+			"path": "github.com/goamz/goamz/s3",
+			"revision": "c35091c30f44b7f151ec9028b895465a191d1ea7",
+			"revisionTime": "2017-02-10T23:16:58Z"
+		},
+		{
 			"checksumSHA1": "tewA7jXVGCw1zb5mA0BDecWi4iQ=",
 			"path": "github.com/jtolds/gls",
 			"revision": "8ddce2a84170772b95dd5d576c48d517b22cac63",
@@ -67,6 +79,12 @@
 			"path": "github.com/smartystreets/goconvey/convey/reporting",
 			"revision": "7befa7fd6e2e8ca28d2b94f2d39111929904b08d",
 			"revisionTime": "2016-09-28T20:55:23Z"
+		},
+		{
+			"checksumSHA1": "sFD8LpJPQtWLwGda3edjf5mNUbs=",
+			"path": "github.com/vaughan0/go-ini",
+			"revision": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1",
+			"revisionTime": "2013-09-23T14:52:12Z"
 		}
 	],
 	"rootPath": "github.com/ONSdigital/go-ns"
