@@ -50,24 +50,18 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test get dataset details", t, func() {
-		c := cli.(client)
-
-		d := c.getDatasetDetails("12345")
+		d := cli.getDatasetDetails("12345")
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		c := cli.(client)
-
-		fs := c.getFileSize("filesize")
+		fs := cli.getFileSize("filesize")
 		So(fs, ShouldEqual, "5.0 MB")
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		c := cli.(client)
-
-		t := c.getPageTitle("pageTitle")
+		t := cli.getPageTitle("pageTitle")
 		So(t, ShouldEqual, "baby-names: 2017")
 	})
 }

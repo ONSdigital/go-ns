@@ -32,7 +32,7 @@ type Client interface {
 	SetAccessToken(token string)
 }
 
-type client struct {
+type ZebedeeClient struct {
 	zebedeeURL  string
 	client      *http.Client
 	accessToken string
@@ -57,18 +57,18 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 var _ error = ErrInvalidZebedeeResponse{}
 
 // NewClient creates a new Zebedee Client
-func NewClient(url string) Client {
-	return client{
+func NewClient(url string) ZebedeeClient {
+	return ZebedeeClient{
 		zebedeeURL: url,
 		client:     &http.Client{Timeout: 5 * time.Second},
 	}
 }
 
-func (c client) Get(path string) ([]byte, error) {
+func (c ZebedeeClient) Get(path string) ([]byte, error) {
 	return c.get(path)
 }
 
-func (c client) GetLanding(path string) (StaticDatasetLandingPage, error) {
+func (c ZebedeeClient) GetLanding(path string) (StaticDatasetLandingPage, error) {
 	b, err := c.get(path)
 	if err != nil {
 		return StaticDatasetLandingPage{}, err
@@ -108,12 +108,12 @@ func (c client) GetLanding(path string) (StaticDatasetLandingPage, error) {
 	return c.populateStaticLandingPageModel(*dlp)
 }
 
-func (c client) SetAccessToken(token string) {
+func (c ZebedeeClient) SetAccessToken(token string) {
 	log.Debug("adding access token to client", log.Data{"token": token})
 	c.accessToken = token
 }
 
-func (c client) get(path string) ([]byte, error) {
+func (c ZebedeeClient) get(path string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (c client) get(path string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func (c client) getBreadcrumb(uri string) ([]model.TaxonomyNode, error) {
+func (c ZebedeeClient) getBreadcrumb(uri string) ([]model.TaxonomyNode, error) {
 	b, err := c.get("/parents?uri=" + uri)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (c client) getBreadcrumb(uri string) ([]model.TaxonomyNode, error) {
 	return parents, nil
 }
 
-func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (StaticDatasetLandingPage, error) {
+func (c ZebedeeClient) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (StaticDatasetLandingPage, error) {
 	//Map Zebedee response data to new page model
 	var sdlp StaticDatasetLandingPage
 	sdlp.Type = dlp.Type
@@ -217,7 +217,7 @@ func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (S
 	return sdlp, nil
 }
 
-func (c client) getDatasetDetails(uri string) datasetLandingPageStatic.Dataset {
+func (c ZebedeeClient) getDatasetDetails(uri string) datasetLandingPageStatic.Dataset {
 	b, err := c.get("/data?uri=" + uri)
 	if err != nil {
 		log.Error(err, nil)
@@ -259,7 +259,7 @@ func (c client) getDatasetDetails(uri string) datasetLandingPageStatic.Dataset {
 
 }
 
-func (c client) getFileSize(uri string) string {
+func (c ZebedeeClient) getFileSize(uri string) string {
 	b, err := c.get("/filesize?uri=" + uri)
 	if err != nil {
 		log.Error(err, nil)
@@ -277,7 +277,7 @@ func (c client) getFileSize(uri string) string {
 	return datasize.ByteSize(fs.Size).HumanReadable()
 }
 
-func (c client) getPageTitle(uri string) string {
+func (c ZebedeeClient) getPageTitle(uri string) string {
 	b, err := c.get("/data?uri=" + uri + "&title")
 	if err != nil {
 		log.Error(err, nil)
