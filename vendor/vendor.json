@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "HGcaKsLnyiPHC1fYKvGTIH00Z4c=",
+			"path": "github.com/ONSdigital/dp-frontend-models/model",
+			"revision": "f390250319d1524b758e8bccc351d6916cebd2c0",
+			"revisionTime": "2017-07-04T13:42:44Z"
+		},
+		{
 			"checksumSHA1": "Xf6RqlcMdmIUjjgjrFfH2XXpcEA=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model/datasetLandingPageStatic",
 			"revision": "f390250319d1524b758e8bccc351d6916cebd2c0",
@@ -21,16 +27,16 @@
 			"revisionTime": "2015-06-12T18:29:05Z"
 		},
 		{
-			"checksumSHA1": "6PQFibmHgsXFHoRQPmkw2V+59Lk=",
-			"path": "github.com/gorilla/mux",
-			"revision": "18fca31550181693b3a834a15b74b564b3605876",
-			"revisionTime": "2017-05-30T19:55:47Z"
-		},
-		{
 			"checksumSHA1": "I6MnUzkLJt+sh73CodD0NKswFrs=",
 			"path": "github.com/go-avro/avro",
 			"revision": "eb366719b57296a0940b70c42578181e3a12b985",
 			"revisionTime": "2017-04-25T22:40:50Z"
+		},
+		{
+			"checksumSHA1": "6PQFibmHgsXFHoRQPmkw2V+59Lk=",
+			"path": "github.com/gorilla/mux",
+			"revision": "18fca31550181693b3a834a15b74b564b3605876",
+			"revisionTime": "2017-05-30T19:55:47Z"
 		},
 		{
 			"checksumSHA1": "tewA7jXVGCw1zb5mA0BDecWi4iQ=",
