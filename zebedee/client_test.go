@@ -42,11 +42,10 @@ func TestUnitClient(t *testing.T) {
 		})
 
 		Convey("test error returned if requesting invalid zebedee url", func() {
-			b, err := cli.GetLanding("/invalid")
+			_, err := cli.GetLanding("/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 			So(err.Error(), ShouldEqual, "unexpected response from zebedee")
-			So(b, ShouldBeNil)
 		})
 	})
 

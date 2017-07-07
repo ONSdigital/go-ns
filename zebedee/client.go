@@ -28,7 +28,7 @@ import (
 // data from a given path in zebedee.
 type Client interface {
 	Get(path string) ([]byte, error)
-	GetLanding(path string) (*datasetLandingPageStatic.Page, error)
+	GetLanding(path string) (StaticDatasetLandingPage, error)
 	SetAccessToken(token string)
 }
 
@@ -37,6 +37,9 @@ type client struct {
 	client      *http.Client
 	accessToken string
 }
+
+// StaticDatasetLandingPage is a StaticDatasetLandingPage representation
+type StaticDatasetLandingPage datasetLandingPageStatic.Page
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
 // with a valid status
@@ -65,15 +68,15 @@ func (c client) Get(path string) ([]byte, error) {
 	return c.get(path)
 }
 
-func (c client) GetLanding(path string) (*datasetLandingPageStatic.Page, error) {
+func (c client) GetLanding(path string) (StaticDatasetLandingPage, error) {
 	b, err := c.get(path)
 	if err != nil {
-		return nil, err
+		return StaticDatasetLandingPage{}, err
 	}
 
 	dlp := new(models.DatasetLandingPage)
 	if err = json.Unmarshal(b, &dlp); err != nil {
-		return nil, err
+		return StaticDatasetLandingPage{}, err
 	}
 
 	related := [][]model.Related{
@@ -159,9 +162,9 @@ func (c client) getBreadcrumb(uri string) ([]model.TaxonomyNode, error) {
 	return parents, nil
 }
 
-func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (*datasetLandingPageStatic.Page, error) {
+func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (StaticDatasetLandingPage, error) {
 	//Map Zebedee response data to new page model
-	var sdlp datasetLandingPageStatic.Page
+	var sdlp StaticDatasetLandingPage
 	sdlp.Type = dlp.Type
 	sdlp.URI = dlp.URI
 	sdlp.Metadata.Title = dlp.Description.Title
@@ -181,7 +184,7 @@ func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (*
 	sdlp.FilterID = dlp.FilterID
 	bc, err := c.getBreadcrumb(dlp.URI)
 	if err != nil {
-		return nil, err
+		return StaticDatasetLandingPage{}, err
 	}
 	sdlp.Page.Breadcrumb = bc
 	sdlp.DatasetLandingPage.ParentPath = sdlp.Breadcrumb[len(sdlp.Breadcrumb)-1].Title
@@ -211,7 +214,7 @@ func (c client) populateStaticLandingPageModel(dlp models.DatasetLandingPage) (*
 		}
 	}
 
-	return &sdlp, nil
+	return sdlp, nil
 }
 
 func (c client) getDatasetDetails(uri string) datasetLandingPageStatic.Dataset {
