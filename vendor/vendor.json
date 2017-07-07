@@ -27,10 +27,22 @@
 			"revisionTime": "2017-05-30T19:55:47Z"
 		},
 		{
+			"checksumSHA1": "I6MnUzkLJt+sh73CodD0NKswFrs=",
+			"path": "github.com/go-avro/avro",
+			"revision": "eb366719b57296a0940b70c42578181e3a12b985",
+			"revisionTime": "2017-04-25T22:40:50Z"
+		},
+		{
 			"checksumSHA1": "tewA7jXVGCw1zb5mA0BDecWi4iQ=",
 			"path": "github.com/jtolds/gls",
 			"revision": "8ddce2a84170772b95dd5d576c48d517b22cac63",
 			"revisionTime": "2016-01-05T22:08:40Z"
+		},
+		{
+			"checksumSHA1": "OBvAHqWjdI4NQVAqTkcQAdTuCFY=",
+			"path": "github.com/justinas/alice",
+			"revision": "1051eaf52fcafdd87ead59d28b065f1fcb8274ec",
+			"revisionTime": "2016-09-10T10:38:22Z"
 		},
 		{
 			"checksumSHA1": "hBgLmZ/4mCxmnH88mqFKBkpJFUY=",
