@@ -4,10 +4,12 @@ package avro
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/go-avro/avro"
 )
 
@@ -24,6 +26,9 @@ func ErrUnsupportedType(typ reflect.Kind) error {
 
 // ErrUnsupportedFieldType is returned for unsupported field types.
 var ErrUnsupportedFieldType = errors.New("Unsupported field type")
+
+// ErrMissingNestedScema is returned when nested schemas are missing from the parent
+var ErrMissingNestedScema = errors.New("nested schema missing from parent")
 
 // Marshal is used to avro encode the interface of s.
 func (schema *Schema) Marshal(s interface{}) ([]byte, error) {
@@ -56,7 +61,10 @@ func (schema *Schema) Marshal(s interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	record := getRecord(avroSchema, v, typ)
+	record, err := getRecord(avroSchema, v, typ)
+	if err != nil {
+		return nil, err
+	}
 
 	writer := avro.NewGenericDatumWriter()
 	writer.SetSchema(avroSchema)
@@ -106,6 +114,7 @@ func checkFieldType(v reflect.Value, t reflect.Type) error {
 		fieldType := t.Field(i)
 
 		if !isValidType(fieldType.Type.Kind()) {
+			log.Trace("type is:", log.Data{"field_type": fieldType.Type.Kind()})
 			return ErrUnsupportedFieldType
 		}
 	}
@@ -132,7 +141,54 @@ func generateDecodedRecord(schema string, message []byte) (*avro.GenericRecord, 
 	return decodedRecord, nil
 }
 
-func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) *avro.GenericRecord {
+func getNestedSchema(avroSchema avro.Schema, fieldTag string, v reflect.Value, typ reflect.Type) (avro.Schema, error) {
+	// Unmarshal parent avro schema into map
+	var schemaMap map[string]interface{}
+	if err := json.Unmarshal([]byte(avroSchema.String()), &schemaMap); err != nil {
+		return nil, err
+	}
+
+	// Get fields section from parent schema map
+	fields := schemaMap["fields"].([]interface{})
+	for _, field := range fields {
+		var fld map[string]interface{}
+		var ok bool
+
+		if fld, ok = field.(map[string]interface{}); !ok {
+			continue
+		}
+
+		// Iterate through each field until the nested schema field is found
+		if fld["name"].(string) == fieldTag {
+			var avroFieldType map[string]interface{}
+
+			// The nested schema is inside the type element of the required field
+			if avroFieldType, ok = fld["type"].(map[string]interface{}); !ok {
+				var avroFieldTypes []interface{}
+				if avroFieldTypes, ok = fld["type"].([]interface{}); !ok {
+					continue
+				}
+
+				// If the nested schema could potentially be "null", then the schema is the second type
+				// element rather than the first
+				if avroFieldType = avroFieldTypes[1].(map[string]interface{}); !ok {
+					continue
+				}
+			}
+
+			// Marshal the nested schema map into json
+			nestedSchemaBytes, err := json.Marshal(avroFieldType)
+			if err != nil {
+				return nil, err
+			}
+
+			return avro.ParseSchema(string(nestedSchemaBytes))
+		}
+	}
+	return nil, ErrMissingNestedScema
+}
+
+func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro.GenericRecord, error) {
 	record := avro.NewGenericRecord(avroSchema)
 
 	for i := 0; i < v.NumField(); i++ {
@@ -152,17 +208,35 @@ func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) *avro.
 		case reflect.Int32:
 			value := v.FieldByName(fieldName).Interface().(int32)
 			record.Set(fieldTag, value)
+		case reflect.Slice:
+			if err := marshalSlice(record, v, i, fieldTag, avroSchema); err != nil {
+				return nil, err
+			}
+		case reflect.Struct:
+			nestedSchema, err := getNestedSchema(avroSchema, fieldTag, v, typ)
+			if err != nil {
+				return nil, err
+			}
+
+			nestedRecord, err := getRecord(nestedSchema, v.Field(i), typ.Field(i).Type)
+			if err != nil {
+				return nil, err
+			}
+
+			record.Set(fieldTag, nestedRecord)
 		}
 	}
 
-	return record
+	return record, nil
 }
 
 func isValidType(kind reflect.Kind) bool {
 	supportedTypes := []reflect.Kind{
 		reflect.Bool,
-		reflect.String,
 		reflect.Int32,
+		reflect.Slice,
+		reflect.String,
+		reflect.Struct,
 	}
 
 	for _, supportedType := range supportedTypes {
@@ -171,6 +245,110 @@ func isValidType(kind reflect.Kind) bool {
 		}
 	}
 	return false
+}
+
+func marshalSlice(record *avro.GenericRecord, v reflect.Value, i int, fieldTag string, avroSchema avro.Schema) error {
+	// This switch statement will need to be extended to support other native types,
+	// Currently supports strings and structs.
+	switch v.Field(i).Type().Elem().Kind() {
+	case reflect.String:
+		slice := marshalStringSlice(v, i)
+		record.Set(fieldTag, slice)
+	case reflect.Struct:
+		slice, err := marshalStructSlice(v, i, avroSchema, fieldTag)
+		if err != nil {
+			return err
+		}
+		record.Set(fieldTag, slice)
+	}
+	return nil
+}
+
+func marshalStringSlice(v reflect.Value, i int) []interface{} {
+	vals := v.Field(i)
+	var slice []interface{}
+	for j := 0; j < vals.Len(); j++ {
+		slice = append(slice, vals.Index(j).Interface())
+	}
+	return slice
+}
+
+func marshalStructSlice(v reflect.Value, i int, avroSchema avro.Schema, fieldTag string) ([]interface{}, error) {
+	vals := v.Field(i)
+	var slice []interface{}
+	for j := 0; j < vals.Len(); j++ {
+		arraySchema, err := getArraySchema(avroSchema, fieldTag)
+		if err != nil {
+			return nil, err
+		}
+
+		arrayRecord, err := getRecord(arraySchema, vals.Index(j), v.Field(i).Type().Elem())
+		if err != nil {
+			return nil, err
+		}
+
+		slice = append(slice, arrayRecord)
+	}
+	return slice, nil
+}
+
+func getArraySchema(avroSchema avro.Schema, fieldTag string) (avro.Schema, error) {
+	var schemaMap map[string]interface{}
+	// Unmarshal the parent schema into a map
+	if err := json.Unmarshal([]byte(avroSchema.String()), &schemaMap); err != nil {
+		return nil, err
+	}
+
+	fields := schemaMap["fields"].([]interface{})
+	for _, field := range fields {
+		var fld map[string]interface{}
+		var ok bool
+
+		if fld, ok = field.(map[string]interface{}); !ok {
+			continue
+		}
+
+		// Iterate through fields in schema until fieldTag matches the name element
+		// of the field
+		if fld["name"].(string) == fieldTag {
+			// The array schema will be inside the type element of the requested field.
+			// Marshal this schema back to json and return
+			arraySchemaBytes, err := json.Marshal(fld["type"])
+			if err != nil {
+				return nil, err
+			}
+
+			return avro.ParseSchema(string(arraySchemaBytes))
+		}
+	}
+
+	return nil, ErrMissingNestedScema
+}
+
+func populateNestedArrayItem(nestedMap map[string]interface{}, typ reflect.Type) reflect.Value {
+	// Create a new instance of required struct type
+	v := reflect.Indirect(reflect.New(typ))
+	for i := 0; i < v.NumField(); i++ {
+		field := typ.Field(i).Tag.Get("avro")
+		fieldValue := nestedMap[field]
+		if fieldValue != nil {
+			if v.Field(i).Kind() == reflect.Struct {
+				setNestedStructs(fieldValue.(map[string]interface{}), v.Field(i), typ.Field(i).Type)
+				continue
+			}
+			value := reflect.ValueOf(fieldValue)
+			if typ.Field(i).Type.Kind() == reflect.Slice {
+				sliceInterface := fieldValue.([]interface{})
+				sliceString := make([]string, len(sliceInterface))
+				for _, val := range sliceInterface {
+					sliceString = append(sliceString, val.(string))
+				}
+				value = reflect.ValueOf(sliceString)
+			}
+			v.Field(i).Set(value)
+		}
+	}
+	return v
 }
 
 func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v, vp reflect.Value) error {
@@ -190,9 +368,73 @@ func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v
 		value := decodedRecord.Get(field)
 
 		if fieldName.IsValid() {
+			if v.Field(i).Type().Kind() == reflect.Slice {
+				switch v.Field(i).Type().Elem().Kind() {
+				case reflect.String:
+					value = unmarshalStringSlice(value)
+				case reflect.Struct:
+					v, err = unmarshalStructSlice(value, v, i)
+					if err != nil {
+						return err
+					}
+					continue
+				default:
+					return ErrUnsupportedType(v.Field(i).Type().Elem().Kind())
+				}
+			}
 			fieldName.Set(reflect.ValueOf(value))
 		}
 	}
 
 	return nil
+}
+
+func setNestedStructs(nestedMap map[string]interface{}, v reflect.Value, typ reflect.Type) {
+	for i := 0; i < v.NumField(); i++ {
+		field := typ.Field(i).Tag.Get("avro")
+		fieldValue := nestedMap[field]
+		if fieldValue != nil {
+			if v.Field(i).Kind() == reflect.Struct {
+				setNestedStructs(fieldValue.(map[string]interface{}), v.Field(i), typ.Field(i).Type)
+				continue
+			}
+			value := reflect.ValueOf(fieldValue)
+			if typ.Field(i).Type.Kind() == reflect.Slice {
+				sliceInterface := fieldValue.([]interface{})
+				sliceString := make([]string, len(sliceInterface))
+				for i, val := range sliceInterface {
+					sliceString[i] = val.(string)
+				}
+				value = reflect.ValueOf(sliceString)
+			}
+			v.Field(i).Set(value)
+		}
+	}
+}
+
+func unmarshalStringSlice(value interface{}) []string {
+	sliceInterface := value.([]interface{})
+	sliceString := make([]string, len(sliceInterface))
+	for _, val := range sliceInterface {
+		sliceString = append(sliceString, val.(string))
+	}
+	return sliceString
+}
+
+func unmarshalStructSlice(value interface{}, v reflect.Value, i int) (reflect.Value, error) {
+	sliceInterface := value.([]interface{})
+	sliceType := v.Field(i).Type().Elem()
+	emptySlice := reflect.MakeSlice(reflect.SliceOf(sliceType), 0, 0)
+	for _, val := range sliceInterface {
+		record := val.(*avro.GenericRecord)
+
+		var dataMap map[string]interface{}
+		if err := json.Unmarshal([]byte(record.String()), &dataMap); err != nil {
+			return v, err
+		}
+		item := populateNestedArrayItem(dataMap, v.Field(i).Type().Elem())
+		emptySlice = reflect.Append(emptySlice, item)
+		v.Field(i).Set(emptySlice)
+	}
+	return v, nil
 }
