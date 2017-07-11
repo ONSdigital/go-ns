@@ -56,7 +56,9 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 		})
 	}
 
-	sdlp.DatasetLandingPage.ParentPath = sdlp.Breadcrumb[len(sdlp.Breadcrumb)-1].Title
+	if len(sdlp.Breadcrumb) > 0 {
+		sdlp.DatasetLandingPage.ParentPath = sdlp.Breadcrumb[len(sdlp.Breadcrumb)-1].Title
+	}
 
 	for i, d := range ds {
 		var dataset datasetLandingPageStatic.Dataset
