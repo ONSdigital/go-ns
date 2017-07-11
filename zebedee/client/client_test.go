@@ -1,4 +1,4 @@
-package zebedee
+package client
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ import (
 func TestUnitClient(t *testing.T) {
 	go mockZebedeeServer()
 
-	cli := NewClient("http://localhost:3050")
+	cli := NewZebedeeClient("http://localhost:3050")
 
 	Convey("test Get()", t, func() {
 		Convey("test get sucessfully returns response from zebedee", func() {
@@ -28,48 +28,52 @@ func TestUnitClient(t *testing.T) {
 			b, err := cli.Get("/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "unexpected response from zebedee")
+			So(err.Error(), ShouldEqual, "invalid response from zebedee - expected: 200, got: 404, path: /invalid")
 			So(b, ShouldBeNil)
 		})
 	})
 
 	Convey("test GetLanding", t, func() {
 		Convey("test getLanding sucessfully returns a landing model", func() {
-			m, err := cli.GetLanding("/data?uri=labor")
+			m, err := cli.GetDatasetLandingPage("/data?uri=labor")
 			So(err, ShouldBeNil)
 			So(m, ShouldNotBeEmpty)
-			So(m.Page.Type, ShouldEqual, "dataset_landing_page")
+			So(m.Type, ShouldEqual, "dataset_landing_page")
 		})
 
 		Convey("test error returned if requesting invalid zebedee url", func() {
-			_, err := cli.GetLanding("/invalid")
+			_, err := cli.GetDatasetLandingPage("/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "unexpected response from zebedee")
+			So(err.Error(), ShouldEqual, "invalid response from zebedee - expected: 200, got: 404, path: /invalid")
 		})
 	})
 
 	Convey("test get dataset details", t, func() {
-		d := cli.getDatasetDetails("12345")
+		d, err := cli.GetDataset("12345")
+		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs := cli.getFileSize("filesize")
-		So(fs, ShouldEqual, "5.0 MB")
+		fs, err := cli.GetFileSize("filesize")
+		So(err, ShouldBeNil)
+		So(fs.Size, ShouldEqual, "5242880")
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t := cli.getPageTitle("pageTitle")
-		So(t, ShouldEqual, "baby-names: 2017")
+		t, err := cli.GetPageTitle("pageTitle")
+		So(err, ShouldBeNil)
+		So(t.Title, ShouldEqual, "baby-names")
+		So(t.Edition, ShouldEqual, "2017")
 	})
 }
 
 func mockZebedeeServer() {
 	r := mux.NewRouter()
 
-	r.Path("/data").HandlerFunc(data)
+	r.Path("/data").HandlerFunc(d)
 	r.Path("/parents").HandlerFunc(parents)
 	r.Path("/filesize").HandlerFunc(filesize)
 
@@ -81,7 +85,7 @@ func mockZebedeeServer() {
 	}
 }
 
-func data(w http.ResponseWriter, req *http.Request) {
+func d(w http.ResponseWriter, req *http.Request) {
 	uri := req.URL.Query().Get("uri")
 
 	switch uri {
@@ -107,5 +111,5 @@ func parents(w http.ResponseWriter, req *http.Request) {
 }
 
 func filesize(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte(`{"fileSize":5242880}`))
+	w.Write([]byte(`{"fileSize":"5242880"}`))
 }
