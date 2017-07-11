@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "HGcaKsLnyiPHC1fYKvGTIH00Z4c=",
+			"path": "github.com/ONSdigital/dp-frontend-models/model",
+			"revision": "68099c8c0a883488fb056b2ad1500c4c478bf883",
+			"revisionTime": "2017-07-11T09:57:28Z"
+		},
+		{
 			"checksumSHA1": "Xf6RqlcMdmIUjjgjrFfH2XXpcEA=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model/datasetLandingPageStatic",
 			"revision": "f390250319d1524b758e8bccc351d6916cebd2c0",
