@@ -1,0 +1,14 @@
+[
+  {
+    "id": "pizza",
+    "rules": [
+      {
+        "name": "min_length",
+        "value": 2
+      },
+      {
+        "name": "food"
+      }
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "search",
+    "rules": [
+      {
+        "name": "min_length",
+        "value": 5
+      },
+      {
+        "name": "email"
+      }
+    ]
+  }
+]
