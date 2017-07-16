@@ -42,13 +42,19 @@ variable within in rule is an optional field which can be passed into a validati
 function such as the one above for the min_length rule. To define your own custom
 rules please see the section further down.
 
-To use the validator you should create a new validator, passing in a path to your
-previously defined JSON file.
+To use the validator you should create a new validator, passing in an `io.Reader`
+with the contents of your JSON rules. For example:
 
 ```go
 import "github.com/ONSdigital/go-ns/validator"
 
-fv := validator.New("../path/rules.json")
+file, err := os.Open("../path/rules.json")
+if err != nil {
+  // handle error
+}
+defer file.Close()
+
+fv := validator.New(file)
 ```
 
 Create a struct which matches the structure of your HTML form, defining any id

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"testing"
 
@@ -22,7 +23,11 @@ type Food struct {
 
 func TestUnitValidate(t *testing.T) {
 	Convey("test validator sucessfully validates test data", t, func() {
-		fv, err := New("testdata/rules.json")
+		f, err := os.Open("testdata/rules.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}
@@ -40,7 +45,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator sucessfully validates a custom rule", t, func() {
-		fv, err := New("testdata/custom_rule.json")
+		f, err := os.Open("testdata/custom_rule.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}
@@ -72,7 +81,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator returns error if request missing form data", t, func() {
-		fv, err := New("testdata/rules.json")
+		f, err := os.Open("testdata/rules.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		req, err := http.NewRequest("POST", "", nil)
@@ -83,7 +96,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator returns error if file does not contain valid json", t, func() {
-		fv, err := New("testdata/junk.txt")
+		f, err := os.Open("testdata/junk.txt")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}
@@ -101,7 +118,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator returns error if json file rule has no corresponding func", t, func() {
-		fv, err := New("testdata/rules-missing-func.json")
+		f, err := os.Open("testdata/rules-missing-func.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}
@@ -120,7 +141,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator returns error if invalid parameter sent to min_length", t, func() {
-		fv, err := New("testdata/invalid-min-length.json")
+		f, err := os.Open("testdata/invalid-min-length.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}
@@ -139,7 +164,11 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test validator returns ErrFormValidationFailed if form validation falise", t, func() {
-		fv, err := New("testdata/rules.json")
+		f, err := os.Open("testdata/rules.json")
+		So(err, ShouldBeNil)
+		defer f.Close()
+
+		fv, err := New(f)
 		So(err, ShouldBeNil)
 
 		data := url.Values{}

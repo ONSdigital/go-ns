@@ -1,10 +1,11 @@
 package validator
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 
@@ -23,10 +24,15 @@ type FormValidator struct {
 }
 
 // New creates a new FormValidator
-func New(path string) (fv FormValidator, err error) {
+func New(r io.Reader) (fv FormValidator, err error) {
 	fv.fieldErrs = make(map[string][]error)
 
-	fv.rulesJSON, err = ioutil.ReadFile(path)
+	buf := &bytes.Buffer{}
+	_, err = io.Copy(buf, r)
+	if err == nil {
+		fv.rulesJSON = buf.Bytes()
+	}
+
 	return
 }
 
