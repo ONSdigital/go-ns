@@ -95,26 +95,9 @@ func TestUnitValidate(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("test validator returns error if file does not contain valid json", t, func() {
-		f, err := os.Open("testdata/junk.txt")
+	Convey("test New returns error if file does not contain valid json", t, func() {
+		_, err := os.Open("testdata/junk.txt")
 		So(err, ShouldBeNil)
-		defer f.Close()
-
-		fv, err := New(f)
-		So(err, ShouldBeNil)
-
-		data := url.Values{}
-		data.Set("search", "matt@gmail.com")
-
-		req, err := http.NewRequest("POST", "", bytes.NewBufferString(data.Encode()))
-		So(err, ShouldBeNil)
-
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
-		frm := Form{}
-		err = fv.Validate(req, &frm)
-		So(err, ShouldNotBeNil)
 	})
 
 	Convey("test validator returns error if json file rule has no corresponding func", t, func() {

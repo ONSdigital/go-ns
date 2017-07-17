@@ -10,7 +10,7 @@ Imagine you had an HTML form as described below:
 
 ```html
 <form action="/search" method="post">
-  <input type="text" id="search" value="search">
+  <input type="text" name="search" value="search">
   <input type="submit" value="Submit">
 </form>
 ```
@@ -36,14 +36,16 @@ to define a JSON file which follows the following structure:
 ]
 ```
 
-The id field would match the input id from the HTML, and we then define a list of
+The id field would match the input name from the HTML, and we then define a list of
 rules which correspond to a key within the function map in `rules.go`. The value
 variable within in rule is an optional field which can be passed into a validation
 function such as the one above for the min_length rule. To define your own custom
 rules please see the section further down.
 
 To use the validator you should create a new validator, passing in an `io.Reader`
-with the contents of your JSON rules. For example:
+with the contents of your JSON rules. Ensure that your rules JSON contains the
+rules for all form fields which will be validated in this service, so the FormValidator
+can be re used for all requests.
 
 ```go
 import "github.com/ONSdigital/go-ns/validator"

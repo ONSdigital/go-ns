@@ -7,19 +7,21 @@ import (
 	"regexp"
 )
 
+const emailRegex = `^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$`
+
 // FieldValidationErr is returned when a field fails validation
 type FieldValidationErr struct {
 	error
 }
 
 // Field represents a field to validate
-type Field struct {
+type field struct {
 	ID    string `json:"id"`
-	Rules []Rule `json:"rules"`
+	Rules []rule `json:"rules"`
 }
 
 // Rule represents a rule to validate within a field
-type Rule struct {
+type rule struct {
 	Name  string      `json:"name"`
 	Value interface{} `json:"value,omitempty"`
 }
@@ -79,7 +81,7 @@ func email(vars ...interface{}) error {
 		return errors.New("first parameter to email must be a string")
 	}
 
-	if ok, err := regexp.MatchString(".+@.+\\..+", e); !ok || err != nil {
+	if ok, err := regexp.MatchString(emailRegex, e); !ok || err != nil {
 		return FieldValidationErr{fmt.Errorf("email: %s is not a valid email address", e)}
 	}
 	return nil
