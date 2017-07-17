@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -22,14 +24,14 @@ type ZebedeeClient struct {
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
 // with a valid status
 type ErrInvalidZebedeeResponse struct {
-	actualCode   int
-	expectedCode int
-	uri          string
+	actualCode    int
+	acceptedCodes []int
+	uri           string
 }
 
 func (e ErrInvalidZebedeeResponse) Error() string {
-	return fmt.Sprintf("invalid response from zebedee - expected: %d, got: %d, path: %s",
-		e.expectedCode,
+	return fmt.Sprintf("invalid response from zebedee - expected: %v, got: %d, path: %s",
+		e.acceptedCodes,
 		e.actualCode,
 		e.uri,
 	)
@@ -37,11 +39,17 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 
 var _ error = ErrInvalidZebedeeResponse{}
 
-// NewZebedeeClient creates a new Zebedee Client
+// NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
+// environment variable to modify default 5 second timeout
 func NewZebedeeClient(url string) ZebedeeClient {
+	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
+	if timeout == 0 || err != nil {
+		timeout = 5
+	}
+
 	return ZebedeeClient{
 		zebedeeURL: url,
-		client:     &http.Client{Timeout: 5 * time.Second},
+		client:     &http.Client{Timeout: time.Duration(timeout) * time.Second},
 	}
 }
 
@@ -114,9 +122,11 @@ func (c ZebedeeClient) get(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	acceptedResponseCodes := []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}
+
+	if !isValidResponse(resp.StatusCode, acceptedResponseCodes) {
 		io.Copy(ioutil.Discard, resp.Body)
-		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, http.StatusOK, req.URL.Path}
+		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, acceptedResponseCodes, req.URL.Path}
 	}
 
 	return ioutil.ReadAll(resp.Body)
@@ -198,4 +208,13 @@ func (c ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
 	}
 
 	return pt, nil
+}
+
+func isValidResponse(actual int, expected []int) bool {
+	for _, code := range expected {
+		if code == actual {
+			return true
+		}
+	}
+	return false
 }
