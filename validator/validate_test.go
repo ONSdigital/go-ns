@@ -96,8 +96,12 @@ func TestUnitValidate(t *testing.T) {
 	})
 
 	Convey("test New returns error if file does not contain valid json", t, func() {
-		_, err := os.Open("testdata/junk.txt")
+		f, err := os.Open("testdata/junk.txt")
 		So(err, ShouldBeNil)
+		defer f.Close()
+
+		_, err = New(f)
+		So(err, ShouldNotBeNil)
 	})
 
 	Convey("test validator returns error if json file rule has no corresponding func", t, func() {
