@@ -56,6 +56,7 @@ func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		tag := string(v.Type().Field(i).Tag.Get("schema"))
+		fieldVal := getValue(v.Field(i).Interface())
 
 		if tag == "" {
 			log.Debug("field missing schema tag", log.Data{"field": v.Type().Field(i).Name})
@@ -70,7 +71,7 @@ func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
 						return fmt.Errorf("rule name: %s, missing corresponding validation function", rule.Name)
 					}
 
-					if err := fn(v.Field(i).Interface(), rule.Value); err != nil {
+					if err := fn(fieldVal.Interface(), rule.Value); err != nil {
 						if _, ok := err.(FieldValidationErr); !ok {
 							return err
 						}
@@ -89,7 +90,10 @@ func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
 }
 
 func getValue(s interface{}) reflect.Value {
-	return reflect.Indirect(reflect.ValueOf(s))
+	if reflect.ValueOf(s).Kind() == reflect.Ptr {
+		return reflect.Indirect(reflect.ValueOf(s))
+	}
+	return reflect.ValueOf(s)
 }
 
 func decodeRequest(req *http.Request, s interface{}) error {

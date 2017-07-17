@@ -18,7 +18,7 @@ type Form struct {
 }
 
 type Food struct {
-	Pizza string `schema:"pizza"`
+	Pizza *string `schema:"pizza"`
 }
 
 func TestUnitValidate(t *testing.T) {
