@@ -74,7 +74,7 @@ function and handle any errors as follows:
 ```go
   var frm Form
   if err := fv.Validate(req, &frm); if err != nil {
-    if _, ok := err.(validator.FieldValidationErr); !ok {
+    if err != validator.ErrFormValidationFailed {
       // handle this error as you would with any normal error
     } else {
       // we now know we have field validation errors so we can work out why a
