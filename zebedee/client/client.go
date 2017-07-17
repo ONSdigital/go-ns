@@ -24,14 +24,12 @@ type ZebedeeClient struct {
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
 // with a valid status
 type ErrInvalidZebedeeResponse struct {
-	actualCode    int
-	acceptedCodes []int
-	uri           string
+	actualCode int
+	uri        string
 }
 
 func (e ErrInvalidZebedeeResponse) Error() string {
-	return fmt.Sprintf("invalid response from zebedee - expected: %v, got: %d, path: %s",
-		e.acceptedCodes,
+	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
 		e.actualCode,
 		e.uri,
 	)
@@ -122,11 +120,9 @@ func (c ZebedeeClient) get(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	acceptedResponseCodes := []int{http.StatusOK, http.StatusCreated, http.StatusAccepted}
-
-	if !isValidResponse(resp.StatusCode, acceptedResponseCodes) {
+	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		io.Copy(ioutil.Discard, resp.Body)
-		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, acceptedResponseCodes, req.URL.Path}
+		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
 
 	return ioutil.ReadAll(resp.Body)
@@ -208,13 +204,4 @@ func (c ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
 	}
 
 	return pt, nil
-}
-
-func isValidResponse(actual int, expected []int) bool {
-	for _, code := range expected {
-		if code == actual {
-			return true
-		}
-	}
-	return false
 }

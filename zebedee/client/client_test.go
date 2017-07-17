@@ -28,7 +28,7 @@ func TestUnitClient(t *testing.T) {
 			b, err := cli.Get("/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "invalid response from zebedee - expected: [200 201 202], got: 404, path: /invalid")
+			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
 			So(b, ShouldBeNil)
 		})
 	})
@@ -45,7 +45,7 @@ func TestUnitClient(t *testing.T) {
 			_, err := cli.GetDatasetLandingPage("/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "invalid response from zebedee - expected: [200 201 202], got: 404, path: /invalid")
+			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
 		})
 	})
 
