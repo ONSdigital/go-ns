@@ -74,13 +74,13 @@ function and handle any errors as follows:
 ```go
   var frm Form
   if err := fv.Validate(req, &frm); if err != nil {
-    if err != validator.ErrFormValidationFailed {
+    if _, ok := err.(ErrFormValidationFailed); !ok {
       // handle this error as you would with any normal error
     } else {
       // we now know we have field validation errors so we can work out why a
       // particular field failed validation
 
-      fieldErrs := fv.GetFieldErrors() // returns a map of []errors
+      fieldErrs := err.(ErrFormValidationFailed).GetFieldErrors() // returns a map of []errors
       if len(fieldErrs["search"]) > 0 {
         // we now know something with search failed validation so we can handle
         // the error appropriately, perhaps by displaying an warning message to

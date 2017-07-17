@@ -165,9 +165,10 @@ func TestUnitValidate(t *testing.T) {
 
 		frm := Form{}
 		err = fv.Validate(req, &frm)
-		So(err, ShouldEqual, ErrFormValidationFailed)
+		So(err, ShouldHaveSameTypeAs, ErrFormValidationFailed{})
+		So(err.Error(), ShouldEqual, "form validation failed, check field errors")
 
-		fieldErrs := fv.GetFieldErrors()
+		fieldErrs := err.(ErrFormValidationFailed).GetFieldErrors()
 		So(fieldErrs["search"][0].Error(), ShouldEqual, "value: no, must be at least 5 characters")
 		So(fieldErrs["search"][1].Error(), ShouldEqual, "email: no is not a valid email address")
 	})

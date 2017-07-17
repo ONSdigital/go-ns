@@ -3,7 +3,6 @@ package validator
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,20 +14,30 @@ import (
 
 // ErrFormValidationFailed if form validation has failed, if this is ever returned,
 // corresponding call to GetFieldErrors should be made to check for individual field errors
-var ErrFormValidationFailed = errors.New("form validation failed, check field errors")
+type ErrFormValidationFailed struct {
+	fieldErrs map[string][]error
+}
+
+// GetFieldErrors returns a list of field errors (if any) after validation
+func (e ErrFormValidationFailed) GetFieldErrors() map[string][]error {
+	return e.fieldErrs
+}
+
+func (e ErrFormValidationFailed) Error() string {
+	return "form validation failed, check field errors"
+}
+
+var _ error = ErrFormValidationFailed{}
 
 // FormValidator represents a form validator which can be used to validate an
 // HTML form
 type FormValidator struct {
-	flds      []field
-	fieldErrs map[string][]error
+	flds []field
 }
 
 // New creates a new FormValidator which takes in an io.Reader containing the
 // rules for all form fields which need to be validated for a particular service
 func New(r io.Reader) (fv FormValidator, err error) {
-	fv.fieldErrs = make(map[string][]error)
-
 	buf := &bytes.Buffer{}
 	_, err = io.Copy(buf, r)
 	if err == nil {
@@ -38,13 +47,10 @@ func New(r io.Reader) (fv FormValidator, err error) {
 	return
 }
 
-// GetFieldErrors returns a list of field errors (if any) after validation
-func (fv FormValidator) GetFieldErrors() map[string][]error {
-	return fv.fieldErrs
-}
-
 // Validate will validate a request form parameters against a provided struct
 func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
+	fieldErrs := make(map[string][]error)
+
 	if err := decodeRequest(req, s); err != nil {
 		return err
 	}
@@ -72,15 +78,15 @@ func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
 						if _, ok := err.(FieldValidationErr); !ok {
 							return err
 						}
-						fv.fieldErrs[tag] = append(fv.fieldErrs[tag], err)
+						fieldErrs[tag] = append(fieldErrs[tag], err)
 					}
 				}
 			}
 		}
 	}
 
-	if len(fv.fieldErrs) > 0 {
-		return ErrFormValidationFailed
+	if len(fieldErrs) > 0 {
+		return ErrFormValidationFailed{fieldErrs}
 	}
 
 	return nil
