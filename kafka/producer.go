@@ -22,8 +22,6 @@ func NewProducer(brokers []string, topic string, envMax int) Producer {
 	}
 	outputChannel := make(chan []byte)
 	closerChannel := make(chan bool)
-	//signals := make(chan os.Signal, 1)
-	//signal.Notify(signals, os.Interrupt)
 	go func() {
 		defer producer.Close()
 		log.Info("Started kafka producer", log.Data{"topic": topic})
@@ -44,9 +42,6 @@ func NewProducer(brokers []string, topic string, envMax int) Producer {
 			case <-closerChannel:
 				log.Info("Closing kafka producer", log.Data{"topic": topic})
 				return
-				//case <-signals:
-				//log.Printf("Quitting kafka producer of topic %q", topic)
-				//return
 			}
 		}
 	}()

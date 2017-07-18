@@ -6,6 +6,7 @@ Common Go code for ONS apps:
 * Common HTTP handlers for healthcheck, requestID, reverse proxy and timeout handling
 * A logger which supports structured context-based logging
 * Avro marshal and unmarshal functionality. Marshal function returns the avro encoding of an interface and the unmarshal function allows user to parse avro encoded byte array.
+* [Kafka](./kafka/README.md) consumer and producer functionality
 
 ### Licence
 
