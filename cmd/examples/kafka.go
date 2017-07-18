@@ -48,6 +48,8 @@ func main() {
 				consumedMessage.Commit()
 			case errorMessage := <-consumer.Errors:
 				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": errorMessage})
+				producer.Closer <- true
+				consumer.Closer <- true
 				exitChannel <- true
 				return
 			}
