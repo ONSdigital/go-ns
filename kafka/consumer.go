@@ -1,8 +1,6 @@
 package kafka
 
 import (
-	"os"
-
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
 )
@@ -29,8 +27,6 @@ func NewConsumer(brokers []string, topic string, offset int64) Consumer {
 
 	messageChannel := make(chan []byte)
 	closerChannel := make(chan bool)
-	signals := make(chan os.Signal, 1)
-	//signal.Notify(signals, os.Interrupt)
 
 	go func() {
 		defer consumer.Close()
@@ -44,9 +40,6 @@ func NewConsumer(brokers []string, topic string, offset int64) Consumer {
 				select {
 				case msg := <-consumer.Messages():
 					messageChannel <- msg.Value
-				case <-signals:
-					log.Info("Quitting kafka consumer", log.Data{"topic": topic})
-					return
 				case <-closerChannel:
 					log.Info("Closing kafka consumer", log.Data{"topic": topic})
 					return

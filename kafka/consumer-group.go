@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/ONSdigital/go-ns/log"
@@ -52,8 +51,6 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 		Closer:   make(chan bool),
 		Errors:   make(chan error),
 	}
-	signals := make(chan os.Signal, 1)
-	//signal.Notify(signals, os.)
 
 	go func() {
 		defer cg.Consumer.Close()
@@ -73,9 +70,6 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 					}
 				case <-time.After(tick):
 					cg.Consumer.CommitOffsets()
-				case <-signals:
-					log.Info(fmt.Sprintf("Quitting kafka consumer of topic %q group %q", topic, group), nil)
-					return
 				case <-cg.Closer:
 					log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
 					return
