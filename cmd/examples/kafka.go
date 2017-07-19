@@ -56,5 +56,5 @@ func main() {
 		}
 	}()
 	<-exitChannel
-	log.Info("Service publish scheduler stopped", nil)
+	log.Info("Service kafka example stopped", nil)
 }
