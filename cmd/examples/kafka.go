@@ -42,14 +42,14 @@ func main() {
 	go func() {
 		for {
 			select {
-			case consumedMessage := <-consumer.Incoming:
+			case consumedMessage := <-consumer.Incoming():
 				log.Info(string(consumedMessage.GetData()), nil)
-				producer.Output <- consumedMessage.GetData()
+				producer.Output() <- consumedMessage.GetData()
 				consumedMessage.Commit()
-			case errorMessage := <-consumer.Errors:
+			case errorMessage := <-consumer.Errors():
 				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": errorMessage})
-				producer.Closer <- true
-				consumer.Closer <- true
+				producer.Closer() <- true
+				consumer.Closer() <- true
 				exitChannel <- true
 				return
 			}

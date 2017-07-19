@@ -7,8 +7,16 @@ import (
 
 type Producer struct {
 	producer sarama.AsyncProducer
-	Output   chan []byte
-	Closer   chan bool
+	output   chan []byte
+	closer   chan bool
+}
+
+func (producer Producer) Output() chan []byte {
+	return producer.output
+}
+
+func (producer Producer) Closer() chan bool {
+	return producer.closer
 }
 
 func NewProducer(brokers []string, topic string, envMax int) Producer {
