@@ -29,8 +29,6 @@ func (M Message) GetData() []byte {
 
 func (M Message) Commit() {
 	M.consumer.MarkOffset(M.message, "metadata")
-	//M.consumer.CommitOffsets()
-	//log.Printf("Offset : %d, Partition : %d", M.message.Offset, M.message.Partition)
 }
 
 func NewConsumerGroup(brokers []string, topic string, group string, offset int64) (*ConsumerGroup, error) {
