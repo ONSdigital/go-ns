@@ -2,17 +2,10 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/ONSdigital/dp-publish-pipeline/utils"
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
-)
-
-var (
-	tick             = time.Millisecond * 330
-	verboseTick      = false
-	maxLaunchPerTick = 20
 )
 
 func main() {
