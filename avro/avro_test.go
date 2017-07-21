@@ -19,7 +19,7 @@ func TestUnitMarshal(t *testing.T) {
 			TeamName:        "Crystal Palace FC",
 			Owner:           "Long, Martin",
 			Sport:           "Football",
-			Uri:             "http://8080/cpfc.com",
+			URI:             "http://8080/cpfc.com",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
 		}
@@ -38,7 +38,7 @@ func TestUnitMarshal(t *testing.T) {
 			Manager:         "Pardew, Alan",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
-			Uri:             "http://8080/cpfc.com",
+			URI:             "http://8080/cpfc.com",
 		}
 
 		bufferBytes, err := schema.Marshal(data)

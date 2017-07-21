@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/go-avro/avro"
 )
 
@@ -114,7 +113,6 @@ func checkFieldType(v reflect.Value, t reflect.Type) error {
 		fieldType := t.Field(i)
 
 		if !isValidType(fieldType.Type.Kind()) {
-			log.Trace("type is:", log.Data{"field_type": fieldType.Type.Kind()})
 			return ErrUnsupportedFieldType
 		}
 	}

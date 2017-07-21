@@ -57,7 +57,7 @@ type testData struct {
 	TeamName        string `avro:"team_name"`
 	Owner           string `avro:"ownerOfTeam"`
 	Sport           string `avro:"kind-of-sport"`
-	Uri             string `avro:"uri"`
+	URI             string `avro:"uri"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
 }
@@ -67,14 +67,14 @@ type testData1 struct {
 	TeamName        string `avro:"team_name"`
 	Owner           string `avro:"ownerOfTeam"`
 	Sport           string `avro:"kind-of-sport"`
-	Uri             string `avro:"-"`
+	URI             string `avro:"-"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
 }
 
 type testData2 struct {
 	Manager         string `avro:"manager"`
-	Uri             string `avro:"-"`
+	URI             string `avro:"-"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
 	NumberOfYouths  int    `avro:"number_of_youths"`
