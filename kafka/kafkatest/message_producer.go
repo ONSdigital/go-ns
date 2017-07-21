@@ -4,13 +4,15 @@ package kafkatest
 type MessageProducer struct {
 	outputChannel chan []byte
 	closerChannel chan bool
+	errorsChannel chan error
 }
 
 //
-func NewMessageProducer(outputChannel chan []byte, closerChannel chan bool) *MessageProducer {
+func NewMessageProducer(outputChannel chan []byte, closerChannel chan bool, errorsChannel chan error) *MessageProducer {
 	return &MessageProducer{
-		closerChannel:closerChannel,
-		outputChannel:outputChannel,
+		closerChannel: closerChannel,
+		outputChannel: outputChannel,
+		errorsChannel: errorsChannel,
 	}
 }
 
@@ -22,4 +24,9 @@ func (messageProducer MessageProducer) Output() chan []byte {
 // Closer returns the injected closer channel for testing.
 func (messageProducer MessageProducer) Closer() chan bool {
 	return messageProducer.closerChannel
+}
+
+// Errors returns the injected errors channel for testing.
+func (messageProducer MessageProducer) Errors() chan error {
+	return messageProducer.errorsChannel
 }
