@@ -13,7 +13,7 @@ func SetMaxMessageSize(maxSize int32) {
 
 // MessageConsumer provides a generic interface for consuming []byte messages
 type MessageConsumer interface {
-	Incoming() chan []byte
+	Incoming() chan Message
 	Closer() chan bool
 	Errors() chan error
 }
