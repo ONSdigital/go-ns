@@ -18,16 +18,21 @@ type ConsumerGroup struct {
 	errors   chan error
 }
 
-type Message struct {
+type Message interface {
+	GetData() []byte
+	Commit()
+}
+
+type SaramaMessage struct {
 	message  *sarama.ConsumerMessage
 	consumer *cluster.Consumer
 }
 
-func (M Message) GetData() []byte {
+func (M SaramaMessage) GetData() []byte {
 	return M.message.Value
 }
 
-func (M Message) Commit() {
+func (M SaramaMessage) Commit() {
 	M.consumer.MarkOffset(M.message, "metadata")
 }
 
@@ -77,7 +82,7 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 			default:
 				select {
 				case msg := <-cg.Consumer().Messages():
-					cg.Incoming() <- Message{msg, cg.Consumer()}
+					cg.Incoming() <- SaramaMessage{msg, cg.Consumer()}
 				case n, more := <-cg.Consumer().Notifications():
 					if more {
 						log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
