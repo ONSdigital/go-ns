@@ -22,4 +22,5 @@ type MessageConsumer interface {
 type MessageProducer interface {
 	Output() chan []byte
 	Closer() chan bool
+	Errors() chan error
 }
