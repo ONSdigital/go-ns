@@ -50,7 +50,7 @@ func main() {
 		for {
 			select {
 			case consumedMessage := <-consumer.Incoming():
-				log.Info("Message consumed", log.Data{"message": consumedMessage.GetData()})
+				log.Info("Message consumed", log.Data{"messageReceived": string(consumedMessage.GetData())})
 				consumedMessage.Commit()
 			case errorMessage := <-consumer.Errors():
 				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": errorMessage})
@@ -60,6 +60,7 @@ func main() {
 				return
 			case stdinLine := <-stdinChannel:
 				producer.Output() <- []byte(stdinLine)
+				log.Info("Message output", log.Data{"messageSent": stdinLine})
 			case <-signals:
 				log.Info("Quitting after signal", nil)
 				producer.Closer() <- true
