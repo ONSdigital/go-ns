@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/ONSdigital/dp-publish-pipeline/utils"
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
 )
@@ -14,14 +13,11 @@ import (
 func main() {
 	log.Namespace = "kafka-example"
 
-	brokers := utils.GetEnvironmentVariableAsArray("KAFKA_ADDR", "localhost:9092")
-	consumedTopic := utils.GetEnvironmentVariable("CONSUMED_TOPIC", "input")
-	producedTopic := utils.GetEnvironmentVariable("PRODUCED_TOPIC", "output")
-	maxMessageSize, err := utils.GetEnvironmentVariableInt("KAFKA_MESSAGE_SIZE", 50*1024*1024) // default to 50MB
-	if err != nil {
-		log.ErrorC("Could not create consumer", err, nil)
-		panic("Could not create consumer")
-	}
+	var brokers []string
+	brokers = append(brokers, "localhost:9092")
+	consumedTopic := "input"
+	producedTopic := "output"
+	maxMessageSize := 50 * 1024 * 1024 // 50MB
 
 	log.Info(fmt.Sprintf("Starting topics: %q -> stdout, stdin -> %q", consumedTopic, producedTopic), nil)
 
