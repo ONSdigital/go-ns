@@ -12,10 +12,10 @@ import (
 var tick = time.Millisecond * 4000
 
 type ConsumerGroup struct {
-	Consumer *cluster.Consumer
-	Incoming chan Message
-	Closer   chan bool
-	Errors   chan error
+	consumer *cluster.Consumer
+	incoming chan Message
+	closer   chan bool
+	errors   chan error
 }
 
 type Message struct {
@@ -29,8 +29,22 @@ func (M Message) GetData() []byte {
 
 func (M Message) Commit() {
 	M.consumer.MarkOffset(M.message, "metadata")
-	//M.consumer.CommitOffsets()
-	//log.Printf("Offset : %d, Partition : %d", M.message.Offset, M.message.Partition)
+}
+
+func (cg ConsumerGroup) Consumer() *cluster.Consumer {
+	return cg.consumer
+}
+
+func (cg ConsumerGroup) Incoming() chan Message {
+	return cg.incoming
+}
+
+func (cg ConsumerGroup) Errors() chan error {
+	return cg.errors
+}
+
+func (cg ConsumerGroup) Closer() chan bool {
+	return cg.closer
 }
 
 func NewConsumerGroup(brokers []string, topic string, group string, offset int64) (*ConsumerGroup, error) {
@@ -46,31 +60,31 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 	}
 
 	cg := ConsumerGroup{
-		Consumer: consumer,
-		Incoming: make(chan Message),
-		Closer:   make(chan bool),
-		Errors:   make(chan error),
+		consumer: consumer,
+		incoming: make(chan Message),
+		closer:   make(chan bool),
+		errors:   make(chan error),
 	}
 
 	go func() {
-		defer cg.Consumer.Close()
+		defer cg.Consumer().Close()
 		log.Info(fmt.Sprintf("Started kafka consumer of topic %q group %q", topic, group), nil)
 		for {
 			select {
-			case err := <-cg.Consumer.Errors():
+			case err := <-cg.Consumer().Errors():
 				log.Error(err, nil)
-				cg.Errors <- err
+				cg.Errors() <- err
 			default:
 				select {
-				case msg := <-cg.Consumer.Messages():
-					cg.Incoming <- Message{msg, cg.Consumer}
-				case n, more := <-cg.Consumer.Notifications():
+				case msg := <-cg.Consumer().Messages():
+					cg.Incoming() <- Message{msg, cg.Consumer()}
+				case n, more := <-cg.Consumer().Notifications():
 					if more {
 						log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
 					}
 				case <-time.After(tick):
-					cg.Consumer.CommitOffsets()
-				case <-cg.Closer:
+					cg.Consumer().CommitOffsets()
+				case <-cg.Closer():
 					log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
 					return
 				}
