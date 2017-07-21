@@ -56,8 +56,14 @@ func main() {
 			case consumedMessage := <-consumer.Incoming():
 				log.Info("Message consumed", log.Data{"messageReceived": string(consumedMessage.GetData())})
 				consumedMessage.Commit()
-			case errorMessage := <-consumer.Errors():
-				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": errorMessage})
+			case consumerError := <-consumer.Errors():
+				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": consumerError})
+				producer.Closer() <- true
+				consumer.Closer() <- true
+				exitChannel <- true
+				return
+			case producerError := <-producer.Errors():
+				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": producerError})
 				producer.Closer() <- true
 				consumer.Closer() <- true
 				exitChannel <- true
