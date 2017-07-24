@@ -15,8 +15,14 @@ func main() {
 
 	var brokers []string
 	brokers = append(brokers, "localhost:9092")
-	consumedTopic := "input"
-	producedTopic := "output"
+	consumedTopic := os.Getenv("KAFKA_CONSUMED_TOPIC")
+	if consumedTopic == "" {
+		consumedTopic = "input"
+	}
+	producedTopic := os.Getenv("KAFKA_PRODUCED_TOPIC")
+	if producedTopic == "" {
+		producedTopic = "output"
+	}
 	maxMessageSize := 50 * 1024 * 1024 // 50MB
 
 	log.Info(fmt.Sprintf("Starting topics: %q -> stdout, stdin -> %q", consumedTopic, producedTopic), nil)
