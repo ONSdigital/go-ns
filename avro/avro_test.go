@@ -4,179 +4,342 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-avro/avro"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var testSchema1 = `{ "type": "record",
- "name": "example1",
- "namespace": "correct",
- "fields": [
-    {"name": "manager", "type": "string"},
-    {"name": "team_name", "type": "string"},
-    {"name": "ownerOfTeam", "type": "string"},
-    {"name": "kind-of-sport", "type": "string"},
-    {"name": "uri", "type": "string", "default": ""},
-    {"name": "has_changed_name", "type": "boolean"},
-    {"name": "number_of_players", "type": "int"}
- ]
-}`
-
-type testData1 struct {
-	Manager         string `avro:"manager"`
-	TeamName        string `avro:"team_name"`
-	Owner           string `avro:"ownerOfTeam"`
-	Sport           string `avro:"kind-of-sport"`
-	Uri             string `avro:"uri"`
-	HasChangedName  bool   `avro:"has_changed_name"`
-	NumberOfPlayers int32  `avro:"number_of_players"`
-}
-
-type testData2 struct {
-	Manager         string `avro:"manager"`
-	TeamName        string `avro:"team_name"`
-	Owner           string `avro:"ownerOfTeam"`
-	Sport           string `avro:"kind-of-sport"`
-	Uri             string `avro:"-"`
-	HasChangedName  bool   `avro:"has_changed_name"`
-	NumberOfPlayers int32  `avro:"number_of_players"`
-}
-
-type testData3 struct {
-	Manager         string `avro:"manager"`
-	NumberOfPlayers int64  `avro:"number_of_players"`
-}
-
 func TestUnitMarshal(t *testing.T) {
 	Convey("Successfully marshal data", t, func() {
-		incs := &Schema{
-			Definition: testSchema1,
+		schema := &Schema{
+			Definition: testSchema,
 		}
 
-		td1a := &testData1{
+		data := &testData{
 			Manager:         "Pardew, Alan",
 			TeamName:        "Crystal Palace FC",
 			Owner:           "Long, Martin",
 			Sport:           "Football",
+			URI:             "http://8080/cpfc.com",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
 		}
 
-		bufferBytes1a, err1a := incs.Marshal(td1a)
-		So(err1a, ShouldBeNil)
-		So(bufferBytes1a, ShouldNotBeNil)
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
 	})
 
 	Convey("Successfully marshal data missing uri", t, func() {
-		incs := &Schema{
-			Definition: testSchema1,
+		schema := &Schema{
+			Definition: testSchema,
 		}
 
-		td1a := &testData2{
+		data := &testData1{
 			Manager:         "Pardew, Alan",
-			TeamName:        "Crystal Palace FC",
-			Owner:           "Long, Martin",
-			Sport:           "Football",
+			HasChangedName:  false,
+			NumberOfPlayers: int32(24),
+			URI:             "http://8080/cpfc.com",
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
+	})
+
+	Convey("Marshal should return an error unless given a pointer to a struct", t, func() {
+		schema := &Schema{
+			Definition: testSchema,
+		}
+
+		data := "string"
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldHaveSameTypeAs, ErrUnsupportedType(reflect.ValueOf(data).Kind()))
+		So(bufferBytes, ShouldBeNil)
+	})
+
+	Convey("Marshal should return an error if field is of the wrong type", t, func() {
+		schema := &Schema{
+			Definition: testSchema,
+		}
+
+		data := &testData2{
+			Manager:        "Pardew, Alan",
+			NumberOfYouths: 10,
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldEqual, ErrUnsupportedFieldType)
+		So(bufferBytes, ShouldBeNil)
+	})
+}
+
+// Test checkFieldType function
+func TestUnitCheckFieldType(t *testing.T) {
+	Convey("Successfully return without error", t, func() {
+		_, v, t := setUp(testSchema, 1)
+
+		err := checkFieldType(v, t)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Error on unsupported field type", t, func() {
+		_, v, t := setUp(testSchema, 2)
+
+		err := checkFieldType(v, t)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, ErrUnsupportedFieldType)
+	})
+}
+
+// Test isValidType function
+func TestUnitIsValidType(t *testing.T) {
+	Convey("Return true for supported types", t, func() {
+		Convey("returned true for boolean type", func() {
+			isValid := isValidType(reflect.Bool)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for int32 type", func() {
+			isValid := isValidType(reflect.Int32)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for slice type", func() {
+			isValid := isValidType(reflect.Slice)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for string type", func() {
+			isValid := isValidType(reflect.String)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for struct type", func() {
+			isValid := isValidType(reflect.Struct)
+			So(isValid, ShouldEqual, true)
+		})
+	})
+
+	Convey("Return false for unsupported type", t, func() {
+		isValid := isValidType(reflect.Float32)
+		So(isValid, ShouldEqual, false)
+	})
+}
+
+// Test getRecord function
+func TestUnitGetRecord(t *testing.T) {
+	Convey("Successfully return a generic avro record", t, func() {
+		Convey("record generated without a nested object", func() {
+			avroSchema, v, typ := setUp(testSchema, 1)
+
+			record, err := getRecord(avroSchema, v, typ)
+			So(err, ShouldBeNil)
+			So(record, ShouldNotBeNil)
+			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
+		})
+
+		Convey("record generated with array of strings", func() {
+			avroSchema, v, typ := setUp(testArraySchema, 3)
+
+			record, err := getRecord(avroSchema, v, typ)
+			So(err, ShouldBeNil)
+			So(record, ShouldNotBeNil)
+			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
+			So(record.Get("winning_years"), ShouldResemble, []interface{}{"1934", "1972", "1999"})
+		})
+
+		Convey("record generated with nested array", func() {
+			avroSchema, v, typ := setUp(testNestedArraySchema, 4)
+
+			record, err := getRecord(avroSchema, v, typ)
+
+			So(err, ShouldBeNil)
+			So(record, ShouldNotBeNil)
+			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
+			So(record.Get("team"), ShouldResemble, "Doncaster")
+			So(record.Get("footballers"), ShouldNotBeEmpty)
+		})
+	})
+}
+
+// Test marshalSlice function
+func TestUnitMarshalSlice(t *testing.T) {
+	Convey("Successfully marshal string slice", t, func() {
+		avroSchema, v, typ := setUp(testArraySchema, 3)
+		record, _ := getRecord(avroSchema, v, typ)
+
+		err := marshalSlice(record, v, 0, "string_slice", avroSchema)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Successfully marshal struct slice", t, func() {
+		avroSchema, v, typ := setUp(testNestedArraySchema, 4)
+		record, _ := getRecord(avroSchema, v, typ)
+
+		err := marshalSlice(record, v, 1, "footballers", avroSchema)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Fail to marshal struct slice", t, func() {
+		avroSchema, v, typ := setUp(testNestedArraySchema, 4)
+		record, _ := getRecord(avroSchema, v, typ)
+
+		err := marshalSlice(record, v, 1, "footballer", avroSchema)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, ErrMissingNestedScema)
+	})
+}
+
+// Test marshalStringSlice function
+func TestUnitMarshalStringSlice(t *testing.T) {
+	Convey("Successfully marshal string slice", t, func() {
+		_, v, _ := setUp(testArraySchema, 3)
+
+		slice := marshalStringSlice(v, 0)
+		So(slice, ShouldNotBeEmpty)
+		So(slice, ShouldResemble, []interface{}{"1934", "1972", "1999"})
+	})
+}
+
+// Test marshalStructSlice function
+func TestUnitMarshalStructSlice(t *testing.T) {
+	Convey("Successfully marshal struct slice", t, func() {
+		avroSchema, v, _ := setUp(testNestedArraySchema, 4)
+
+		slice, err := marshalStructSlice(v, 1, avroSchema, "footballers")
+		So(err, ShouldBeNil)
+		So(slice, ShouldNotBeEmpty)
+	})
+
+	Convey("Throws error due to missing nested schema", t, func() {
+		avroSchema, v, _ := setUp(testNestedArraySchema, 4)
+
+		slice, err := marshalStructSlice(v, 1, avroSchema, "footballer")
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, ErrMissingNestedScema)
+		So(slice, ShouldBeNil)
+	})
+}
+
+// Test getArraySchema function
+func TestUnitGetArraySchema(t *testing.T) {
+	avroSchema, _, _ := setUp(testSchema, 0)
+
+	Convey("Successfully retrieve array schema", t, func() {
+		newSchema, err := getArraySchema(avroSchema, "manager")
+		So(err, ShouldBeNil)
+		So(newSchema, ShouldNotBeEmpty)
+	})
+
+	Convey("Error retrieving array schema", t, func() {
+		newSchema, err := getArraySchema(avroSchema, "managers")
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, ErrMissingNestedScema)
+		So(newSchema, ShouldBeNil)
+	})
+}
+
+// Test getNestedSchema function
+func TestUnitGetNestedSchema(t *testing.T) {
+	Convey("Successfully retrieve nested schema", t, func() {
+		avroSchema, v, t := setUp(testNestedArraySchema, 4)
+
+		newSchema, err := getNestedSchema(avroSchema, "footballers", v, t)
+		So(err, ShouldBeNil)
+		So(newSchema, ShouldNotBeEmpty)
+	})
+
+	Convey("Error retrieving nested schema", t, func() {
+		avroSchema, v, t := setUp(testNestedArraySchema, 4)
+
+		newSchema, err := getNestedSchema(avroSchema, "footballer", v, t)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, ErrMissingNestedScema)
+		So(newSchema, ShouldBeNil)
+	})
+}
+
+// TODO Test Unmarshal function
+
+// TODO -- Test populateStructFromSchema function
+
+// TODO -- -- Test generateDecodedRecord function
+
+// TODO -- -- Test unmarshalStringSlice function
+
+// TODO -- -- Test unmarshalStructSlice function
+
+// TODO -- -- -- Test populateNestedArrayItem function
+
+// TODO -- -- -- -- Test setNestedStructs function
+
+func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.Type) {
+	avroSchema, _ := avro.ParseSchema(testSchema)
+
+	var (
+		v   reflect.Value
+		typ reflect.Type
+	)
+
+	switch dataSet {
+	case 1:
+		testData := &testData1{
+			Manager:         "Pardew, Alan",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
 		}
 
-		bufferBytes1a, err := incs.Marshal(td1a)
-		So(err, ShouldBeNil)
-		So(bufferBytes1a, ShouldNotBeNil)
-	})
-
-	Convey("Marshal should return an error unless given a pointer to a struct", t, func() {
-		cs := &Schema{
-			Definition: testSchema1,
-		}
-
-		td1b := "string"
-		bufferBytes1b, err1b := cs.Marshal(td1b)
-		So(err1b, ShouldNotBeNil)
-		So(err1b, ShouldHaveSameTypeAs, ErrUnsupportedType(reflect.ValueOf(td1b).Kind()))
-		So(bufferBytes1b, ShouldBeNil)
-	})
-
-	Convey("Marshal should return an error if field is of the wrong type", t, func() {
-		incs := &Schema{
-			Definition: testSchema1,
-		}
-
-		id := &testData3{
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	case 2:
+		testData := &testData2{
 			Manager:         "Pardew, Alan",
-			NumberOfPlayers: int64(10),
+			HasChangedName:  false,
+			NumberOfPlayers: int32(24),
+			NumberOfYouths:  6,
 		}
 
-		bufferBytes2, err2 := incs.Marshal(id)
-		So(err2, ShouldNotBeNil)
-		So(err2, ShouldEqual, ErrUnsupportedFieldType)
-		So(bufferBytes2, ShouldBeNil)
-	})
-}
-
-func TestUnitUnmarshal(t *testing.T) {
-	Convey("Correctly unmarshal byte array", t, func() {
-		message, err := createMessage(testSchema1)
-		So(err, ShouldBeNil)
-
-		cs := &Schema{
-			Definition: testSchema1,
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	case 3:
+		var winningYears []string
+		winningYears = append(winningYears, "1934", "1972", "1999")
+		testData := &testData3{
+			WinningYears: winningYears,
 		}
 
-		var data testData2
-
-		err1 := cs.Unmarshal(message, &data)
-		So(err1, ShouldBeNil)
-		So(data.Manager, ShouldNotBeNil)
-		So(data.Manager, ShouldEqual, "John Elway")
-		So(data.TeamName, ShouldNotBeNil)
-		So(data.TeamName, ShouldEqual, "Denver Broncos")
-		So(data.Owner, ShouldNotBeNil)
-		So(data.Owner, ShouldEqual, "Pat Bowlen")
-		So(data.Sport, ShouldNotBeNil)
-		So(data.Sport, ShouldEqual, "American Football")
-		So(data.Uri, ShouldNotBeNil)
-		So(data.Uri, ShouldEqual, "")
-		So(data.HasChangedName, ShouldNotBeNil)
-		So(data.HasChangedName, ShouldEqual, false)
-	})
-
-	Convey("Check error return for unsupported interface types", t, func() {
-		message, err := createMessage(testSchema1)
-		So(err, ShouldBeNil)
-
-		cs := &Schema{
-			Definition: testSchema1,
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	case 4:
+		testData := &testData4{
+			Team: "Doncaster",
+			Footballers: []Footballer{
+				Footballer{
+					Email: "jgregory@gmail.com",
+					Name:  "jack gregory",
+				},
+				Footballer{
+					Email: "pdoherty@gmail.com",
+					Name:  "paul doherty",
+				},
+			},
 		}
 
-		data := ""
-		reflectData := reflect.ValueOf(data)
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	default:
+		testData := &testData1{
+			Manager: "Pardew, Alan",
+		}
 
-		err1 := cs.Unmarshal(message, data)
-		So(err1, ShouldNotBeNil)
-		So(err1, ShouldResemble, ErrUnsupportedType(reflectData.Kind()))
-	})
-}
-
-func createMessage(schema string) ([]byte, error) {
-	marshalSchema := &Schema{
-		Definition: testSchema1,
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
 	}
 
-	data := &testData1{
-		Manager:         "John Elway",
-		TeamName:        "Denver Broncos",
-		Owner:           "Pat Bowlen",
-		Sport:           "American Football",
-		HasChangedName:  false,
-		Uri:             "http://denverbroncos.com",
-		NumberOfPlayers: 11,
-	}
+	v = reflect.Indirect(v)
+	typ = typ.Elem()
 
-	message, err := marshalSchema.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return message, nil
+	return avroSchema, v, typ
 }
