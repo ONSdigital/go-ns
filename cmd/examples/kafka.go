@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/ONSdigital/dp-publish-pipeline/utils"
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
 )
@@ -14,14 +13,11 @@ import (
 func main() {
 	log.Namespace = "kafka-example"
 
-	brokers := utils.GetEnvironmentVariableAsArray("KAFKA_ADDR", "localhost:9092")
-	consumedTopic := utils.GetEnvironmentVariable("CONSUMED_TOPIC", "input")
-	producedTopic := utils.GetEnvironmentVariable("PRODUCED_TOPIC", "output")
-	maxMessageSize, err := utils.GetEnvironmentVariableInt("KAFKA_MESSAGE_SIZE", 50*1024*1024) // default to 50MB
-	if err != nil {
-		log.ErrorC("Could not create consumer", err, nil)
-		panic("Could not create consumer")
-	}
+	var brokers []string
+	brokers = append(brokers, "localhost:9092")
+	consumedTopic := "input"
+	producedTopic := "output"
+	maxMessageSize := 50 * 1024 * 1024 // 50MB
 
 	log.Info(fmt.Sprintf("Starting topics: %q -> stdout, stdin -> %q", consumedTopic, producedTopic), nil)
 
@@ -54,16 +50,23 @@ func main() {
 		for {
 			select {
 			case consumedMessage := <-consumer.Incoming():
-				log.Info("Message consumed", log.Data{"message": consumedMessage.GetData()})
+				log.Info("Message consumed", log.Data{"messageReceived": string(consumedMessage.GetData())})
 				consumedMessage.Commit()
-			case errorMessage := <-consumer.Errors():
-				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": errorMessage})
+			case consumerError := <-consumer.Errors():
+				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": consumerError})
+				producer.Closer() <- true
+				consumer.Closer() <- true
+				exitChannel <- true
+				return
+			case producerError := <-producer.Errors():
+				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": producerError})
 				producer.Closer() <- true
 				consumer.Closer() <- true
 				exitChannel <- true
 				return
 			case stdinLine := <-stdinChannel:
 				producer.Output() <- []byte(stdinLine)
+				log.Info("Message output", log.Data{"messageSent": stdinLine})
 			case <-signals:
 				log.Info("Quitting after signal", nil)
 				producer.Closer() <- true
