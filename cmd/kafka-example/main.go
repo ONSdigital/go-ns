@@ -28,7 +28,11 @@ func main() {
 	log.Info(fmt.Sprintf("Starting topics: %q -> stdout, stdin -> %q", consumedTopic, producedTopic), nil)
 
 	kafka.SetMaxMessageSize(int32(maxMessageSize))
-	producer := kafka.NewProducer(brokers, producedTopic, maxMessageSize)
+	producer, err := kafka.NewProducer(brokers, producedTopic, maxMessageSize)
+	if err != nil {
+		log.ErrorC("Could not create producer", err, nil)
+		panic("Could not create producer")
+	}
 	consumer, err := kafka.NewConsumerGroup(brokers, consumedTopic, log.Namespace, kafka.OffsetNewest)
 	if err != nil {
 		log.ErrorC("Could not create consumer", err, nil)
@@ -56,7 +60,12 @@ func main() {
 		for {
 			select {
 			case consumedMessage := <-consumer.Incoming():
-				log.Info("Message consumed", log.Data{"messageReceived": string(consumedMessage.GetData())})
+				consumedData := consumedMessage.GetData()
+				log.Info("Message consumed", log.Data{
+					"messageString": string(consumedData),
+					"messageRaw":    consumedData,
+					"messageLen":    len(consumedData),
+				})
 				consumedMessage.Commit()
 			case consumerError := <-consumer.Errors():
 				log.Error(fmt.Errorf("Aborting"), log.Data{"messageReceived": consumerError})

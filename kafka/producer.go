@@ -24,15 +24,16 @@ func (producer Producer) Errors() chan error {
 	return producer.errors
 }
 
-func NewProducer(brokers []string, topic string, envMax int) Producer {
+func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 	config := sarama.NewConfig()
 	if envMax > 0 {
 		config.Producer.MaxMessageBytes = envMax
 	}
 	producer, err := sarama.NewAsyncProducer(brokers, config)
 	if err != nil {
-		panic(err)
+		return Producer{}, err
 	}
+
 	outputChannel := make(chan []byte)
 	closerChannel := make(chan bool)
 	errorChannel := make(chan error)
@@ -52,5 +53,5 @@ func NewProducer(brokers []string, topic string, envMax int) Producer {
 			}
 		}
 	}()
-	return Producer{producer, outputChannel, closerChannel, errorChannel}
+	return Producer{producer, outputChannel, closerChannel, errorChannel}, nil
 }
