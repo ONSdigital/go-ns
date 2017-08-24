@@ -19,8 +19,7 @@ func TestUnitHealthcheck(t *testing.T) {
 
 	Convey("test Do returns status 500 when external service error found", t, func() {
 		mcli := NewMockClient(mockCtrl)
-		mcli.EXPECT().Healthcheck().Return(errors.New("bad healthcheck - sad face"))
-		mcli.EXPECT().Name().Return("my-external-service")
+		mcli.EXPECT().Healthcheck().Return("my-external-service", errors.New("bad healthcheck - sad face"))
 
 		MonitorExternal(mcli)
 
@@ -37,7 +36,7 @@ func TestUnitHealthcheck(t *testing.T) {
 
 	Convey("test Do returns status 200 when external service error found", t, func() {
 		mcli := NewMockClient(mockCtrl)
-		mcli.EXPECT().Healthcheck().Return(nil)
+		mcli.EXPECT().Healthcheck().Return("", nil)
 
 		MonitorExternal(mcli)
 

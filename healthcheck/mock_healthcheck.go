@@ -31,25 +31,14 @@ func (_m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Healthcheck mocks base method
-func (_m *MockClient) Healthcheck() error {
+func (_m *MockClient) Healthcheck() (string, error) {
 	ret := _m.ctrl.Call(_m, "Healthcheck")
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Healthcheck indicates an expected call of Healthcheck
 func (_mr *MockClientMockRecorder) Healthcheck() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Healthcheck")
-}
-
-// Name mocks base method
-func (_m *MockClient) Name() string {
-	ret := _m.ctrl.Call(_m, "Name")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Name indicates an expected call of Name
-func (_mr *MockClientMockRecorder) Name() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Name")
 }

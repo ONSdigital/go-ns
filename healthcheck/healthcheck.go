@@ -10,8 +10,7 @@ import (
 
 // Client represents the methods required to healthcheck a client
 type Client interface {
-	Healthcheck() error
-	Name() string
+	Healthcheck() (string, error)
 }
 
 var (
@@ -26,8 +25,8 @@ func MonitorExternal(clients ...Client) {
 	healthState = make(map[string]error)
 
 	for _, client := range clients {
-		if err := client.Healthcheck(); err != nil {
-			healthState[client.Name()] = err
+		if name, err := client.Healthcheck(); err != nil {
+			healthState[name] = err
 		}
 	}
 	mutex.Unlock()
