@@ -56,6 +56,25 @@ func (c ZebedeeClient) Get(path string) ([]byte, error) {
 	return c.get(path)
 }
 
+// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
+func (c *ZebedeeClient) Healthcheck() error {
+	resp, err := c.client.Get(c.zebedeeURL + "/healthcheck")
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrInvalidZebedeeResponse{resp.StatusCode, "/healthcheck"}
+	}
+
+	return nil
+}
+
+// Name returns the api that the client sends requests to
+func (c *ZebedeeClient) Name() string {
+	return "zebedee"
+}
+
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c ZebedeeClient) GetDatasetLandingPage(path string) (data.DatasetLandingPage, error) {
