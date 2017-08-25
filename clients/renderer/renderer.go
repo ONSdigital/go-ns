@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/ONSdigital/dp-frontend-filter-dataset-controller/config"
 )
 
 // ErrInvalidRendererResponse is returned when the renderer service does not respons
@@ -26,12 +24,10 @@ type Renderer struct {
 }
 
 // New creates an instance of renderer with a default client
-func New() *Renderer {
-	cfg := config.Get()
-
+func New(url string) *Renderer {
 	return &Renderer{
 		client: &http.Client{},
-		url:    cfg.RendererURL,
+		url:    url,
 	}
 }
 
