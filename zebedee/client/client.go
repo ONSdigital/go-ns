@@ -57,7 +57,7 @@ func (c ZebedeeClient) Get(path string) ([]byte, error) {
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *ZebedeeClient) Healthcheck() (string, error) {
+func (c ZebedeeClient) Healthcheck() (string, error) {
 	resp, err := c.client.Get(c.zebedeeURL + "/healthcheck")
 	if err != nil {
 		return "zebedee", err

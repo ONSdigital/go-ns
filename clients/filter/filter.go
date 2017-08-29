@@ -132,6 +132,37 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 	return
 }
 
+// CreateJob creates a filter job and returns the associated filterJobID
+func (c *Client) CreateJob(datasetFilterID string) (string, error) {
+	fj := Model{DatasetFilterID: datasetFilterID, State: "created"}
+
+	b, err := json.Marshal(fj)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := http.Post(c.url+"/filters", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", errors.New("invalid status from filter api")
+	}
+	defer resp.Body.Close()
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if err = json.Unmarshal(b, &fj); err != nil {
+		return "", err
+	}
+
+	return fj.FilterID, nil
+}
+
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and name
 func (c *Client) AddDimensionValue(filterID, name, value string) error {
