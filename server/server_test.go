@@ -39,6 +39,14 @@ func TestNew(t *testing.T) {
 			So(s.ReadHeaderTimeout, ShouldEqual, 0)
 			So(s.IdleTimeout, ShouldEqual, 0)
 		})
+
+		Convey("Handle OS signals by default", func() {
+			So(s.HandleOSSignals, ShouldEqual, true)
+		})
+
+		Convey("A default shutdown context is initialised", func() {
+			So(s.DefaultShutdownTimeout, ShouldEqual, 10*time.Second)
+		})
 	})
 
 	Convey("prep should prepare the server correctly", t, func() {
@@ -79,7 +87,7 @@ func TestNew(t *testing.T) {
 			s.MiddlewareOrder = []string{"foo"}
 
 			So(func() {
-				s.ListenAndServeTLS("", "")
+				s.ListenAndServeTLS("testdata/certFile", "testdata/keyFile")
 			}, ShouldPanicWith, "middleware not found: foo")
 		})
 	})
@@ -137,5 +145,4 @@ func TestNew(t *testing.T) {
 		res.Body.Close()
 		So(res.StatusCode, ShouldEqual, 200)
 	})
-
 }
