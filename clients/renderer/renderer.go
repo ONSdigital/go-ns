@@ -17,7 +17,7 @@ func (e ErrInvalidRendererResponse) Error() string {
 	return fmt.Sprintf("invalid response from renderer service - status %d", e.responseCode)
 }
 
-// Renderer represents a template renderer for dp-frontend-filter-dataset-controller
+// Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
 	client *http.Client
 	url    string
