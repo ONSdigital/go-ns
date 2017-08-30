@@ -118,7 +118,7 @@ func (s *Server) listenAndServeHandleOSSignals() error {
 
 	s.prep()
 	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
-		s.listenAndServeTLSAsync(s.CertFile, s.KeyFile)
+		s.listenAndServeTLSAsync()
 	} else {
 		s.listenAndServeAsync()
 	}
@@ -137,7 +137,7 @@ func (s *Server) listenAndServeAsync() {
 	}()
 }
 
-func (s *Server) listenAndServeTLSAsync(certFile, keyFile string) {
+func (s *Server) listenAndServeTLSAsync() {
 	go func() {
 		if err := s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile); err != nil {
 			log.Error(err, nil)
