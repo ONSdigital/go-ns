@@ -23,30 +23,44 @@ var (
 func MonitorExternal(clients ...Client) {
 	hs := make(map[string]error)
 
-	var wg sync.WaitGroup
+	type externalError struct {
+		name string
+		err  error
+	}
+	errs := make(chan externalError)
+	done := make(chan bool)
 
+	go func() {
+		for extErr := range errs {
+			hs[extErr.name] = extErr.err
+		}
+		close(done)
+	}()
+
+	var wg sync.WaitGroup
 	wg.Add(len(clients))
 	for _, client := range clients {
 		go func(client Client) {
 			if name, err := client.Healthcheck(); err != nil {
-				mutex.Lock()
-				hs[name] = err
-				mutex.Unlock()
+				errs <- externalError{name, err}
 			}
 			wg.Done()
 		}(client)
 	}
 
 	wg.Wait()
+	close(errs)
+	<-done
 
-	mutex.RLock()
+	mutex.Lock()
 	healthState = hs
-	mutex.RUnlock()
+	mutex.Unlock()
 }
 
 // Do is responsible for returning the healthcheck status to the user
 func Do(w http.ResponseWriter, req *http.Request) {
-	mutex.Lock()
+	mutex.RLock()
+	defer mutex.RUnlock()
 
 	if len(healthState) > 0 {
 		for k, v := range healthState {
@@ -57,6 +71,4 @@ func Do(w http.ResponseWriter, req *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
-
-	mutex.Unlock()
 }
