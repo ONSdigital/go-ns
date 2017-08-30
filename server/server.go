@@ -113,15 +113,11 @@ func (s *Server) listenAndServe() error {
 }
 
 func (s *Server) listenAndServeHandleOSSignals() error {
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill)
 
-	s.prep()
-	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
-		s.listenAndServeTLSAsync()
-	} else {
-		s.listenAndServeAsync()
-	}
+	s.listenAndServeAsync()
 
 	<-stop
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
@@ -129,19 +125,21 @@ func (s *Server) listenAndServeHandleOSSignals() error {
 }
 
 func (s *Server) listenAndServeAsync() {
-	go func() {
-		if err := s.Server.ListenAndServe(); err != nil {
-			log.Error(err, nil)
-			os.Exit(1)
-		}
-	}()
-}
 
-func (s *Server) listenAndServeTLSAsync() {
-	go func() {
-		if err := s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile); err != nil {
-			log.Error(err, nil)
-			os.Exit(1)
-		}
-	}()
+	s.prep()
+	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
+		go func() {
+			if err := s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile); err != nil {
+				log.Error(err, nil)
+				os.Exit(1)
+			}
+		}()
+	} else {
+		go func() {
+			if err := s.Server.ListenAndServe(); err != nil {
+				log.Error(err, nil)
+				os.Exit(1)
+			}
+		}()
+	}
 }
