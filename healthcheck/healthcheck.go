@@ -15,21 +15,33 @@ type Client interface {
 
 var (
 	healthState = make(map[string]error)
-	mutex       = &sync.Mutex{}
+	mutex       = &sync.RWMutex{}
 )
 
-// MonitorExternal monitors external service health and if they are unhealthy, records the
-// status in a map
+// MonitorExternal concurrently monitors external service health and if they are unhealthy,
+// records the status in a map
 func MonitorExternal(clients ...Client) {
-	mutex.Lock()
-	healthState = make(map[string]error)
+	hs := make(map[string]error)
 
+	var wg sync.WaitGroup
+
+	wg.Add(len(clients))
 	for _, client := range clients {
-		if name, err := client.Healthcheck(); err != nil {
-			healthState[name] = err
-		}
+		go func(client Client) {
+			if name, err := client.Healthcheck(); err != nil {
+				mutex.Lock()
+				hs[name] = err
+				mutex.Unlock()
+			}
+			wg.Done()
+		}(client)
 	}
-	mutex.Unlock()
+
+	wg.Wait()
+
+	mutex.RLock()
+	healthState = hs
+	mutex.RUnlock()
 }
 
 // Do is responsible for returning the healthcheck status to the user
@@ -40,8 +52,8 @@ func Do(w http.ResponseWriter, req *http.Request) {
 		for k, v := range healthState {
 			err := fmt.Errorf("unsuccessful healthcheck for %s: %v", k, v)
 			log.ErrorR(req, err, nil)
-			w.WriteHeader(http.StatusInternalServerError)
 		}
+		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
