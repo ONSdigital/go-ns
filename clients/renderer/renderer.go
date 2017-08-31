@@ -7,12 +7,13 @@ import (
 	"net/http"
 )
 
-// ErrInvalidRendererResponse is returned when the renderer service does not respons
+// ErrInvalidRendererResponse is returned when the renderer service does not respond
 // with a status 200
 type ErrInvalidRendererResponse struct {
 	responseCode int
 }
 
+// Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidRendererResponse) Error() string {
 	return fmt.Sprintf("invalid response from renderer service - status %d", e.responseCode)
 }

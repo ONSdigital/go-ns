@@ -16,6 +16,7 @@ type ErrInvalidHierarchyAPIResponse struct {
 	uri          string
 }
 
+// Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidHierarchyAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from hierarchy api - should be: %d, got: %d, path: %s",
 		e.expectedCode,

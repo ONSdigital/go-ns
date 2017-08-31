@@ -4,8 +4,8 @@ package hierarchy
 type Model struct {
 	ID       string  `json:"id"`
 	Label    string  `json:"label"`
-	Children []Child `json:"children"`
-	Parent   Parent  `json:"parent"`
+	Children []Child `json:"children,omitempty"`
+	Parent   Parent  `json:"parent,omitempty"`
 }
 
 // Child represents a child item in the hierarchy model
@@ -13,7 +13,7 @@ type Child struct {
 	ID               string `json:"id"`
 	Label            string `json:"label"`
 	URL              string `json:"url"`
-	NumberofChildren int    `json:"number_of_children"`
+	NumberofChildren int    `json:"number_of_children,omitempty"`
 	LabelCode        string `json:"label_code"`
 }
 

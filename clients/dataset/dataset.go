@@ -16,6 +16,7 @@ type ErrInvalidDatasetAPIResponse struct {
 	uri          string
 }
 
+// Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from dataset api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
@@ -54,8 +55,8 @@ func (c *Client) Healthcheck() (string, error) {
 	return "", nil
 }
 
-// GetDataset ...
-func (c *Client) GetDataset(id, edition, version string) (m Model, err error) {
+// GetVersion gets a particular version of a dataset from the dataset api
+func (c *Client) GetVersion(id, edition, version string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 	resp, err := c.cli.Get(uri)
 	if err != nil {

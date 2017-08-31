@@ -28,6 +28,7 @@ type ErrInvalidZebedeeResponse struct {
 	uri        string
 }
 
+// Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
 	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
 		e.actualCode,
@@ -57,7 +58,7 @@ func (c *ZebedeeClient) Get(path string) ([]byte, error) {
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c ZebedeeClient) Healthcheck() (string, error) {
+func (c *ZebedeeClient) Healthcheck() (string, error) {
 	resp, err := c.client.Get(c.zebedeeURL + "/healthcheck")
 	if err != nil {
 		return "zebedee", err
@@ -158,7 +159,7 @@ func (c *ZebedeeClient) GetBreadcrumb(uri string) ([]data.Breadcrumb, error) {
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
+func (c *ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
 	b, err := c.get("/data?uri=" + uri)
 	if err != nil {
 		return data.Dataset{}, err
@@ -191,7 +192,7 @@ func (c ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
+func (c *ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
 	b, err := c.get("/filesize?uri=" + uri)
 	if err != nil {
 		return data.FileSize{}, err
@@ -206,7 +207,7 @@ func (c ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
+func (c *ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
 	b, err := c.get("/data?uri=" + uri + "&title")
 	if err != nil {
 		return data.PageTitle{}, err
