@@ -7,52 +7,45 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
+	"sync"
 )
 
 var tick = time.Millisecond * 4000
 
+// ConsumerGroup represents a Kafka consumer group instance.
 type ConsumerGroup struct {
 	consumer *cluster.Consumer
 	incoming chan Message
-	closer   chan bool
 	errors   chan error
+	closer   chan bool
+	wg       *sync.WaitGroup
 }
 
-type Message interface {
-	GetData() []byte
-	Commit()
-}
-
-type SaramaMessage struct {
-	message  *sarama.ConsumerMessage
-	consumer *cluster.Consumer
-}
-
-func (M SaramaMessage) GetData() []byte {
-	return M.message.Value
-}
-
-func (M SaramaMessage) Commit() {
-	M.consumer.MarkOffset(M.message, "metadata")
-}
-
-func (cg ConsumerGroup) Consumer() *cluster.Consumer {
-	return cg.consumer
-}
-
+// Incoming provides a channel of incoming messages.
 func (cg ConsumerGroup) Incoming() chan Message {
 	return cg.incoming
 }
 
+// Errors provides a channel of incoming errors.
 func (cg ConsumerGroup) Errors() chan error {
 	return cg.errors
 }
 
-func (cg ConsumerGroup) Closer() chan bool {
-	return cg.closer
+// Close safely closes the consumer and releases all resources
+func (cg *ConsumerGroup) Close() (err error) {
+
+	cg.closer <- true
+	cg.wg.Wait()
+
+	close(cg.errors)
+	close(cg.incoming)
+
+	return cg.consumer.Close()
 }
 
+// NewConsumerGroup returns a new consumer group using default configuration.
 func NewConsumerGroup(brokers []string, topic string, group string, offset int64) (*ConsumerGroup, error) {
+
 	config := cluster.NewConfig()
 	config.Group.Return.Notifications = true
 	config.Consumer.Return.Errors = true
@@ -64,32 +57,36 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 		return nil, fmt.Errorf("Bad NewConsumer of %q: %s", topic, err)
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	cg := ConsumerGroup{
 		consumer: consumer,
 		incoming: make(chan Message),
 		closer:   make(chan bool),
 		errors:   make(chan error),
+		wg:       &wg,
 	}
 
 	go func() {
-		defer cg.Consumer().Close()
+		defer wg.Done()
 		log.Info(fmt.Sprintf("Started kafka consumer of topic %q group %q", topic, group), nil)
 		for {
 			select {
-			case err := <-cg.Consumer().Errors():
+			case err := <-consumer.Errors():
 				log.Error(err, nil)
 				cg.Errors() <- err
 			default:
 				select {
-				case msg := <-cg.Consumer().Messages():
-					cg.Incoming() <- SaramaMessage{msg, cg.Consumer()}
-				case n, more := <-cg.Consumer().Notifications():
+				case msg := <-consumer.Messages():
+					cg.Incoming() <- SaramaMessage{msg, consumer}
+				case n, more := <-consumer.Notifications():
 					if more {
 						log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
 					}
 				case <-time.After(tick):
-					cg.Consumer().CommitOffsets()
-				case <-cg.Closer():
+					consumer.CommitOffsets()
+				case <-cg.closer:
 					log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
 					return
 				}

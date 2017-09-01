@@ -3,25 +3,38 @@ package kafka
 import (
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
+	"sync"
 )
 
+//go:generate moq -out kafkatest/sarama_async_producer.go -pkg kafkatest . SaramaAsyncProducer
+type SaramaAsyncProducer sarama.AsyncProducer
+
 type Producer struct {
-	producer sarama.AsyncProducer
+	producer SaramaAsyncProducer
 	output   chan []byte
-	closer   chan bool
 	errors   chan error
+	closer   chan bool
+	wg       *sync.WaitGroup
 }
 
 func (producer Producer) Output() chan []byte {
 	return producer.output
 }
 
-func (producer Producer) Closer() chan bool {
-	return producer.closer
-}
-
 func (producer Producer) Errors() chan error {
 	return producer.errors
+}
+
+// Close safely closes the consumer and releases all resources
+func (producer *Producer) Close() (err error) {
+
+	producer.closer <- true
+	producer.wg.Wait()
+
+	close(producer.errors)
+	close(producer.output)
+
+	return producer.producer.Close()
 }
 
 func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
@@ -34,11 +47,16 @@ func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 		return Producer{}, err
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	outputChannel := make(chan []byte)
 	closerChannel := make(chan bool)
 	errorChannel := make(chan error)
+
 	go func() {
-		defer producer.Close()
+
+		defer wg.Done()
 		log.Info("Started kafka producer", log.Data{"topic": topic})
 		for {
 			select {
@@ -53,5 +71,6 @@ func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 			}
 		}
 	}()
-	return Producer{producer, outputChannel, closerChannel, errorChannel}, nil
+
+	return Producer{producer, outputChannel, errorChannel, closerChannel, &wg}, nil
 }
