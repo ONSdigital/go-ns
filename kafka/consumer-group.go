@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"context"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/bsm/sarama-cluster"
-	"sync"
+	"github.com/johnnadratowski/golang-neo4j-bolt-driver/errors"
 )
 
 var tick = time.Millisecond * 4000
@@ -16,8 +17,8 @@ type ConsumerGroup struct {
 	consumer *cluster.Consumer
 	incoming chan Message
 	errors   chan error
-	closer   chan bool
-	wg       *sync.WaitGroup
+	closer   chan struct{}
+	closed   chan struct{}
 }
 
 // Incoming provides a channel of incoming messages.
@@ -30,16 +31,28 @@ func (cg ConsumerGroup) Errors() chan error {
 	return cg.errors
 }
 
-// Close safely closes the consumer and releases all resources
-func (cg *ConsumerGroup) Close() (err error) {
+// Close safely closes the consumer and releases all resources.
+// pass in a context with a timeout or deadline.
+// Passing a nil context will provide no timeout but is not recommended
+func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 
-	cg.closer <- true
-	cg.wg.Wait()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
-	close(cg.errors)
-	close(cg.incoming)
+	close(cg.closer)
 
-	return cg.consumer.Close()
+	select {
+	case <-cg.closed:
+		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
+		close(cg.errors)
+		close(cg.incoming)
+		return cg.consumer.Close()
+
+	case <-ctx.Done():
+		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
+		return errors.New("Shutdown context timed out")
+	}
 }
 
 // NewConsumerGroup returns a new consumer group using default configuration.
@@ -56,19 +69,16 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 		return nil, fmt.Errorf("Bad NewConsumer of %q: %s", topic, err)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	cg := ConsumerGroup{
 		consumer: consumer,
 		incoming: make(chan Message),
-		closer:   make(chan bool),
+		closer:   make(chan struct{}),
+		closed:   make(chan struct{}),
 		errors:   make(chan error),
-		wg:       &wg,
 	}
 
 	go func() {
-		defer wg.Done()
+		defer close(cg.closed)
 		log.Info(fmt.Sprintf("Started kafka consumer of topic %q group %q", topic, group), nil)
 		for {
 			select {

@@ -8,6 +8,8 @@ import (
 
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
+	"time"
+	"context"
 )
 
 func main() {
@@ -55,11 +57,16 @@ func main() {
 		close(ch)
 	}(stdinChannel)
 
-	shutdownGracefully := func () {
-		producer.Close()
-		consumer.Close()
+	shutdownGracefully := func() {
+
+		// give the app 3 seconds to close gracefully before killing it.
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		producer.Close(ctx)
+		consumer.Close(ctx)
 		log.Info("Service kafka example stopped", nil)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	for {
