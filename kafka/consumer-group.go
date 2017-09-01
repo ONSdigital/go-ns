@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/Shopify/sarama"
 	"github.com/bsm/sarama-cluster"
 	"sync"
 )

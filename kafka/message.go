@@ -1,6 +1,9 @@
 package kafka
 
-import "github.com/Shopify/sarama"
+import (
+	"github.com/Shopify/sarama"
+	"github.com/bsm/sarama-cluster"
+)
 
 type Message interface {
 	GetData() []byte
@@ -9,7 +12,7 @@ type Message interface {
 
 type SaramaMessage struct {
 	message  *sarama.ConsumerMessage
-	consumer SaramaClusterConsumer
+	consumer *cluster.Consumer
 }
 
 func (M SaramaMessage) GetData() []byte {
