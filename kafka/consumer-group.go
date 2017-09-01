@@ -87,6 +87,7 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 				case <-time.After(tick):
 					consumer.CommitOffsets()
 				case <-cg.closer:
+					consumer.CommitOffsets()
 					log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
 					return
 				}
