@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/ONSdigital/go-ns/log"
 )
 
 // Client is an extension of the net/http client with ability to add
@@ -52,7 +50,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
 		return c.doWithBackoff(req)
 	}
 
@@ -89,7 +87,7 @@ func (c *Client) Get(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
 		return c.getWithBackoff(url)
 	}
 
@@ -100,8 +98,6 @@ func (c *Client) getWithBackoff(url string) (resp *http.Response, err error) {
 	for i := 0; i < c.MaxRetries; i++ {
 		attempt := i + 1
 		sleepTime := getSleepTime(attempt, c.RetryTime)
-
-		log.Debug("retrying....", log.Data{"attempt": attempt, "sleep time": sleepTime})
 
 		time.Sleep(sleepTime)
 
@@ -128,7 +124,7 @@ func (c *Client) Head(url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
 		return c.headWithBackoff(url)
 	}
 
@@ -165,7 +161,7 @@ func (c *Client) Post(url string, contentType string, body io.Reader) (*http.Res
 		return nil, err
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
 		return c.postWithBackoff(url, contentType, body)
 	}
 
@@ -202,7 +198,7 @@ func (c *Client) PostForm(url string, data url.Values) (*http.Response, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
 		return c.postFormWithBackoff(url, data)
 	}
 
