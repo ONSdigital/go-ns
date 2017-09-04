@@ -11,13 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 )
 
 // ZebedeeClient represents a zebedee client
 type ZebedeeClient struct {
 	zebedeeURL  string
-	client      *http.Client
+	client      *rhttp.Client
 	accessToken string
 }
 
@@ -39,16 +40,19 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 var _ error = ErrInvalidZebedeeResponse{}
 
 // NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
-// environment variable to modify default 5 second timeout
+// environment variable to modify default client timeout as zebedee can often be slow
+// to respond
 func NewZebedeeClient(url string) *ZebedeeClient {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
+	cli := rhttp.DefaultClient
+	cli.HTTPClient.Timeout = time.Duration(timeout) * time.Second
 
 	return &ZebedeeClient{
 		zebedeeURL: url,
-		client:     &http.Client{Timeout: time.Duration(timeout) * time.Second},
+		client:     cli,
 	}
 }
 

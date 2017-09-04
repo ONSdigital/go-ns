@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/ONSdigital/go-ns/rhttp"
 )
 
 // ErrInvalidRendererResponse is returned when the renderer service does not respond
@@ -20,14 +22,14 @@ func (e ErrInvalidRendererResponse) Error() string {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	client *http.Client
+	client *rhttp.Client
 	url    string
 }
 
 // New creates an instance of renderer with a default client
 func New(url string) *Renderer {
 	return &Renderer{
-		client: &http.Client{},
+		client: rhttp.DefaultClient,
 		url:    url,
 	}
 }

@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
+
+	"github.com/ONSdigital/go-ns/rhttp"
 )
 
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
@@ -29,14 +30,14 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli *http.Client
+	cli *rhttp.Client
 	url string
 }
 
 // New creates a new instance of Client with a given filter api url
 func New(datasetAPIURL string) *Client {
 	return &Client{
-		cli: &http.Client{Timeout: 5 * time.Second},
+		cli: rhttp.DefaultClient,
 		url: datasetAPIURL,
 	}
 }

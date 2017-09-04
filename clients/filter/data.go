@@ -27,15 +27,9 @@ type Model struct {
 
 // ModelDimension represents a dimension to be filtered upon
 type ModelDimension struct {
-	Name      string    `json:"name"`
-	Values    []string  `json:"values"`
-	IDs       []string  `json:"ids"`
-	Hierarchy Hierarchy `json:"hierarchy"`
-}
-
-// Hierarchy represents a hierarchy in a filter model
-type Hierarchy struct {
-	ID string `json:"id"`
+	Name   string   `json:"name"`
+	Values []string `json:"values"`
+	IDs    []string `json:"ids"`
 }
 
 // Download represents a download within a filter from api response
