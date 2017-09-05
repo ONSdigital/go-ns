@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/signal"
 
+	"context"
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
 	"time"
-	"context"
 )
 
 func main() {

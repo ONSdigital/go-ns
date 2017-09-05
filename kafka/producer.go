@@ -8,6 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
+// Producer provides a producer of Kafka messages
 type Producer struct {
 	producer sarama.AsyncProducer
 	output   chan []byte
@@ -16,10 +17,12 @@ type Producer struct {
 	closed   chan struct{}
 }
 
+// Output is the channel to send outgoing messages to.
 func (producer Producer) Output() chan []byte {
 	return producer.output
 }
 
+// Errors provides errors returned from Kafka.
 func (producer Producer) Errors() chan error {
 	return producer.errors
 }
@@ -48,6 +51,7 @@ func (producer *Producer) Close(ctx context.Context) (err error) {
 	}
 }
 
+// NewProducer returns a new producer instance using the provided config. The rest of the config is set to defaults.
 func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 	config := sarama.NewConfig()
 	if envMax > 0 {

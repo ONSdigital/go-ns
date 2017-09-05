@@ -15,7 +15,7 @@ type Message struct {
 // NewMessage returns a new mock message containing the given data.
 func NewMessage(data []byte) *Message {
 	return &Message{
-		data:data,
+		data: data,
 	}
 }
 
