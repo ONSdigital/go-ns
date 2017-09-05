@@ -42,177 +42,116 @@ var DefaultClient = &Client{
 
 // Do calls net/http Do with the addition of exponential backoff
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	do := func(args ...interface{}) (*http.Response, error) {
+		return c.HTTPClient.Do(args[0].(*http.Request))
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.doWithBackoff(req)
+			return c.backoff(do, req)
 		}
 		return nil, err
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
-		return c.doWithBackoff(req)
+		return c.backoff(do, req)
 	}
 
 	return resp, err
-}
-
-func (c *Client) doWithBackoff(req *http.Request) (resp *http.Response, err error) {
-	for i := 0; i < c.MaxRetries; i++ {
-		attempt := i + 1
-		sleepTime := getSleepTime(attempt, c.RetryTime)
-
-		time.Sleep(sleepTime)
-
-		resp, err = c.HTTPClient.Do(req)
-		if err != nil || resp.StatusCode >= http.StatusInternalServerError {
-			if attempt == c.MaxRetries {
-				return
-			}
-			continue
-		}
-
-		return
-	}
-	return
 }
 
 // Get calls net/http Get with the addition of exponential backoff
 func (c *Client) Get(url string) (*http.Response, error) {
+	get := func(args ...interface{}) (*http.Response, error) {
+		return c.HTTPClient.Get(args[0].(string))
+	}
+
 	resp, err := c.HTTPClient.Get(url)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.getWithBackoff(url)
+			return c.backoff(get, url)
 		}
 		return nil, err
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
-		return c.getWithBackoff(url)
+		return c.backoff(get, url)
 	}
 
 	return resp, err
-}
-
-func (c *Client) getWithBackoff(url string) (resp *http.Response, err error) {
-	for i := 0; i < c.MaxRetries; i++ {
-		attempt := i + 1
-		sleepTime := getSleepTime(attempt, c.RetryTime)
-
-		time.Sleep(sleepTime)
-
-		resp, err = c.HTTPClient.Get(url)
-		if err != nil || resp.StatusCode >= http.StatusInternalServerError {
-			if attempt == c.MaxRetries {
-				return
-			}
-			continue
-		}
-
-		return
-	}
-	return
 }
 
 // Head calls net/http Head with the addition of exponential backoff
 func (c *Client) Head(url string) (*http.Response, error) {
+	head := func(args ...interface{}) (*http.Response, error) {
+		return c.HTTPClient.Head(args[0].(string))
+	}
+
 	resp, err := c.HTTPClient.Head(url)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.headWithBackoff(url)
+			return c.backoff(head, url)
 		}
 		return nil, err
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
-		return c.headWithBackoff(url)
+		return c.backoff(head, url)
 	}
 
 	return resp, err
-}
-
-func (c *Client) headWithBackoff(url string) (resp *http.Response, err error) {
-	for i := 0; i < c.MaxRetries; i++ {
-		attempt := i + 1
-		sleepTime := getSleepTime(attempt, c.RetryTime)
-
-		time.Sleep(sleepTime)
-
-		resp, err = c.HTTPClient.Head(url)
-		if err != nil || resp.StatusCode >= http.StatusInternalServerError {
-			if attempt == c.MaxRetries {
-				return
-			}
-			continue
-		}
-
-		return
-	}
-	return
 }
 
 // Post calls net/http Post with the addition of exponential backoff
 func (c *Client) Post(url string, contentType string, body io.Reader) (*http.Response, error) {
+	post := func(args ...interface{}) (*http.Response, error) {
+		return c.HTTPClient.Post(args[0].(string), args[1].(string), args[2].(io.Reader))
+	}
+
 	resp, err := c.HTTPClient.Post(url, contentType, body)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.postWithBackoff(url, contentType, body)
+			return c.backoff(post, url, contentType, body)
 		}
 		return nil, err
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
-		return c.postWithBackoff(url, contentType, body)
+		return c.backoff(post, url, contentType, body)
 	}
 
 	return resp, err
-}
-
-func (c *Client) postWithBackoff(url string, contentType string, body io.Reader) (resp *http.Response, err error) {
-	for i := 0; i < c.MaxRetries; i++ {
-		attempt := i + 1
-		sleepTime := getSleepTime(attempt, c.RetryTime)
-
-		time.Sleep(sleepTime)
-
-		resp, err = c.HTTPClient.Post(url, contentType, body)
-		if err != nil || resp.StatusCode >= http.StatusInternalServerError {
-			if attempt == c.MaxRetries {
-				return
-			}
-			continue
-		}
-
-		return
-	}
-	return
 }
 
 // PostForm calls net/http PostForm with the addition of exponential backoff
-func (c *Client) PostForm(url string, data url.Values) (*http.Response, error) {
-	resp, err := c.HTTPClient.PostForm(url, data)
+func (c *Client) PostForm(uri string, data url.Values) (*http.Response, error) {
+	postForm := func(args ...interface{}) (*http.Response, error) {
+		return c.HTTPClient.PostForm(args[0].(string), args[1].(url.Values))
+	}
+
+	resp, err := c.HTTPClient.PostForm(uri, data)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.postFormWithBackoff(url, data)
+			return c.backoff(postForm, uri, data)
 		}
 		return nil, err
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError && c.ExponentialBackoff {
-		return c.postFormWithBackoff(url, data)
+		return c.backoff(postForm, uri, data)
 	}
 
 	return resp, err
 }
 
-func (c *Client) postFormWithBackoff(url string, data url.Values) (resp *http.Response, err error) {
-	for i := 0; i < c.MaxRetries; i++ {
-		attempt := i + 1
+func (c *Client) backoff(f func(...interface{}) (*http.Response, error), args ...interface{}) (resp *http.Response, err error) {
+	for attempt := 1; attempt <= c.MaxRetries; attempt++ {
 		sleepTime := getSleepTime(attempt, c.RetryTime)
 
 		time.Sleep(sleepTime)
 
-		resp, err = c.HTTPClient.PostForm(url, data)
+		resp, err = f(args...)
 		if err != nil || resp.StatusCode >= http.StatusInternalServerError {
 			if attempt == c.MaxRetries {
 				return
@@ -225,6 +164,10 @@ func (c *Client) postFormWithBackoff(url string, data url.Values) (resp *http.Re
 	return
 }
 
+// getSleepTime will return a sleep time based on the attempt and initial retry time.
+// It uses the algorithm 2^n where n is the attempt number (double the previous) and
+// a randomization factor of between 0-5ms so that the server isn't being hit constantly
+// at the same time by many clients
 func getSleepTime(attempt int, retryTime time.Duration) time.Duration {
 	n := (math.Pow(2, float64(attempt)))
 	rand.Seed(time.Now().Unix())
