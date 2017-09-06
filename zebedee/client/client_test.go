@@ -1,20 +1,24 @@
 package client
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/server"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestUnitClient(t *testing.T) {
-	go mockZebedeeServer()
+	portChan := make(chan int)
+	go mockZebedeeServer(portChan)
 
-	cli := NewZebedeeClient("http://localhost:3050")
+	port := <-portChan
+
+	cli := NewZebedeeClient(fmt.Sprintf("http://localhost:%d", port))
 
 	Convey("test Get()", t, func() {
 		Convey("test get sucessfully returns response from zebedee", func() {
@@ -70,16 +74,23 @@ func TestUnitClient(t *testing.T) {
 	})
 }
 
-func mockZebedeeServer() {
+func mockZebedeeServer(port chan int) {
 	r := mux.NewRouter()
 
 	r.Path("/data").HandlerFunc(d)
 	r.Path("/parents").HandlerFunc(parents)
 	r.Path("/filesize").HandlerFunc(filesize)
 
-	s := server.New(":3050", r)
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		log.Error(err, nil)
+		os.Exit(2)
+	}
 
-	if err := s.ListenAndServe(); err != nil {
+	port <- l.Addr().(*net.TCPAddr).Port
+	close(port)
+
+	if err := http.Serve(l, r); err != nil {
 		log.Error(err, nil)
 		os.Exit(2)
 	}
