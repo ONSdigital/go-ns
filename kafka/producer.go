@@ -1,29 +1,57 @@
 package kafka
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
 )
 
+// Producer provides a producer of Kafka messages
 type Producer struct {
 	producer sarama.AsyncProducer
 	output   chan []byte
-	closer   chan bool
 	errors   chan error
+	closer   chan struct{}
+	closed   chan struct{}
 }
 
+// Output is the channel to send outgoing messages to.
 func (producer Producer) Output() chan []byte {
 	return producer.output
 }
 
-func (producer Producer) Closer() chan bool {
-	return producer.closer
-}
-
+// Errors provides errors returned from Kafka.
 func (producer Producer) Errors() chan error {
 	return producer.errors
 }
 
+// Close safely closes the consumer and releases all resources.
+// pass in a context with a timeout or deadline.
+// Passing a nil context will provide no timeout but is not recommended
+func (producer *Producer) Close(ctx context.Context) (err error) {
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	close(producer.closer)
+
+	select {
+	case <-producer.closed:
+		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
+		close(producer.errors)
+		close(producer.output)
+		return producer.producer.Close()
+
+	case <-ctx.Done():
+		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
+		return errors.New("Shutdown context timed out")
+	}
+}
+
+// NewProducer returns a new producer instance using the provided config. The rest of the config is set to defaults.
 func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 	config := sarama.NewConfig()
 	if envMax > 0 {
@@ -35,10 +63,12 @@ func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 	}
 
 	outputChannel := make(chan []byte)
-	closerChannel := make(chan bool)
 	errorChannel := make(chan error)
+	closerChannel := make(chan struct{})
+	closedChannel := make(chan struct{})
+
 	go func() {
-		defer producer.Close()
+		defer close(closedChannel)
 		log.Info("Started kafka producer", log.Data{"topic": topic})
 		for {
 			select {
@@ -53,5 +83,6 @@ func NewProducer(brokers []string, topic string, envMax int) (Producer, error) {
 			}
 		}
 	}()
-	return Producer{producer, outputChannel, closerChannel, errorChannel}, nil
+
+	return Producer{producer, outputChannel, errorChannel, closerChannel, closedChannel}, nil
 }

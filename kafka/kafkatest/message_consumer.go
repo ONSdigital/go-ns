@@ -3,6 +3,7 @@ package kafkatest
 import (
 	"github.com/ONSdigital/go-ns/kafka"
 )
+
 // NewMessageConsumer creates a consumer using the given channel.
 func NewMessageConsumer(messages chan kafka.Message) *MessageConsumer {
 	return &MessageConsumer{
