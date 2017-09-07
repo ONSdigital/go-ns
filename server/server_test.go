@@ -26,11 +26,10 @@ func TestNew(t *testing.T) {
 			So(s.KeyFile, ShouldBeEmpty)
 		})
 
-		Convey("Default middleware should include Timeout, RequestID and Log", func() {
-			So(s.Middleware, ShouldContainKey, "Timeout")
+		Convey("Default middleware should include RequestID and Log", func() {
 			So(s.Middleware, ShouldContainKey, "RequestID")
 			So(s.Middleware, ShouldContainKey, "Log")
-			So(s.MiddlewareOrder, ShouldResemble, []string{"RequestID", "Log", "Timeout"})
+			So(s.MiddlewareOrder, ShouldResemble, []string{"RequestID", "Log"})
 		})
 
 		Convey("Default timeouts should be sensible", func() {

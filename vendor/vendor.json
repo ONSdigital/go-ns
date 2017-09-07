@@ -27,12 +27,6 @@
 			"revisionTime": "2017-07-07T09:05:56Z"
 		},
 		{
-			"checksumSHA1": "jQ7JB1XsEO3528jVoX9wKM/9wWU=",
-			"path": "github.com/c2h5oh/datasize",
-			"revision": "54516c931ae99c3c74637b9ea2390cf9a6327f26",
-			"revisionTime": "2017-05-19T14:33:21Z"
-		},
-		{
 			"checksumSHA1": "7UT+dVVfOn8IA79ITFiGNMb2c/4=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "782f4967f2dc4564575ca782fe2d04090b5faca8",

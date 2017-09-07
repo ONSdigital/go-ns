@@ -8,7 +8,6 @@ import (
 
 	"context"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
-	"github.com/ONSdigital/go-ns/handlers/timeout"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/justinas/alice"
 )
@@ -32,13 +31,12 @@ func New(bindAddr string, router http.Handler) *Server {
 	middleware := map[string]alice.Constructor{
 		"RequestID": requestID.Handler(16),
 		"Log":       log.Handler,
-		"Timeout":   timeout.Handler(10 * time.Second),
 	}
 
 	return &Server{
 		Alice:           nil,
 		Middleware:      middleware,
-		MiddlewareOrder: []string{"RequestID", "Log", "Timeout"},
+		MiddlewareOrder: []string{"RequestID", "Log"},
 		Server: http.Server{
 			Handler:           router,
 			Addr:              bindAddr,
