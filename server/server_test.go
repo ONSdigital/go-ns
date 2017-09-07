@@ -27,9 +27,9 @@ func TestNew(t *testing.T) {
 		})
 
 		Convey("Default middleware should include RequestID and Log", func() {
-			So(s.Middleware, ShouldContainKey, "RequestID")
-			So(s.Middleware, ShouldContainKey, "Log")
-			So(s.MiddlewareOrder, ShouldResemble, []string{"RequestID", "Log"})
+			So(s.Middleware, ShouldContainKey, RequestIDHandlerKey)
+			So(s.Middleware, ShouldContainKey, LogHandlerKey)
+			So(s.MiddlewareOrder, ShouldResemble, []string{RequestIDHandlerKey, LogHandlerKey})
 		})
 
 		Convey("Default timeouts should be sensible", func() {
