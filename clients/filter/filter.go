@@ -165,6 +165,32 @@ func (c *Client) CreateJob(datasetFilterID string) (string, error) {
 	return fj.FilterID, nil
 }
 
+// UpdateJob will update a job with a given filter model
+func (c *Client) UpdateJob(m Model) error {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s", c.url, m.FilterID)
+
+	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.cli.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+
+	return nil
+}
+
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and name
 func (c *Client) AddDimensionValue(filterID, name, value string) error {
