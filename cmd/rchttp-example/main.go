@@ -51,7 +51,7 @@ func main() {
 			panic(err)
 			return
 		}
-		log.Debug("bod", log.Data{"body": string(body)})
+		log.Debug("bod", log.Data{"body": string(body), "status": respErr.resp.Status})
 	}
 
 	log.Debug("that's all folks", nil)

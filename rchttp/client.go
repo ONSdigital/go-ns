@@ -23,8 +23,8 @@ type Client struct {
 	HTTPClient         *http.Client
 }
 
-// DefaultClient is a go-ns specific http client with sensible timeouts
-// and exponential backoff
+// DefaultClient is a go-ns specific http client with sensible timeouts,
+// exponential backoff, and a contextual dialer
 var DefaultClient = &Client{
 	MaxRetries:         10,
 	ExponentialBackoff: true,
@@ -43,7 +43,7 @@ var DefaultClient = &Client{
 	},
 }
 
-// Do calls net/http Do with the addition of exponential backoff
+// Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	doer := func(args ...interface{}) (*http.Response, error) {
 		return ctxhttp.Do(args[0].(context.Context), args[1].(*http.Client), args[2].(*http.Request))
@@ -64,7 +64,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-// Get calls net/http Get with the addition of exponential backoff
+// Get calls Do with a GET
 func (c *Client) Get(ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -74,7 +74,7 @@ func (c *Client) Get(ctx context.Context, url string) (*http.Response, error) {
 	return c.Do(ctx, req)
 }
 
-// Head calls net/http Head with the addition of exponential backoff
+// Head calls Do with a HEAD
 func (c *Client) Head(ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *Client) Head(ctx context.Context, url string) (*http.Response, error) {
 	return c.Do(ctx, req)
 }
 
-// Post calls net/http Post with the addition of exponential backoff
+// Post calls Do with a POST and the appropriate content-type and body
 func (c *Client) Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
@@ -95,7 +95,7 @@ func (c *Client) Post(ctx context.Context, url string, contentType string, body 
 	return c.Do(ctx, req)
 }
 
-// PostForm calls net/http PostForm with the addition of exponential backoff
+// PostForm calls Post with the appropriate form content-type
 func (c *Client) PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
 	return c.Post(ctx, uri, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
