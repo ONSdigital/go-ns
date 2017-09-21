@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	// "errors"
 	"io/ioutil"
 	"net/http"
 	"time"
