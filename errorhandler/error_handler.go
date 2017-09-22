@@ -36,7 +36,7 @@ type MessageProducer interface {
 // Handle logs the error to the error handler via a kafka message
 func (handler *KafkaHandler) Handle(instanceID string, err error) {
 
-	data := log.Data{"INSTANCEID": instanceID, "ERROR": err.Error()}
+	data := log.Data{"instance_id": instanceID, "error": err.Error()}
 
 	log.Info("Recieved error report", data)
 	eventReport := errorModel.EventReport{

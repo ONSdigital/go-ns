@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ONSdigital/dp-dimension-importer/mocks"
+	"github.com/ONSdigital/go-ns/errorhandler/mock"
+
 	"github.com/ONSdigital/go-ns/errorhandler"
 	"github.com/ONSdigital/go-ns/kafka/kafkatest"
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,7 +23,6 @@ func TestRun(t *testing.T) {
 			Convey("A complete run through should conists of 1 call to the handler", func() {
 				So(len(errHandle.HandleCalls()), ShouldEqual, 1)
 			})
-
 		})
 	})
 }
