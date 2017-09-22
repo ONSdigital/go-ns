@@ -8,14 +8,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
-// Mongo represents a simplistic MongoDB configuration.
-type Mongo struct {
-	Collection string
-	Database   string
-	URI        string
-}
-
-func (m *Mongo) Close(ctx context.Context, session *mgo.Session) error {
+func Close(ctx context.Context, session *mgo.Session) error {
 	closedChannel := make(chan bool)
 	defer close(closedChannel)
 

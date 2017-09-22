@@ -15,13 +15,21 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var session *mgo.Session
 var (
+	hasSessionSleep bool
+	session         *mgo.Session
+
 	Collection = "test"
 	Database   = "test"
 	URI        = "localhost:27017"
 )
-var hasSessionSleep bool
+
+// Mongo represents a simplistic MongoDB configuration.
+type Mongo struct {
+	Collection string
+	Database   string
+	URI        string
+}
 
 func init() {
 	// To run all tests uncomment out lines 32 to 35 in mongo.go
@@ -31,7 +39,7 @@ func init() {
 }
 
 func TestSuccessfulCloseMongoSession(t *testing.T) {
-	mongo, err := setupSession()
+	_, err := setupSession()
 	if err != nil {
 		log.Info("mongo instance not available, skip tests", log.Data{"error": err})
 		os.Exit(0)
@@ -42,7 +50,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 			Convey("with no context deadline", func() {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				err := mongo.Close(ctx, session.Copy())
+				err := Close(ctx, session.Copy())
 
 				So(err, ShouldBeNil)
 			})
@@ -51,7 +59,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 		Convey("within context timeout (deadline)", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			err := mongo.Close(ctx, session.Copy())
+			err := Close(ctx, session.Copy())
 
 			So(err, ShouldBeNil)
 		})
@@ -60,7 +68,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 			time := time.Now().Local().Add(time.Second * time.Duration(2))
 			ctx, cancel := context.WithDeadline(context.Background(), time)
 			defer cancel()
-			err := mongo.Close(ctx, session.Copy())
+			err := Close(ctx, session.Copy())
 
 			So(err, ShouldBeNil)
 		})
@@ -85,7 +93,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 
 				contextKey := "return"
 				ctx := context.WithValue(context.Background(), contextKey, "true")
-				err := mongo.Close(ctx, copiedSession)
+				err := Close(ctx, copiedSession)
 
 				So(err, ShouldNotBeNil)
 				So(err, ShouldResemble, errors.New("closing mongo timed out"))
@@ -101,7 +109,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 
 				ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 				defer cancel()
-				err := mongo.Close(ctx, copiedSession)
+				err := Close(ctx, copiedSession)
 
 				So(err, ShouldNotBeNil)
 				So(err, ShouldResemble, context.DeadlineExceeded)
