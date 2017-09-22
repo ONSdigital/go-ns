@@ -10,6 +10,8 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 )
 
+//Helper file for when running a fullstack and forcing errors
+
 // InputFileAvailableSchema schema
 var InputFileAvailableSchema = `{
 	"type": "record",

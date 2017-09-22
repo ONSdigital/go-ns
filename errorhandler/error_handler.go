@@ -1,9 +1,8 @@
 package errorhandler
 
 import (
-	eventhandler "github.com/ONSdigital/dp-import-reporter/handler"
-	eventSchema "github.com/ONSdigital/dp-import-reporter/schema"
-
+	"github.com/ONSdigital/go-ns/errorhandler/models"
+	"github.com/ONSdigital/go-ns/errorhandler/schema"
 	"github.com/ONSdigital/go-ns/log"
 )
 
@@ -40,12 +39,12 @@ func (handler *KafkaHandler) Handle(instanceID string, err error) {
 	data := log.Data{"INSTANCEID": instanceID, "ERROR": err.Error()}
 
 	log.Info("Recieved error report", data)
-	eventReport := eventhandler.EventReport{
+	eventReport := errorModel.EventReport{
 		InstanceID: instanceID,
 		EventType:  "error",
 		EventMsg:   err.Error(),
 	}
-	errMsg, err := eventSchema.ReportedEventSchema.Marshal(eventReport)
+	errMsg, err := errorschema.ReportedEventSchema.Marshal(eventReport)
 	if err != nil {
 		log.ErrorC("Failed to marshall error to event-reporter", err, data)
 		return
