@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"flag"
 	"os"
 	"testing"
 	"time"
@@ -31,11 +30,18 @@ type Mongo struct {
 	URI        string
 }
 
-func init() {
-	// To run all tests uncomment out lines 32 to 35 in mongo.go
-	// and run go test -has.session.sleep=true ./... under the mongo package
-	flag.BoolVar(&hasSessionSleep, "has.session.sleep", false, "enables tests that require close channel function to sleep before closing down mongo session")
-	flag.Parse()
+type ungraceful struct{}
+
+func (t ungraceful) shutdown(ctx context.Context, session *mgo.Session, closedChannel chan bool) {
+	time.Sleep(timeLeft + (100 * time.Millisecond))
+	if ctx.Value("return") == "true" || ctx.Err() != nil {
+		return
+	}
+
+	session.Close()
+
+	closedChannel <- true
+	return
 }
 
 func TestSuccessfulCloseMongoSession(t *testing.T) {
@@ -43,6 +49,10 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 	if err != nil {
 		log.Info("mongo instance not available, skip tests", log.Data{"error": err})
 		os.Exit(0)
+	}
+
+	if err = cleanupTestData(session.Copy()); err != nil {
+		log.ErrorC("Failed to delete test data", err, nil)
 	}
 
 	Convey("Safely close mongo session", t, func() {
@@ -74,51 +84,49 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 		})
 	})
 
-	if !hasSessionSleep {
-		log.Info("Skipping tests", nil)
-	} else {
-		if err = setUpTestData(session.Copy()); err != nil {
-			log.ErrorC("Failed to insert test data, skipping tests", err, nil)
-			os.Exit(1)
-		}
+	if err = setUpTestData(session.Copy()); err != nil {
+		log.ErrorC("Failed to insert test data, skipping tests", err, nil)
+		os.Exit(1)
+	}
 
-		Convey("Timed out from safely closing mongo session", t, func() {
-			Convey("with no context deadline", func() {
-				copiedSession := session.Copy()
-				go func() {
-					_ = queryMongo(copiedSession)
-				}()
-				// Sleep for half a second for mongo query to begin
-				time.Sleep(500 * time.Millisecond)
+	Convey("Timed out from safely closing mongo session", t, func() {
+		Convey("with no context deadline", func() {
+			start = ungraceful{}
+			copiedSession := session.Copy()
+			go func() {
+				_ = queryMongo(copiedSession)
+			}()
+			// Sleep for half a second for mongo query to begin
+			time.Sleep(500 * time.Millisecond)
 
-				contextKey := "return"
-				ctx := context.WithValue(context.Background(), contextKey, "true")
-				err := Close(ctx, copiedSession)
+			contextKey := "return"
+			ctx := context.WithValue(context.Background(), contextKey, "true")
+			err := Close(ctx, copiedSession)
 
-				So(err, ShouldNotBeNil)
-				So(err, ShouldResemble, errors.New("closing mongo timed out"))
-			})
-
-			Convey("with context deadline", func() {
-				copiedSession := session.Copy()
-				go func() {
-					_ = queryMongo(copiedSession)
-				}()
-				// Sleep for half a second for mongo query to begin
-				time.Sleep(500 * time.Millisecond)
-
-				ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-				defer cancel()
-				err := Close(ctx, copiedSession)
-
-				So(err, ShouldNotBeNil)
-				So(err, ShouldResemble, context.DeadlineExceeded)
-			})
+			So(err, ShouldNotBeNil)
+			So(err, ShouldResemble, errors.New("closing mongo timed out"))
+			time.Sleep(500 * time.Millisecond)
 		})
 
-		if err = cleanupTestData(session.Copy()); err != nil {
-			log.ErrorC("Failed to delete test data", err, nil)
-		}
+		Convey("with context deadline", func() {
+			copiedSession := session.Copy()
+			go func() {
+				_ = queryMongo(copiedSession)
+			}()
+			// Sleep for half a second for mongo query to begin
+			time.Sleep(500 * time.Millisecond)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			defer cancel()
+			err := Close(ctx, copiedSession)
+
+			So(err, ShouldNotBeNil)
+			So(err, ShouldResemble, context.DeadlineExceeded)
+		})
+	})
+
+	if err = cleanupTestData(session.Copy()); err != nil {
+		log.ErrorC("Failed to delete test data", err, nil)
 	}
 }
 
