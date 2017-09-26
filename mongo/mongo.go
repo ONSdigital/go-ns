@@ -8,8 +8,8 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
-// Type represents an interface to the shutdown method
-type Type interface {
+// Shutdown represents an interface to the shutdown method
+type Shutdown interface {
 	shutdown(ctx context.Context, session *mgo.Session, closedChannel chan bool)
 }
 
@@ -23,8 +23,8 @@ func (t graceful) shutdown(ctx context.Context, session *mgo.Session, closedChan
 }
 
 var (
-	start    Type = graceful{}
-	timeLeft      = 1000 * time.Millisecond
+	start    Shutdown = graceful{}
+	timeLeft          = 1000 * time.Millisecond
 )
 
 // Close represents mongo session closing within the context deadline
