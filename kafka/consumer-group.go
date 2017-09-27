@@ -1,13 +1,14 @@
 package kafka
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"context"
+
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/bsm/sarama-cluster"
-	"github.com/johnnadratowski/golang-neo4j-bolt-driver/errors"
 )
 
 var tick = time.Millisecond * 4000
