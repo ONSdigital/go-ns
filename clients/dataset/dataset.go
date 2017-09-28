@@ -56,8 +56,86 @@ func (c *Client) Healthcheck() (string, error) {
 	return "", nil
 }
 
-// GetVersion gets a particular version of a dataset from the dataset api
-func (c *Client) GetVersion(id, edition, version string) (m Model, err error) {
+// Get returns dataset level information for a given dataset id
+func (c *Client) Get(id string) (m Model, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetEditions returns all editions for a dataset
+func (c *Client) GetEditions(id string) (m []Edition, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	editions := struct {
+		Items []Edition `json:"items"`
+	}{}
+	err = json.Unmarshal(b, &editions)
+	m = editions.Items
+	return
+}
+
+// GetVersions gets all versions for an edition from the dataset api
+func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	versions := struct {
+		Items []Version `json:"items"`
+	}{}
+
+	err = json.Unmarshal(b, &versions)
+	m = versions.Items
+	return
+}
+
+// GetVersion gets a specific version for an edition from the dataset api
+func (c *Client) GetVersion(id, edition, version string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 	resp, err := c.cli.Get(uri)
 	if err != nil {
