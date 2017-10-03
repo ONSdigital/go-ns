@@ -156,3 +156,49 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 	err = json.Unmarshal(b, &m)
 	return
 }
+
+// GetDimensions will return a versions dimensions
+func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetOptions will return the options for a dimension
+func (c *Client) GetOptions(id, edition, version, dimension string) (m Options, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
