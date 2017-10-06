@@ -35,21 +35,24 @@ func (cg ConsumerGroup) Errors() chan error {
 // Close safely closes the consumer and releases all resources.
 // pass in a context with a timeout or deadline.
 // Passing a nil context will provide no timeout but is not recommended
-func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
+func (cg *ConsumerGroup) Close(ctx context.Context, readyToCloseConsumerGroup, readyToCLoseProducer chan bool) (err error) {
 
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	close(cg.closer)
+	log.Info(fmt.Sprintf("Stopped listening to kafka consumer group"), nil)
 
 	select {
 	case <-cg.closed:
-		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
 		close(cg.errors)
 		close(cg.incoming)
-		return cg.consumer.Close()
 
+		readyToCLoseProducer <- true
+		<-readyToCloseConsumerGroup
+		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
+		return cg.consumer.Close()
 	case <-ctx.Done():
 		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
 		return errors.New("Shutdown context timed out")
@@ -86,6 +89,11 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 			case err := <-consumer.Errors():
 				log.Error(err, nil)
 				cg.Errors() <- err
+			case <-cg.closer:
+				consumer.CommitOffsets()
+				log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
+				return
+
 			default:
 				select {
 				case msg := <-consumer.Messages():
@@ -96,10 +104,6 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 					}
 				case <-time.After(tick):
 					consumer.CommitOffsets()
-				case <-cg.closer:
-					consumer.CommitOffsets()
-					log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
-					return
 				}
 			}
 		}

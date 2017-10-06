@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
 )
@@ -40,9 +41,9 @@ func (producer *Producer) Close(ctx context.Context) (err error) {
 
 	select {
 	case <-producer.closed:
-		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
 		close(producer.errors)
 		close(producer.output)
+		log.Info(fmt.Sprintf("Successfully closed kafka producer"), nil)
 		return producer.producer.Close()
 
 	case <-ctx.Done():
