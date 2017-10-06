@@ -32,27 +32,51 @@ func (cg ConsumerGroup) Errors() chan error {
 	return cg.errors
 }
 
+// StopListeningToConsumer stops any more messages being consumed off kafka topic
+func (cg *ConsumerGroup) StopListeningToConsumer(ctx context.Context) (err error) {
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	var q struct{}
+
+	cg.closer <- q
+
+	select {
+	case <-cg.closed:
+
+		log.Info(fmt.Sprintf("Stopped listening to kafka consumer group"), nil)
+		return
+	case <-ctx.Done():
+		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
+		return errors.New("Shutdown context timed out")
+	}
+}
+
 // Close safely closes the consumer and releases all resources.
 // pass in a context with a timeout or deadline.
 // Passing a nil context will provide no timeout but is not recommended
-func (cg *ConsumerGroup) Close(ctx context.Context, readyToCloseConsumerGroup, readyToCLoseProducer chan bool) (err error) {
+func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	close(cg.closer)
-	log.Info(fmt.Sprintf("Stopped listening to kafka consumer group"), nil)
 
 	select {
 	case <-cg.closed:
 		close(cg.errors)
 		close(cg.incoming)
 
-		readyToCLoseProducer <- true
-		<-readyToCloseConsumerGroup
+		if err = cg.consumer.Close(); err != nil {
+			log.ErrorC(fmt.Sprintf("Failed to close kafka consumer group"), err, nil)
+			return
+		}
+
 		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
-		return cg.consumer.Close()
+		return
 	case <-ctx.Done():
 		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
 		return errors.New("Shutdown context timed out")

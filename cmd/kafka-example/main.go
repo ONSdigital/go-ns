@@ -50,7 +50,7 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	stdinChannel := make(chan string)
-	readyToCloseConsumer := make(chan bool)
+	listeningToConsumerGroupStopped := make(chan bool)
 	readyToCloseProducer := make(chan bool)
 
 	go func(ch chan string) {
@@ -69,6 +69,9 @@ func main() {
 	go func() {
 		for {
 			select {
+			case <-listeningToConsumerGroupStopped:
+				readyToCloseProducer <- true
+				return
 			case consumedMessage := <-consumer.Incoming():
 				log.Info("[KAFKA-TEST] Received message", nil)
 				consumedData := consumedMessage.GetData()
@@ -112,23 +115,20 @@ func main() {
 	// background a wait for the instance handler to stop
 	atomic.AddInt32(&waitGroup, 1)
 	go func() {
-		log.Info("[KAFKA-TEST] Attempting to close kafka consumer group", nil)
-		consumer.Close(ctx, readyToCloseConsumer, readyToCloseProducer)
-		atomic.AddInt32(&waitGroup, -1)
-
-		log.Info("[KAFKA-TEST] Closed kafka consumer", nil)
-	}()
-
-	// background a wait for the instance handler to stop
-	atomic.AddInt32(&waitGroup, 1)
-	go func() {
-		log.Info("[KAFKA-TEST] Stop writing to producer", nil)
+		log.Info("[KAFKA-TEST] Attempting to stop listening to kafka consumer group", nil)
+		consumer.StopListeningToConsumer(ctx)
+		log.Info("[KAFKA-TEST] Successfully stopped listening to kafka consumer group", nil)
+		listeningToConsumerGroupStopped <- true
 		<-readyToCloseProducer
+		log.Info("[KAFKA-TEST] Attempting to close kafka producer", nil)
 		producer.Close(ctx)
+		log.Info("[KAFKA-TEST] Successfully closed kafka producer", nil)
+		log.Info("[KAFKA-TEST] Attempting to close kafka consumer group", nil)
+		consumer.Close(ctx)
+		log.Info("[KAFKA-TEST] Successfully closed kafka consumer group", nil)
 		atomic.AddInt32(&waitGroup, -1)
-		log.Info("[KAFKA-TEST] Closed kafka producer", nil)
-		// Allow service to commit to consumer before closing consumerGroup
-		readyToCloseConsumer <- true
+
+		log.Info("[KAFKA-TEST] Closed kafka successfully", nil)
 	}()
 
 	// setup a timer to zero waitGroup after timeout
