@@ -149,8 +149,8 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 }
 
 // CreateJob creates a filter job and returns the associated filterJobID
-func (c *Client) CreateJob(datasetFilterID string) (string, error) {
-	fj := Model{InstanceID: datasetFilterID, State: "created"}
+func (c *Client) CreateJob(instanceID string) (string, error) {
+	fj := Model{InstanceID: instanceID, State: "created"}
 
 	b, err := json.Marshal(fj)
 	if err != nil {
@@ -158,9 +158,9 @@ func (c *Client) CreateJob(datasetFilterID string) (string, error) {
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do(fmt.Sprintf("attemping to create filter job with instance id: %s", datasetFilterID), service, uri, log.Data{
-		"method": "POST",
-		"body":   string(b),
+	clientlog.Do("attemping to create filter job", service, uri, log.Data{
+		"method":     "POST",
+		"instanceID": instanceID,
 	})
 
 	resp, err := c.cli.Post(uri, "application/json", bytes.NewBuffer(b))
