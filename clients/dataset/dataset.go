@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
+
+const service = "dataset-api"
 
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
@@ -46,19 +49,22 @@ func New(datasetAPIURL string) *Client {
 func (c *Client) Healthcheck() (string, error) {
 	resp, err := c.cli.Get(c.url + "/healthcheck")
 	if err != nil {
-		return "dataset-api", err
+		return service, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "dataset-api", &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // Get returns dataset level information for a given dataset id
 func (c *Client) Get(id string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
+
+	clientlog.Do("retrieving dataset", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -82,6 +88,9 @@ func (c *Client) Get(id string) (m Model, err error) {
 // GetEditions returns all editions for a dataset
 func (c *Client) GetEditions(id string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
+
+	clientlog.Do("retrieving dataset editions", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -109,6 +118,9 @@ func (c *Client) GetEditions(id string) (m []Edition, err error) {
 // GetVersions gets all versions for an edition from the dataset api
 func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
+
+	clientlog.Do("retrieving dataset versions", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -137,6 +149,9 @@ func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
 // GetVersion gets a specific version for an edition from the dataset api
 func (c *Client) GetVersion(id, edition, version string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
+
+	clientlog.Do("retrieving dataset version", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -160,6 +175,9 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 // GetDimensions will return a versions dimensions
 func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
+
+	clientlog.Do("retrieving dataset version dimensions", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -183,6 +201,9 @@ func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err e
 // GetOptions will return the options for a dimension
 func (c *Client) GetOptions(id, edition, version, dimension string) (m Options, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
+
+	clientlog.Do("retrieving options for dimension", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return

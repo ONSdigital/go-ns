@@ -8,8 +8,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
+
 	"github.com/ONSdigital/go-ns/rhttp"
 )
+
+const service = "filter-api"
 
 // ErrInvalidFilterAPIResponse is returned when the filter api does not respond
 // with a valid status
@@ -48,19 +52,22 @@ func New(filterAPIURL string) *Client {
 func (c *Client) Healthcheck() (string, error) {
 	resp, err := c.cli.Get(c.url + "/healthcheck")
 	if err != nil {
-		return "filter-api", err
+		return service, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "filter-api", &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // GetDimension returns information on a requested dimension name for a given filterID
 func (c *Client) GetDimension(filterID, name string) (dim Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+
+	clientlog.Do("retrieving dimension information", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -89,6 +96,9 @@ func (c *Client) GetDimension(filterID, name string) (dim Dimension, err error) 
 // GetDimensions will return the dimensions associated with the provided filter id
 func (c *Client) GetDimensions(filterID string) (dims []Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.url, filterID)
+
+	clientlog.Do("retrieving all dimensions for given filter job", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -112,6 +122,9 @@ func (c *Client) GetDimensions(filterID string) (dims []Dimension, err error) {
 // GetDimensionOptions retrieves a list of the dimension options
 func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOption, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.url, filterID, name)
+
+	clientlog.Do("retrieving selected dimension options for filter job", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -143,7 +156,10 @@ func (c *Client) CreateJob(datasetFilterID string) (string, error) {
 		return "", err
 	}
 
-	resp, err := c.cli.Post(c.url+"/filters", "application/json", bytes.NewBuffer(b))
+	uri := c.url + "/filters"
+	clientlog.Do(fmt.Sprintf("attemping to create filter job with instance id: %s", datasetFilterID), service, uri, "POST")
+
+	resp, err := c.cli.Post(uri, "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		return "", err
 	}
@@ -174,6 +190,8 @@ func (c *Client) UpdateJob(m Model) error {
 
 	uri := fmt.Sprintf("%s/filters/%s", c.url, m.FilterID)
 
+	clientlog.Do("updating filter job", service, uri, "PUT")
+
 	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
 	if err != nil {
 		return err
@@ -195,6 +213,9 @@ func (c *Client) UpdateJob(m Model) error {
 // and name
 func (c *Client) AddDimensionValue(filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
+
+	clientlog.Do("adding dimension option to filter job", service, uri, "POST")
+
 	req, err := http.NewRequest("POST", uri, nil)
 	if err != nil {
 		return err
@@ -220,6 +241,8 @@ func (c *Client) RemoveDimensionValue(filterID, name, value string) error {
 		return err
 	}
 
+	clientlog.Do("removing dimension option from filter job", service, uri, "DELETE")
+
 	resp, err := c.cli.Do(req)
 	if err != nil {
 		return err
@@ -234,6 +257,9 @@ func (c *Client) RemoveDimensionValue(filterID, name, value string) error {
 // RemoveDimension removes a given dimension from a filter job
 func (c *Client) RemoveDimension(filterID, name string) (err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+
+	clientlog.Do("removing dimension from filter job", service, uri, "DELETE")
+
 	req, err := http.NewRequest("DELETE", uri, nil)
 	if err != nil {
 		return
@@ -254,7 +280,10 @@ func (c *Client) RemoveDimension(filterID, name string) (err error) {
 
 // AddDimension adds a new dimension to a filter job
 func (c *Client) AddDimension(id, name string) error {
-	resp, err := http.Post(fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name), "application/json", bytes.NewBufferString(`{}`))
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name)
+	clientlog.Do("adding dimension to filter job", service, uri, "POST")
+
+	resp, err := c.cli.Post(uri, "application/json", bytes.NewBufferString(`{}`))
 	if err != nil {
 		return err
 	}
@@ -269,6 +298,9 @@ func (c *Client) AddDimension(id, name string) error {
 // GetJobState will return the current state of the filter job
 func (c *Client) GetJobState(filterID string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/filters/%s", c.url, filterID)
+
+	clientlog.Do("retrieving filter job state", service, uri, "GET")
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
@@ -292,6 +324,8 @@ func (c *Client) GetJobState(filterID string) (m Model, err error) {
 // AddDimensionValues adds many options to a filter job dimension
 func (c *Client) AddDimensionValues(filterID, name string, options []string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+
+	clientlog.Do("adding multiple dimension values to filter job", service, uri, "POST")
 
 	body := struct {
 		Options []string `json:"options"`
