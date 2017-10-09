@@ -63,7 +63,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	clientlog.Do("retrieving codes from codelist", service, uri, "GET")
+	clientlog.Do("retrieving codes from codelist", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {

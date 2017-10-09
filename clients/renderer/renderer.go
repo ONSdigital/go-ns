@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
 
@@ -61,7 +62,9 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	uri := r.url + "/" + path
 
-	clientlog.Do(fmt.Sprintf("rendering template: %s", path), service, uri, "POST")
+	clientlog.Do(fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
+		"method": "POST",
+	})
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
 	if err != nil {

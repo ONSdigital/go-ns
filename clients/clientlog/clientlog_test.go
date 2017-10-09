@@ -12,11 +12,11 @@ import (
 )
 
 func TestUnitClientlog(t *testing.T) {
-	Convey("test ouput produced by client log package", t, func() {
+	Convey("test ouput produced by client log package with no log.Data", t, func() {
 		log.Namespace = "dp-frontend-service"
 
 		output := captureOutput(func() {
-			Do("retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets", "GET")
+			Do("retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets")
 		})
 
 		logContents := make(map[string]interface{})
@@ -33,6 +33,34 @@ func TestUnitClientlog(t *testing.T) {
 		So(logData["action"].(string), ShouldEqual, "retrieving datasets")
 		So(logData["message"].(string), ShouldEqual, "Making request to service: dp-backend-api")
 		So(logData["method"].(string), ShouldEqual, "GET")
+		So(logData["uri"].(string), ShouldEqual, "http://localhost:22000/datasets")
+	})
+
+	Convey("test output produced by client log package with log.Data", t, func() {
+		log.Namespace = "dp-frontend-service"
+
+		output := captureOutput(func() {
+			Do("retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets", log.Data{
+				"method": "DELETE",
+				"value":  "abcdefg",
+			})
+		})
+
+		logContents := make(map[string]interface{})
+
+		err := json.Unmarshal([]byte(output), &logContents)
+		So(err, ShouldBeNil)
+
+		So(logContents["created"].(string), ShouldNotBeEmpty)
+		So(logContents["event"].(string), ShouldEqual, "trace")
+		So(logContents["namespace"].(string), ShouldEqual, "dp-frontend-service")
+
+		logData := logContents["data"].(map[string]interface{})
+		So(logData, ShouldNotBeEmpty)
+		So(logData["action"].(string), ShouldEqual, "retrieving datasets")
+		So(logData["message"].(string), ShouldEqual, "Making request to service: dp-backend-api")
+		So(logData["method"].(string), ShouldEqual, "DELETE")
+		So(logData["value"].(string), ShouldEqual, "abcdefg")
 		So(logData["uri"].(string), ShouldEqual, "http://localhost:22000/datasets")
 	})
 }

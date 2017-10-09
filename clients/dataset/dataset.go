@@ -63,7 +63,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) Get(id string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
 
-	clientlog.Do("retrieving dataset", service, uri, "GET")
+	clientlog.Do("retrieving dataset", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *Client) Get(id string) (m Model, err error) {
 func (c *Client) GetEditions(id string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
 
-	clientlog.Do("retrieving dataset editions", service, uri, "GET")
+	clientlog.Do("retrieving dataset editions", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
@@ -119,7 +119,7 @@ func (c *Client) GetEditions(id string) (m []Edition, err error) {
 func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
 
-	clientlog.Do("retrieving dataset versions", service, uri, "GET")
+	clientlog.Do("retrieving dataset versions", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
@@ -150,7 +150,7 @@ func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
 func (c *Client) GetVersion(id, edition, version string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 
-	clientlog.Do("retrieving dataset version", service, uri, "GET")
+	clientlog.Do("retrieving dataset version", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
@@ -176,7 +176,7 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
-	clientlog.Do("retrieving dataset version dimensions", service, uri, "GET")
+	clientlog.Do("retrieving dataset version dimensions", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
@@ -202,7 +202,7 @@ func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err e
 func (c *Client) GetOptions(id, edition, version, dimension string) (m Options, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
 
-	clientlog.Do("retrieving options for dimension", service, uri, "GET")
+	clientlog.Do("retrieving options for dimension", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {

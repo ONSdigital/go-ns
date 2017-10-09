@@ -63,7 +63,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetHierarchy(path string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/hierarchies/%s", c.url, path)
 
-	clientlog.Do("retrieving hierarchy", service, uri, "GET")
+	clientlog.Do("retrieving hierarchy", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
