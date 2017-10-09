@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"context"
-	"errors"
 
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/bsm/sarama-cluster"
@@ -20,6 +19,7 @@ type ConsumerGroup struct {
 	errors   chan error
 	closer   chan struct{}
 	closed   chan struct{}
+	topic    string
 }
 
 // Incoming provides a channel of incoming messages.
@@ -40,17 +40,16 @@ func (cg *ConsumerGroup) StopListeningToConsumer(ctx context.Context) (err error
 	}
 
 	var q struct{}
-
 	cg.closer <- q
 
 	select {
 	case <-cg.closed:
-
-		log.Info(fmt.Sprintf("Stopped listening to kafka consumer group"), nil)
+		log.Info("Stopped listening to kafka consumer group", log.Data{"topic": cg.topic})
 		return
 	case <-ctx.Done():
-		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
-		return errors.New("Shutdown context timed out")
+		err = fmt.Errorf("StopListeningToConsumer context timed out for topic[%s]: %s", cg.topic, ctx.Err())
+		log.Error(err, nil)
+		return err
 	}
 }
 
@@ -71,15 +70,17 @@ func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 		close(cg.incoming)
 
 		if err = cg.consumer.Close(); err != nil {
-			log.ErrorC(fmt.Sprintf("Failed to close kafka consumer group"), err, nil)
+			err = fmt.Errorf("Failed to close kafka consumer group for topic[%s]: %s", cg.topic, err)
+			log.Error(err, nil)
 			return
 		}
 
-		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
+		log.Info("Successfully closed kafka consumer group", log.Data{"topic": cg.topic})
 		return
 	case <-ctx.Done():
-		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
-		return errors.New("Shutdown context timed out")
+		err = fmt.Errorf("Shutdown context timed out for topic[%s]: %s", cg.topic, ctx.Err())
+		log.Error(err, nil)
+		return err
 	}
 }
 
@@ -103,6 +104,7 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 		closer:   make(chan struct{}),
 		closed:   make(chan struct{}),
 		errors:   make(chan error),
+		topic:    topic,
 	}
 
 	go func() {
