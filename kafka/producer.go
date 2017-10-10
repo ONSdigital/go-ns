@@ -47,7 +47,7 @@ func (producer *Producer) Close(ctx context.Context) (err error) {
 		return producer.producer.Close()
 
 	case <-ctx.Done():
-		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
+		log.Info("Shutdown context time exceeded, skipping graceful shutdown of consumer group", nil)
 		return errors.New("Shutdown context timed out")
 	}
 }

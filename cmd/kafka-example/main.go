@@ -65,7 +65,7 @@ func main() {
 		close(ch)
 	}(stdinChannel)
 
-	done := make(chan bool)
+	eventLoopDone := make(chan bool)
 	go func() {
 		for {
 			select {
@@ -86,24 +86,25 @@ func main() {
 				log.Info("[KAFKA-TEST] committed message", log.Data{"messageString": string(consumedData)})
 			case consumerError := <-consumer.Errors():
 				log.Error(fmt.Errorf("[KAFKA-TEST] Aborting consumer"), log.Data{"messageReceived": consumerError})
-				close(done)
+				close(eventLoopDone)
 				return
 			case producerError := <-producer.Errors():
 				log.Error(fmt.Errorf("[KAFKA-TEST] Aborting producer"), log.Data{"messageReceived": producerError})
-				close(done)
+				close(eventLoopDone)
 				return
 			case stdinLine := <-stdinChannel:
 				producer.Output() <- []byte(stdinLine)
 				log.Info("[KAFKA-TEST] Message output", log.Data{"messageSent": stdinLine})
+			case <-signals:
+				log.Info("[KAFKA-TEST] os signal received", nil)
+				close(eventLoopDone)
 			}
 		}
 	}()
 
 	select {
-	case <-done:
+	case <-eventLoopDone:
 		log.Info("[KAFKA-TEST] Quitting after done was closed", nil)
-	case <-signals:
-		log.Info("[KAFKA-TEST] Quitting after signal", nil)
 	}
 
 	// give the app 3 seconds to close gracefully before killing it.
