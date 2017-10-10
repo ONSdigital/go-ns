@@ -119,17 +119,13 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 				consumer.CommitOffsets()
 				log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
 				return
-
-			default:
-				select {
-				case msg := <-consumer.Messages():
-					cg.Incoming() <- SaramaMessage{msg, consumer}
-				case n, more := <-consumer.Notifications():
-					if more {
-						log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
-					}
-				case <-time.After(tick):
-					consumer.CommitOffsets()
+			case <-time.After(tick):
+				consumer.CommitOffsets()
+			case msg := <-consumer.Messages():
+				cg.Incoming() <- SaramaMessage{msg, consumer}
+			case n, more := <-consumer.Notifications():
+				if more {
+					log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
 				}
 			}
 		}
