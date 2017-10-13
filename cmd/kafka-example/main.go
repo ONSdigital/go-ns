@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"context"
 	"time"
@@ -34,6 +35,16 @@ func main() {
 	if producedTopic == "" {
 		producedTopic = "output"
 	}
+	consumeCount := 0
+	consumeMax := 0
+	maxMessagesString := os.Getenv("KAFKA_CONSUME_MAX")
+	if maxMessagesString != "" {
+		var err error
+		consumeMax, err = strconv.Atoi(maxMessagesString)
+		if err != nil {
+			panic(err)
+		}
+	}
 	maxMessageSize := 50 * 1024 * 1024 // 50MB
 
 	log.Info(fmt.Sprintf("[KAFKA-TEST] Starting topics: %q -> stdout, stdin -> %q", consumedTopic, producedTopic), nil)
@@ -55,6 +66,9 @@ func main() {
 	signal.Notify(signals, os.Interrupt)
 	stdinChannel := make(chan string)
 
+	eventLoopContext, eventLoopCancel := context.WithCancel(context.Background())
+	eventLoopDone := make(chan bool)
+
 	go func(ch chan string) {
 		reader := bufio.NewReader(os.Stdin)
 		for {
@@ -64,11 +78,12 @@ func main() {
 			}
 			ch <- line
 		}
+		eventLoopCancel()
+		<-eventLoopDone
 		close(ch)
 	}(stdinChannel)
 
-	eventLoopContext, eventLoopCancel := context.WithCancel(context.Background())
-	eventLoopDone := make(chan bool)
+	// eventLoop
 	go func() {
 		defer close(eventLoopDone)
 		for {
@@ -86,15 +101,19 @@ func main() {
 				producer.Output() <- consumedData
 				consumedMessage.Commit()
 				log.Info("[KAFKA-TEST] committed message", log.Data{"messageString": string(consumedData)})
-
+				consumeCount++
+				if consumeCount == consumeMax {
+					log.Trace("consumed max - exiting eventLoop", nil)
+					return
+				}
 			case stdinLine := <-stdinChannel:
 				producer.Output() <- []byte(stdinLine)
-				log.Info("[KAFKA-TEST] Message output", log.Data{"messageSent": stdinLine})
+				log.Info("[KAFKA-TEST] Message output", log.Data{"messageSent": stdinLine, "messageChars": []byte(stdinLine)})
 			}
 		}
 	}()
 
-	// block until a fatal error/signal - then proceed to shutdown
+	// block until a fatal error/signal or eventLoopDone - then proceed to shutdown
 	select {
 	case <-eventLoopDone:
 		log.Info("[KAFKA-TEST] Quitting after event loop aborted", nil)
@@ -106,7 +125,7 @@ func main() {
 		log.Error(fmt.Errorf("[KAFKA-TEST] Aborting producer"), log.Data{"messageReceived": producerError})
 	}
 
-	// give the a timeout to close gracefully before killing it.
+	// give the eventLoop time to close gracefully before exiting
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 
 	// background graceful shutdown

@@ -1,10 +1,9 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"context"
 
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/bsm/sarama-cluster"
@@ -20,6 +19,7 @@ type ConsumerGroup struct {
 	closer   chan struct{}
 	closed   chan struct{}
 	topic    string
+	group    string
 }
 
 // Incoming provides a channel of incoming messages.
@@ -39,15 +39,14 @@ func (cg *ConsumerGroup) StopListeningToConsumer(ctx context.Context) (err error
 		ctx = context.Background()
 	}
 
-	var q struct{}
-	cg.closer <- q
+	close(cg.closer)
 
 	select {
 	case <-cg.closed:
-		log.Info("Stopped listening to kafka consumer group", log.Data{"topic": cg.topic})
+		log.Info("Stopped listening to kafka consumer group", log.Data{"topic": cg.topic, "group": cg.group})
 		return
 	case <-ctx.Done():
-		err = fmt.Errorf("StopListeningToConsumer context timed out for topic[%s]: %s", cg.topic, ctx.Err())
+		err = fmt.Errorf("StopListeningToConsumer context timed out for group[%s] topic[%s]: %s", cg.group, cg.topic, ctx.Err())
 		log.Error(err, nil)
 		return err
 	}
@@ -62,7 +61,12 @@ func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 		ctx = context.Background()
 	}
 
-	close(cg.closer)
+	// close(closer) - select avoids panic if already closed
+	select {
+	case <-cg.closer:
+	default:
+		close(cg.closer)
+	}
 
 	select {
 	case <-cg.closed:
@@ -70,15 +74,15 @@ func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 		close(cg.incoming)
 
 		if err = cg.consumer.Close(); err != nil {
-			err = fmt.Errorf("Failed to close kafka consumer group for topic[%s]: %s", cg.topic, err)
+			err = fmt.Errorf("Failed to close kafka consumer group for group[%s] topic[%s]: %s", cg.group, cg.topic, err)
 			log.Error(err, nil)
 			return
 		}
 
-		log.Info("Successfully closed kafka consumer group", log.Data{"topic": cg.topic})
+		log.Info("Successfully closed kafka consumer group", log.Data{"topic": cg.topic, "group": cg.group})
 		return
 	case <-ctx.Done():
-		err = fmt.Errorf("Shutdown context timed out for topic[%s]: %s", cg.topic, ctx.Err())
+		err = fmt.Errorf("Shutdown context timed out for group[%s] topic[%s]: %s", cg.group, cg.topic, ctx.Err())
 		log.Error(err, nil)
 		return err
 	}
@@ -95,7 +99,7 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 
 	consumer, err := cluster.NewConsumer(brokers, group, []string{topic}, config)
 	if err != nil {
-		return nil, fmt.Errorf("Bad NewConsumer of %q: %s", topic, err)
+		return nil, fmt.Errorf("Bad NewConsumer of group[%s] topic[%s]: %s", group, topic, err)
 	}
 
 	cg := ConsumerGroup{
@@ -105,27 +109,39 @@ func NewConsumerGroup(brokers []string, topic string, group string, offset int64
 		closed:   make(chan struct{}),
 		errors:   make(chan error),
 		topic:    topic,
+		group:    group,
 	}
 
 	go func() {
+		log.Info(fmt.Sprintf("Started kafka consumer of topic %q group %q", cg.topic, cg.group), nil)
 		defer close(cg.closed)
-		log.Info(fmt.Sprintf("Started kafka consumer of topic %q group %q", topic, group), nil)
+		select {
+		case <-cg.closer:
+			cg.consumer.CommitOffsets()
+			log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", cg.topic, cg.group), nil)
+			return
+		case msg := <-cg.consumer.Messages():
+			cg.Incoming() <- SaramaMessage{msg, cg.consumer}
+		}
+	}()
+
+	go func() {
+		hasBalanced := false
 		for {
 			select {
-			case err := <-consumer.Errors():
+			case <-cg.closer:
+				return
+			case err := <-cg.consumer.Errors():
 				log.Error(err, nil)
 				cg.Errors() <- err
-			case <-cg.closer:
-				consumer.CommitOffsets()
-				log.Info(fmt.Sprintf("Closing kafka consumer of topic %q group %q", topic, group), nil)
-				return
 			case <-time.After(tick):
-				consumer.CommitOffsets()
-			case msg := <-consumer.Messages():
-				cg.Incoming() <- SaramaMessage{msg, consumer}
-			case n, more := <-consumer.Notifications():
+				if hasBalanced {
+					cg.consumer.CommitOffsets()
+				}
+			case n, more := <-cg.consumer.Notifications():
 				if more {
-					log.Trace("Rebalancing group", log.Data{"topic": topic, "group": group, "partitions": n.Current[topic]})
+					hasBalanced = true
+					log.Trace("Rebalancing group", log.Data{"topic": cg.topic, "group": cg.group, "partitions": n.Current[topic]})
 				}
 			}
 		}
