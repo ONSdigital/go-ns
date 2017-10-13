@@ -107,7 +107,7 @@ func main() {
 		log.Info("[KAFKA-TEST] Quitting after done was closed", nil)
 	}
 
-	// give the app 3 seconds to close gracefully before killing it.
+	// give the app `timeout` seconds to close gracefully before killing it.
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
 
