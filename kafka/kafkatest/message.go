@@ -10,6 +10,7 @@ var _ kafka.Message = (*Message)(nil)
 type Message struct {
 	data      []byte
 	committed bool
+	offset    int64
 }
 
 // NewMessage returns a new mock message containing the given data.
@@ -32,4 +33,9 @@ func (m *Message) Commit() {
 // Committed returns true if commit was called on this message.
 func (m *Message) Committed() bool {
 	return m.committed
+}
+
+// Offset returns the message offset
+func (m *Message) Offset() int64 {
+	return m.offset
 }
