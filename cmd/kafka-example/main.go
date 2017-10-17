@@ -106,7 +106,7 @@ func main() {
 		log.Error(fmt.Errorf("[KAFKA-TEST] Aborting producer"), log.Data{"messageReceived": producerError})
 	}
 
-	// give the a timeout to close gracefully before killing it.
+	// give the app `timeout` seconds to close gracefully before killing it.
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 
 	// background graceful shutdown
