@@ -144,7 +144,7 @@ func main() {
 		log.ErrorC("[KAFKA-TEST] Aborting producer", producerError, nil)
 	}
 
-	// give the eventLoop time to close gracefully before exiting
+	// give the app `Timeout` seconds to close gracefully before killing it.
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.TimeOut)
 
 	// background graceful shutdown
