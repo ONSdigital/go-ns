@@ -143,7 +143,7 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 		topic:        topic,
 		group:        group,
 		sync:         sync,
-		upstreamDone: make(chan bool),
+		upstreamDone: make(chan bool, 1),
 	}
 
 	// listener goroutine - listen to consumer.Messages() and upstream them
@@ -165,15 +165,15 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 				if cg.sync {
 					// wait for msg-processed or close-consumer triggers
 					log.Trace("listener.....msg upstreamed - waiting for sync", nil)
-					for loopingForSync := true; loopingForSync; {
+					for loopingForSync := true; looping && loopingForSync; {
 						select {
 						case <-cg.upstreamDone:
 							log.Trace("listener.....sync DONE!", nil)
 							loopingForSync = false
-						// case <-cg.closer:
-						// 	log.Trace("listener.....sync closer triggered", nil)
-						// 	looping = false
-						// 	loopingForSync = false
+						case <-cg.closer:
+							// XXX if we read closer here, this means that the release/upstreamDone blocks unless it is buffered
+							log.Trace("listener.....sync closer triggered", nil)
+							looping = false
 						case <-time.After(tick):
 							log.Trace("listener.....sync tick", nil)
 						}
