@@ -102,7 +102,8 @@ func main() {
 				consumeCount++
 				log.Info("[KAFKA-TEST] Received message", log.Data{"consumeCount": consumeCount, "consumeMax": cfg.ConsumeMax})
 				consumedData := consumedMessage.GetData()
-				sleep := 500*time.Millisecond + cfg.TimeOut
+				sleep := 0 * time.Millisecond
+				// sleep = 500*time.Millisecond + cfg.TimeOut
 				log.Info("[KAFKA-TEST] Message consumed", log.Data{
 					"messageString": string(consumedData),
 					"messageRaw":    consumedData,
