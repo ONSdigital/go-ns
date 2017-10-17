@@ -42,11 +42,8 @@ func (cg ConsumerGroup) Release() {
 
 // Release signals the successful completion of a read incoming message
 func (cg ConsumerGroup) CommitAndRelease(msg Message) {
-	log.Trace("pre-commit", nil)
 	msg.Commit()
-	log.Trace("postCommit pre-release", nil)
 	cg.Release()
-	log.Trace("           postRelease", nil)
 }
 
 // StopListeningToConsumer stops any more messages being consumed off kafka topic
@@ -60,7 +57,7 @@ func (cg *ConsumerGroup) StopListeningToConsumer(ctx context.Context) (err error
 
 	select {
 	case <-cg.closed:
-		log.Info("StopListeningToConsumer saw closed kafka consumer", log.Data{"topic": cg.topic, "group": cg.group})
+		log.Info("StopListeningToConsumer got confirmation of closed kafka consumer listener", log.Data{"topic": cg.topic, "group": cg.group})
 	case <-ctx.Done():
 		err = fmt.Errorf("StopListeningToConsumer context timed out for group[%s] topic[%s]: %s", cg.group, cg.topic, ctx.Err())
 		log.Error(err, nil)
@@ -152,34 +149,22 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 		log.Info(fmt.Sprintf("Started kafka consumer listener of topic %q group %q", cg.topic, cg.group), nil)
 		defer close(cg.closed)
 		for looping := true; looping; {
-			log.Trace("listener.....", nil)
 			select {
 			case <-cg.closer:
-				log.Trace("listener.....CLOSER closed - exiting listener", nil)
 				looping = false
-			case <-time.After(tick):
-				log.Trace("listener.....tick", nil)
 			case msg := <-cg.consumer.Messages():
-				log.Trace("listener.....msg sending upstream, may block...", nil)
 				cg.Incoming() <- SaramaMessage{msg, cg.consumer}
 				if cg.sync {
 					// wait for msg-processed or close-consumer triggers
-					log.Trace("listener.....msg upstreamed - waiting for sync", nil)
 					for loopingForSync := true; looping && loopingForSync; {
 						select {
 						case <-cg.upstreamDone:
-							log.Trace("listener.....sync DONE!", nil)
 							loopingForSync = false
 						case <-cg.closer:
 							// XXX if we read closer here, this means that the release/upstreamDone blocks unless it is buffered
-							log.Trace("listener.....sync closer triggered", nil)
 							looping = false
-						case <-time.After(tick):
-							log.Trace("listener.....sync tick", nil)
 						}
 					}
-				} else {
-					log.Trace("listener.....msg upstreamed", nil)
 				}
 			}
 		}
@@ -197,16 +182,13 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 				<-cg.closed
 				looping = false
 			case err := <-cg.consumer.Errors():
-				log.Trace("controller---err msg rx", nil)
 				log.Error(err, nil)
 				cg.Errors() <- err
 			case <-time.After(tick):
-				log.Trace("controller---tick", nil)
 				if hasBalanced {
 					cg.consumer.CommitOffsets()
 				}
 			case n, more := <-cg.consumer.Notifications():
-				log.Trace("controller---note", log.Data{"n": n, "more": more})
 				if more {
 					hasBalanced = true
 					log.Trace("Rebalancing group", log.Data{"topic": cg.topic, "group": cg.group, "partitions": n.Current[cg.topic]})

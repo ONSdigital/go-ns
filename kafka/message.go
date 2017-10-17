@@ -13,6 +13,9 @@ type Message interface {
 
 	// Commit the message's offset.
 	Commit()
+
+	// Offset returns the message offset
+	Offset() int64
 }
 
 // SaramaMessage represents a Sarama specific Kafka message
@@ -24,6 +27,11 @@ type SaramaMessage struct {
 // GetData returns the message contents.
 func (M SaramaMessage) GetData() []byte {
 	return M.message.Value
+}
+
+// Offset returns the message offset
+func (M SaramaMessage) Offset() int64 {
+	return M.message.Offset
 }
 
 // Commit the message's offset.
