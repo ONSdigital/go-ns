@@ -6,8 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
+
+const service = "renderer"
 
 // ErrInvalidRendererResponse is returned when the renderer service does not respond
 // with a status 200
@@ -38,14 +42,14 @@ func New(url string) *Renderer {
 func (r *Renderer) Healthcheck() (string, error) {
 	resp, err := r.client.Get(r.url + "/healthcheck")
 	if err != nil {
-		return "renderer", err
+		return service, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "renderer", ErrInvalidRendererResponse{resp.StatusCode}
+		return service, ErrInvalidRendererResponse{resp.StatusCode}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // Do sends a request to the renderer service to render a given template
@@ -56,7 +60,13 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 		b = []byte(`{}`)
 	}
 
-	req, err := http.NewRequest("POST", r.url+"/"+path, bytes.NewBuffer(b))
+	uri := r.url + "/" + path
+
+	clientlog.Do(fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
+		"method": "POST",
+	})
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
 	}

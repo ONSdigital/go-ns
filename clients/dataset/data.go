@@ -24,6 +24,7 @@ type Version struct {
 	Links        Links  `json:"links"`
 	ReleaseDate  string `json:"release_date"`
 	State        string `json:"date"`
+	Version      int    `json:"version"`
 }
 
 // Edition represents an edition within a dataset

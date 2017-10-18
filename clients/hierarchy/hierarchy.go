@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
+
+const service = "hierarchy-api"
 
 // ErrInvalidHierarchyAPIResponse is returned when the hierarchy api does not respond
 // with a valid status
@@ -46,19 +49,21 @@ func New(hierarchyAPIURL string) *Client {
 func (c *Client) Healthcheck() (string, error) {
 	resp, err := c.cli.Get(c.url + "/healthcheck")
 	if err != nil {
-		return "hierarchy-api", err
+		return service, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "hierarchy-api", &ErrInvalidHierarchyAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidHierarchyAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // GetHierarchy returns the hierarchy for the requested path
 func (c *Client) GetHierarchy(path string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/hierarchies/%s", c.url, path)
+
+	clientlog.Do("retrieving hierarchy", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {

@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
+
+const service = "code-list-api"
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
 // with a valid status
@@ -46,19 +49,22 @@ func New(codelistAPIURL string) *Client {
 func (c *Client) Healthcheck() (string, error) {
 	resp, err := c.cli.Get(c.url + "/healthcheck")
 	if err != nil {
-		return "code-list-api", err
+		return service, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "code-list-api", &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // GetValues returns dimension values from the codelist api
 func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+
+	clientlog.Do("retrieving codes from codelist", service, uri)
+
 	resp, err := c.cli.Get(uri)
 	if err != nil {
 		return
