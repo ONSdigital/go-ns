@@ -3,10 +3,14 @@ package kafka
 import (
 	"context"
 	"errors"
-	"fmt"
+
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/Shopify/sarama"
 )
+
+// ErrShutdownTimedOut represents an error received due to the context
+// deadline being exceeded
+var ErrShutdownTimedOut = errors.New("Shutdown context timed out")
 
 // Producer provides a producer of Kafka messages
 type Producer struct {
@@ -40,14 +44,14 @@ func (producer *Producer) Close(ctx context.Context) (err error) {
 
 	select {
 	case <-producer.closed:
-		log.Info(fmt.Sprintf("Successfully closed kafka consumer group"), nil)
 		close(producer.errors)
 		close(producer.output)
+		log.Info("Successfully closed kafka producer", nil)
 		return producer.producer.Close()
 
 	case <-ctx.Done():
-		log.Info(fmt.Sprintf("Shutdown context time exceeded, skipping graceful shutdown of consumer group"), nil)
-		return errors.New("Shutdown context timed out")
+		log.Info("Shutdown context time exceeded, skipping graceful shutdown of consumer group", nil)
+		return ErrShutdownTimedOut
 	}
 }
 

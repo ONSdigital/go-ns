@@ -4,7 +4,10 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-const OffsetNewest = sarama.OffsetNewest
+const (
+	OffsetNewest = sarama.OffsetNewest
+	OffsetOldest = sarama.OffsetOldest
+)
 
 func SetMaxMessageSize(maxSize int32) {
 	sarama.MaxRequestSize = maxSize

@@ -123,6 +123,12 @@
 			"revisionTime": "2016-09-10T10:38:22Z"
 		},
 		{
+			"checksumSHA1": "Jrjxy16tD9mUgr/jbhXwbHVeSa0=",
+			"path": "github.com/kelseyhightower/envconfig",
+			"revision": "462fda1f11d8cad3660e52737b8beefd27acfb3f",
+			"revisionTime": "2017-09-18T16:15:10Z"
+		},
+		{
 			"checksumSHA1": "hBgLmZ/4mCxmnH88mqFKBkpJFUY=",
 			"path": "github.com/mgutz/ansi",
 			"revision": "c286dcecd19ff979eeb73ea444e479b903f2cfcb",
