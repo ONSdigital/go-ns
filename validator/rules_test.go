@@ -99,4 +99,28 @@ func TestUnitRules(t *testing.T) {
 		})
 	})
 
+	Convey("test mustNotEqual", t, func() {
+		Convey("test mustNotEqual sucessfully validates string comparison", func() {
+			err := mustNotEqual("hello", "world")
+			So(err, ShouldBeNil)
+		})
+
+		Convey("test notEmpty throws error if first parameter is not a string", func() {
+			err := mustNotEqual(1, "2")
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "first param must be a string")
+
+			err = mustNotEqual("2", 1)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "second param must be a string")
+		})
+
+		Convey("test notEmpty throws FieldValidationErr if condition not met", func() {
+			err := mustNotEqual("hello", "hello")
+			So(err, ShouldNotBeNil)
+			So(err, ShouldHaveSameTypeAs, FieldValidationErr{})
+			So(err.Error(), ShouldEqual, "input value must not equal: hello")
+		})
+	})
+
 }
