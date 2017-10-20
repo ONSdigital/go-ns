@@ -2,11 +2,9 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	"context"
 	"os"
 	"os/signal"
-
-	"context"
 	"time"
 
 	"github.com/ONSdigital/go-ns/kafka"
@@ -47,7 +45,8 @@ func main() {
 		panic(err)
 	}
 
-	log.Info(fmt.Sprintf("[KAFKA-TEST] Starting topics: %q -> stdout, stdin -> %q", cfg.ConsumedTopic, cfg.ProducedTopic), nil)
+	log.Info("[KAFKA-TEST] Starting (consumer sent to stdout, stdin sent to producer)",
+		log.Data{"consumed_group": cfg.ConsumedGroup, "consumed_topic": cfg.ConsumedTopic, "produced_topic": cfg.ProducedTopic})
 
 	kafka.SetMaxMessageSize(int32(cfg.KafkaMaxBytes))
 	producer, err := kafka.NewProducer(cfg.Brokers, cfg.ProducedTopic, cfg.KafkaMaxBytes)

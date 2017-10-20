@@ -149,6 +149,8 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 	// listener goroutine - listen to consumer.Messages() and upstream them
 	// if this blocks while upstreaming a message, we can shutdown consumer via the following goroutine
 	go func() {
+		logData := log.Data{"topic": topic, "group": group}
+
 		log.Info("Started kafka consumer listener", logData)
 		defer close(cg.closed)
 		for looping := true; looping; {
@@ -177,6 +179,8 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 
 	// control goroutine - allows us to close consumer even if blocked while upstreaming a message (above)
 	go func() {
+		logData := log.Data{"topic": topic, "group": group}
+
 		hasBalanced := false // avoid CommitOffsets() being called before we have balanced (otherwise causes a panic)
 		for looping := true; looping; {
 			select {
