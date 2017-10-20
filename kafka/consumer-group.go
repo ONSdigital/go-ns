@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ONSdigital/go-ns/log"
@@ -40,7 +39,7 @@ func (cg ConsumerGroup) Release() {
 	cg.upstreamDone <- true
 }
 
-// Release signals the successful completion of a read incoming message
+// CommitAndRelease commits the consumed message and release the consumer listener to read another message
 func (cg ConsumerGroup) CommitAndRelease(msg Message) {
 	msg.Commit()
 	cg.Release()
@@ -55,12 +54,13 @@ func (cg *ConsumerGroup) StopListeningToConsumer(ctx context.Context) (err error
 
 	close(cg.closer)
 
+	logData := log.Data{"topic": cg.topic, "group": cg.group}
 	select {
 	case <-cg.closed:
-		log.Info("StopListeningToConsumer got confirmation of closed kafka consumer listener", log.Data{"topic": cg.topic, "group": cg.group})
+		log.Info("StopListeningToConsumer got confirmation of closed kafka consumer listener", logData)
 	case <-ctx.Done():
-		err = fmt.Errorf("StopListeningToConsumer context timed out for group[%s] topic[%s]: %s", cg.group, cg.topic, ctx.Err())
-		log.Error(err, nil)
+		err = ctx.Err()
+		log.ErrorC("StopListeningToConsumer abandoned: context done", err, logData)
 	}
 	return
 }
@@ -81,20 +81,20 @@ func (cg *ConsumerGroup) Close(ctx context.Context) (err error) {
 		close(cg.closer)
 	}
 
+	logData := log.Data{"topic": cg.topic, "group": cg.group}
 	select {
 	case <-cg.closed:
 		close(cg.errors)
 		close(cg.incoming)
 
 		if err = cg.consumer.Close(); err != nil {
-			err = fmt.Errorf("Failed to close kafka consumer group for group[%s] topic[%s]: %s", cg.group, cg.topic, err)
-			log.Error(err, nil)
+			log.ErrorC("Close failed of kafka consumer group", err, logData)
 		} else {
-			log.Info("Successfully closed kafka consumer group", log.Data{"topic": cg.topic, "group": cg.group})
+			log.Info("Successfully closed kafka consumer group", logData)
 		}
 	case <-ctx.Done():
-		err = fmt.Errorf("Shutdown context timed out for group[%s] topic[%s]: %s", cg.group, cg.topic, ctx.Err())
-		log.Error(err, nil)
+		err = ctx.Err()
+		log.ErrorC("Close abandoned: context done", err, logData)
 	}
 	return
 }
@@ -118,9 +118,12 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 	config.Consumer.MaxWaitTime = 50 * time.Millisecond
 	config.Consumer.Offsets.Initial = offset
 
+	logData := log.Data{"topic": topic, "group": group}
+
 	consumer, err := cluster.NewConsumer(brokers, group, []string{topic}, config)
 	if err != nil {
-		return nil, fmt.Errorf("newConsumer error: group[%s] topic[%s]: %s", group, topic, err)
+		log.ErrorC("newConsumer failed", err, logData)
+		return nil, err
 	}
 
 	var upstream chan Message
@@ -146,7 +149,7 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 	// listener goroutine - listen to consumer.Messages() and upstream them
 	// if this blocks while upstreaming a message, we can shutdown consumer via the following goroutine
 	go func() {
-		log.Info(fmt.Sprintf("Started kafka consumer listener of topic %q group %q", cg.topic, cg.group), nil)
+		log.Info("Started kafka consumer listener", logData)
 		defer close(cg.closed)
 		for looping := true; looping; {
 			select {
@@ -169,7 +172,7 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 			}
 		}
 		cg.consumer.CommitOffsets()
-		log.Info(fmt.Sprintf("Closed kafka consumer listener of topic %q group %q", cg.topic, cg.group), nil)
+		log.Info("Closed kafka consumer listener", logData)
 	}()
 
 	// control goroutine - allows us to close consumer even if blocked while upstreaming a message (above)
@@ -178,7 +181,7 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 		for looping := true; looping; {
 			select {
 			case <-cg.closer:
-				log.Info(fmt.Sprintf("Closing kafka consumer controller of topic %q group %q", cg.topic, cg.group), nil)
+				log.Info("Closing kafka consumer controller", logData)
 				<-cg.closed
 				looping = false
 			case err := <-cg.consumer.Errors():
@@ -195,7 +198,7 @@ func newConsumer(brokers []string, topic string, group string, offset int64, syn
 				}
 			}
 		}
-		log.Info(fmt.Sprintf("Closed kafka consumer controller of topic %q group %q", cg.topic, cg.group), nil)
+		log.Info("Closed kafka consumer controller", logData)
 	}()
 
 	return cg, nil
