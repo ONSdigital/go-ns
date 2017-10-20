@@ -103,7 +103,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return s.Server.Shutdown(ctx)
 }
 
-// Close is simply a wrapper around Shutdown that enables Server to treated as a Closable
+// Close is simply a wrapper around Shutdown that enables Server to be treated as a Closable
 func (s *Server) Close(ctx context.Context) error {
 	return s.Shutdown(ctx)
 }
