@@ -16,15 +16,22 @@ type Model struct {
 
 // Version represents a version within a dataset
 type Version struct {
-	CollectionID string `json:"collection_id"`
-	Edition      string `json:"edition"`
-	ID           string `json:"id"`
-	InstanceID   string `json:"instance_id"`
-	License      string `json:"license"`
-	Links        Links  `json:"links"`
-	ReleaseDate  string `json:"release_date"`
-	State        string `json:"date"`
-	Version      int    `json:"version"`
+	CollectionID string              `json:"collection_id"`
+	Downloads    map[string]Download `json:"downloads"`
+	Edition      string              `json:"edition"`
+	ID           string              `json:"id"`
+	InstanceID   string              `json:"instance_id"`
+	License      string              `json:"license"`
+	Links        Links               `json:"links"`
+	ReleaseDate  string              `json:"release_date"`
+	State        string              `json:"date"`
+	Version      int                 `json:"version"`
+}
+
+// Download represents a version download from the dataset api
+type Download struct {
+	URL  string `json:"url"`
+	Size string `json:"size"`
 }
 
 // Edition represents an edition within a dataset
