@@ -2,25 +2,36 @@ package hierarchy
 
 // Model represents the model returned by the heirarchy api
 type Model struct {
-	ID       string  `json:"id"`
-	Label    string  `json:"label"`
-	Children []Child `json:"children,omitempty"`
-	Parent   Parent  `json:"parent,omitempty"`
+	Label       string       `json:"label"`
+	Links       Links        `json:"links"`
+	Children    []Child      `json:"children,omitempty"`
+	Breadcrumbs []Breadcrumb `json:"breadcrumbs,omitempty"`
+}
+
+// Links represents links within the hierarchy api
+type Links struct {
+	Self     Link `json:"self"`
+	CodeList Link `json:"codelist"`
+}
+
+// Link represents a link within the hierarchy api
+type Link struct {
+	ID  string `json:"id"`
+	URL string `json:"href"`
 }
 
 // Child represents a child item in the hierarchy model
 type Child struct {
-	ID               string `json:"id"`
 	Label            string `json:"label"`
-	URL              string `json:"url"`
-	NumberofChildren int    `json:"number_of_children,omitempty"`
-	LabelCode        string `json:"label_code"`
+	NumberofChildren int    `json:"no_of_children,omitempty"`
+	HasData          bool   `json:"has_data"`
+	Links            Links  `json:"links"`
 }
 
-// Parent represents a parent item in the hierarchy model
-type Parent struct {
-	URL       string `json:"url"`
-	Label     string `json:"label"`
-	LabelCode string `json:"label_code"`
-	ID        string `json:"id"`
+// Breadcrumb represents a breadcrumb item in the hierarchy model
+type Breadcrumb struct {
+	Label            string `json:"label"`
+	NumberofChildren int    `json:"no_of_children,omitempty"`
+	HasData          bool   `json:"has_data"`
+	Links            Links  `json:"links"`
 }
