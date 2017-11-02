@@ -14,7 +14,7 @@ type DimensionOption struct {
 
 // Model represents a model returned from the filter api
 type Model struct {
-	FilterID   string              `json:"filter_job_id"`
+	FilterID   string              `json:"filter_id"`
 	InstanceID string              `json:"instance_id"`
 	Links      Links               `json:"links"`
 	Dataset    string              `json:"dataset"`
@@ -28,7 +28,9 @@ type Model struct {
 
 // Links represents a links object on the filter api response
 type Links struct {
-	Version Link `json:"version,omitempty"`
+	Version         Link `json:"version,omitempty"`
+	FilterOutputs   Link `json:"filter_output,omitempty"`
+	FilterBlueprint Link `json:"filter_blueprint,omitempty"`
 }
 
 // Link represents a single link within a links object
