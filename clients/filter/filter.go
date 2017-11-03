@@ -174,8 +174,8 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 	return
 }
 
-// CreateBlueprin creates a filter blueprint and returns the associated filterID
-func (c *Client) CreateBlueprin(instanceID string, names []string) (string, error) {
+// CreateBlueprint creates a filter blueprint and returns the associated filterID
+func (c *Client) CreateBlueprint(instanceID string, names []string) (string, error) {
 	fj := Model{InstanceID: instanceID}
 
 	var dimensions []ModelDimension
