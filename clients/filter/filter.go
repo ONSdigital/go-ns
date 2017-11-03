@@ -174,8 +174,8 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 	return
 }
 
-// CreateJob creates a filter job and returns the associated filterJobID
-func (c *Client) CreateJob(instanceID string, names []string) (string, error) {
+// CreateBlueprin creates a filter blueprint and returns the associated filterID
+func (c *Client) CreateBlueprin(instanceID string, names []string) (string, error) {
 	fj := Model{InstanceID: instanceID}
 
 	var dimensions []ModelDimension
@@ -191,7 +191,7 @@ func (c *Client) CreateJob(instanceID string, names []string) (string, error) {
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do("attemping to create filter job", service, uri, log.Data{
+	clientlog.Do("attemping to create filter blueprint", service, uri, log.Data{
 		"method":     "POST",
 		"instanceID": instanceID,
 	})
@@ -218,8 +218,8 @@ func (c *Client) CreateJob(instanceID string, names []string) (string, error) {
 	return fj.FilterID, nil
 }
 
-// UpdateJob will update a job with a given filter model
-func (c *Client) UpdateJob(m Model, doSubmit bool) (mdl Model, err error) {
+// UpdateBlueprint will update a blueprint with a given filter model
+func (c *Client) UpdateBlueprint(m Model, doSubmit bool) (mdl Model, err error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return
