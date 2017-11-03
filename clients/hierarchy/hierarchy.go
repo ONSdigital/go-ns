@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
 
@@ -61,12 +63,27 @@ func (c *Client) Healthcheck() (string, error) {
 // GetRoot returns the root hierarchy response from the hierarchy API
 func (c *Client) GetRoot(instanceID, name string) (m Model, err error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
+
+	clientlog.Do("retrieving hierarchy", service, path, log.Data{
+		"method":      "GET",
+		"instance_id": instanceID,
+		"dimension":   name,
+	})
+
 	return c.getHierarchy(path)
 }
 
 // GetChild returns a child of a given hierarchy and code
 func (c *Client) GetChild(instanceID, name, code string) (m Model, err error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s/%s", instanceID, name, code)
+
+	clientlog.Do("retrieving hierarchy", service, path, log.Data{
+		"method":      "GET",
+		"instance_id": instanceID,
+		"dimension":   name,
+		"code":        code,
+	})
+
 	return c.getHierarchy(path)
 }
 
