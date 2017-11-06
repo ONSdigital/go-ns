@@ -10,8 +10,8 @@ type Model struct {
 
 // Links represents links within the hierarchy api
 type Links struct {
-	Self     Link `json:"self"`
-	CodeList Link `json:"codelist"`
+	Self Link `json:"self"`
+	Code Link `json:"code"`
 }
 
 // Link represents a link within the hierarchy api
