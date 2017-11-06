@@ -94,7 +94,7 @@ func TestWriteJSONResponseWithInvalidData(t *testing.T) {
 			})
 
 			Convey("Then an http internal server error status is written to the response.", func() {
-				So(rec.Code, ShouldEqual, http.StatusInternalServerError)
+				So(rec.Code, ShouldEqual, statusCode)
 			})
 
 			Convey("And the encoder is invoked the expected number of times.", func() {
