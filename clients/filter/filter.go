@@ -63,6 +63,32 @@ func (c *Client) Healthcheck() (string, error) {
 	return service, nil
 }
 
+// GetOutput returns a filter output job for a given filter output id
+func (c *Client) GetOutput(filterOutputID string) (m Model, err error) {
+	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterOutputID)
+
+	clientlog.Do("retrieving filter output", service, uri)
+
+	resp, err := c.cli.Get(uri)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
 // GetDimension returns information on a requested dimension name for a given filterID
 func (c *Client) GetDimension(filterID, name string) (dim Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
@@ -148,9 +174,16 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 	return
 }
 
-// CreateJob creates a filter job and returns the associated filterJobID
-func (c *Client) CreateJob(instanceID string) (string, error) {
-	fj := Model{InstanceID: instanceID, State: "created"}
+// CreateBlueprint creates a filter blueprint and returns the associated filterID
+func (c *Client) CreateBlueprint(instanceID string, names []string) (string, error) {
+	fj := Model{InstanceID: instanceID}
+
+	var dimensions []ModelDimension
+	for _, name := range names {
+		dimensions = append(dimensions, ModelDimension{Name: name})
+	}
+
+	fj.Dimensions = dimensions
 
 	b, err := json.Marshal(fj)
 	if err != nil {
@@ -158,7 +191,7 @@ func (c *Client) CreateJob(instanceID string) (string, error) {
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do("attemping to create filter job", service, uri, log.Data{
+	clientlog.Do("attemping to create filter blueprint", service, uri, log.Data{
 		"method":     "POST",
 		"instanceID": instanceID,
 	})
@@ -185,14 +218,18 @@ func (c *Client) CreateJob(instanceID string) (string, error) {
 	return fj.FilterID, nil
 }
 
-// UpdateJob will update a job with a given filter model
-func (c *Client) UpdateJob(m Model) error {
+// UpdateBlueprint will update a blueprint with a given filter model
+func (c *Client) UpdateBlueprint(m Model, doSubmit bool) (mdl Model, err error) {
 	b, err := json.Marshal(m)
 	if err != nil {
-		return err
+		return
 	}
 
 	uri := fmt.Sprintf("%s/filters/%s", c.url, m.FilterID)
+
+	if doSubmit {
+		uri = uri + "?submitted=true"
+	}
 
 	clientlog.Do("updating filter job", service, uri, log.Data{
 		"method": "PUT",
@@ -201,19 +238,28 @@ func (c *Client) UpdateJob(m Model) error {
 
 	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
 	if err != nil {
-		return err
+		return
 	}
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
-		return err
+		return
 	}
-
 	if resp.StatusCode != http.StatusOK {
-		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return m, ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
-	return nil
+	defer resp.Body.Close()
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	return m, nil
 }
 
 // AddDimensionValue adds a particular value to a filter job for a given filterID
