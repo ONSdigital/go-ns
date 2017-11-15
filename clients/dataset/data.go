@@ -1,5 +1,7 @@
 package dataset
 
+import "unicode"
+
 // Model represents a response dataset model from the dataset api
 type Model struct {
 	CollectionID string    `json:"collection_id"`
@@ -79,7 +81,41 @@ type Contact struct {
 
 // Dimensions represent a list of dimensions from the dataset api
 type Dimensions struct {
-	Items []Dimension `json:"items"`
+	Items Items `json:"items"`
+}
+
+// Items represents a list of dimensions
+type Items []Dimension
+
+func (d Items) Len() int      { return len(d) }
+func (d Items) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
+func (d Items) Less(i, j int) bool {
+	iRunes := []rune(d[i].ID)
+	jRunes := []rune(d[j].ID)
+
+	max := len(iRunes)
+	if max > len(jRunes) {
+		max = len(jRunes)
+	}
+
+	for idx := 0; idx < max; idx++ {
+		ir := iRunes[idx]
+		jr := jRunes[idx]
+
+		lir := unicode.ToLower(ir)
+		ljr := unicode.ToLower(jr)
+
+		if lir != ljr {
+			return lir < ljr
+		}
+
+		// the lowercase runes are the same, so compare the original
+		if ir != jr {
+			return ir < jr
+		}
+	}
+
+	return false
 }
 
 // Dimension represents a response model for a dimension endpoint

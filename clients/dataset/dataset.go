@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rhttp"
@@ -194,7 +195,12 @@ func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err e
 	}
 	defer resp.Body.Close()
 
-	err = json.Unmarshal(b, &m)
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	sort.Sort(m.Items)
+
 	return
 }
 
