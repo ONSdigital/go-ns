@@ -2,10 +2,12 @@ package hierarchy
 
 // Model represents the model returned by the heirarchy api
 type Model struct {
-	Label       string       `json:"label"`
-	Links       Links        `json:"links"`
-	Children    []Child      `json:"children,omitempty"`
-	Breadcrumbs []Breadcrumb `json:"breadcrumbs,omitempty"`
+	Label            string       `json:"label"`
+	Links            Links        `json:"links"`
+	HasData          bool         `json:"has_data"`
+	NumberofChildren int          `json:"number_of_children,omitempty"`
+	Children         []Child      `json:"children,omitempty"`
+	Breadcrumbs      []Breadcrumb `json:"breadcrumbs,omitempty"`
 }
 
 // Links represents links within the hierarchy api
