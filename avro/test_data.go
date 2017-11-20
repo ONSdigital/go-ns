@@ -9,7 +9,8 @@ var testSchema = `{ "type": "record",
     {"name": "kind-of-sport", "type": "string"},
     {"name": "uri", "type": "string", "default": ""},
     {"name": "has_changed_name", "type": "boolean"},
-    {"name": "number_of_players", "type": "int"}
+    {"name": "number_of_players", "type": "int"},
+    {"name": "pay_per_week", "type": "long"}
  ]
 }`
 
@@ -60,6 +61,7 @@ type testData struct {
 	URI             string `avro:"uri"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
+	PayPerWeek      int64  `avro:"pay_per_week"`
 }
 
 type testData1 struct {
@@ -70,6 +72,7 @@ type testData1 struct {
 	URI             string `avro:"-"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
+	PayPerWeek      int64  `avro:"pay_per_week"`
 }
 
 type testData2 struct {

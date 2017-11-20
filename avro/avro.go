@@ -206,6 +206,9 @@ func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro
 		case reflect.Int32:
 			value := v.FieldByName(fieldName).Interface().(int32)
 			record.Set(fieldTag, value)
+		case reflect.Int64:
+			value := v.FieldByName(fieldName).Interface().(int64)
+			record.Set(fieldTag, value)
 		case reflect.Slice:
 			if err := marshalSlice(record, v, i, fieldTag, avroSchema); err != nil {
 				return nil, err
@@ -232,6 +235,7 @@ func isValidType(kind reflect.Kind) bool {
 	supportedTypes := []reflect.Kind{
 		reflect.Bool,
 		reflect.Int32,
+		reflect.Int64,
 		reflect.Slice,
 		reflect.String,
 		reflect.Struct,

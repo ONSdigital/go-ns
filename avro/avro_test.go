@@ -22,6 +22,7 @@ func TestUnitMarshal(t *testing.T) {
 			URI:             "http://8080/cpfc.com",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
+			PayPerWeek:      int64(539457394875390485),
 		}
 
 		bufferBytes, err := schema.Marshal(data)
@@ -103,6 +104,11 @@ func TestUnitIsValidType(t *testing.T) {
 
 		Convey("returned true for int32 type", func() {
 			isValid := isValidType(reflect.Int32)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for int64 type", func() {
+			isValid := isValidType(reflect.Int64)
 			So(isValid, ShouldEqual, true)
 		})
 
@@ -289,6 +295,7 @@ func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.
 			Manager:         "Pardew, Alan",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
+			PayPerWeek:      int64(539457394875390485),
 		}
 
 		v = reflect.ValueOf(testData)
