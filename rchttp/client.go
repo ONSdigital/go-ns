@@ -43,6 +43,13 @@ var DefaultClient = &Client{
 	},
 }
 
+// ClientWithTimeout facilitates creating a client and setting request timeout
+func ClientWithTimeout(timeout time.Duration) (c *Client) {
+	c = DefaultClient
+	c.HTTPClient.Timeout = timeout
+	return c
+}
+
 // Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	doer := func(args ...interface{}) (*http.Response, error) {
