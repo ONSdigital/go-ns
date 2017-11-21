@@ -53,7 +53,15 @@ func ClientWithTimeout(timeout time.Duration) (c *Client) {
 // Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	doer := func(args ...interface{}) (*http.Response, error) {
-		return ctxhttp.Do(args[0].(context.Context), args[1].(*http.Client), args[2].(*http.Request))
+		req := args[2].(*http.Request)
+		if req.ContentLength > 0 {
+			var err error
+			req.Body, err = req.GetBody()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return ctxhttp.Do(args[0].(context.Context), args[1].(*http.Client), req)
 	}
 
 	resp, err := doer(ctx, c.HTTPClient, req)
