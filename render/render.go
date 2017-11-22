@@ -2,11 +2,30 @@
 package render
 
 import (
+	"html/template"
 	"io"
 	"sync"
 
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/unrolled/render"
 )
+
+func init() {
+	// If the renderer is nil, provide a default to avoid nil pointer panic
+	// and remind user to provide assets as required
+	if Renderer == nil {
+		Renderer = render.New(render.Options{
+			Layout: "main",
+			Funcs: []template.FuncMap{{
+				"safeHTML": func(s string) template.HTML {
+					return template.HTML(s)
+				},
+			}},
+		})
+
+		log.Info("renderer was uninitialised so using default - please provide assets before proceeding", nil)
+	}
+}
 
 var (
 	// Since the unrolled renderer can lead to race conditions with
