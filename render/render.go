@@ -12,7 +12,6 @@ import (
 
 func init() {
 	// If the renderer is nil, provide a default to avoid nil pointer panic
-	// and remind user to provide assets as required
 	if Renderer == nil {
 		Renderer = render.New(render.Options{
 			Layout: "main",
@@ -23,7 +22,7 @@ func init() {
 			}},
 		})
 
-		log.Info("renderer was uninitialised so using default - please provide assets before proceeding", nil)
+		log.Debug("creating default unrolled renderer", nil)
 	}
 }
 
