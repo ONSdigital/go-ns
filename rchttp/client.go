@@ -110,6 +110,17 @@ func (c *Client) Post(ctx context.Context, url string, contentType string, body 
 	return c.Do(ctx, req)
 }
 
+// Put calls Do with a PUT and the appropriate content-type and body
+func (c *Client) Put(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest("PUT", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+
+	return c.Do(ctx, req)
+}
+
 // PostForm calls Post with the appropriate form content-type
 func (c *Client) PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
 	return c.Post(ctx, uri, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
