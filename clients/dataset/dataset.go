@@ -34,8 +34,9 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli *rhttp.Client
-	url string
+	cli           *rhttp.Client
+	url           string
+	internalToken string
 }
 
 // New creates a new instance of Client with a given filter api url
@@ -43,6 +44,17 @@ func New(datasetAPIURL string) *Client {
 	return &Client{
 		cli: rhttp.DefaultClient,
 		url: datasetAPIURL,
+	}
+}
+
+// SetInternalToken will set an internal token to use for the dataset api
+func (c *Client) SetInternalToken(token string) {
+	c.internalToken = token
+}
+
+func (c *Client) setInternalTokenHeader(req *http.Request) {
+	if len(c.internalToken) > 0 {
+		req.Header.Set("Internal-token", c.internalToken)
 	}
 }
 
@@ -66,7 +78,13 @@ func (c *Client) Get(id string) (m Model, err error) {
 
 	clientlog.Do("retrieving dataset", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -82,6 +100,21 @@ func (c *Client) Get(id string) (m Model, err error) {
 	}
 	defer resp.Body.Close()
 
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return
+	}
+
+	// TODO: Authentication will sort this problem out for us. Currently
+	// the shape of the response body is different if you are authenticated
+	// so return the "next" item only
+	if next, ok := body["next"]; ok && len(c.internalToken) > 0 {
+		b, err = json.Marshal(next)
+		if err != nil {
+			return
+		}
+	}
+
 	err = json.Unmarshal(b, &m)
 	return
 }
@@ -92,7 +125,13 @@ func (c *Client) GetEditions(id string) (m []Edition, err error) {
 
 	clientlog.Do("retrieving dataset editions", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -122,7 +161,13 @@ func (c *Client) GetVersions(id, edition string) (m []Version, err error) {
 
 	clientlog.Do("retrieving dataset versions", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -153,7 +198,13 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 
 	clientlog.Do("retrieving dataset version", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -179,7 +230,13 @@ func (c *Client) GetDimensions(id, edition, version string) (m Dimensions, err e
 
 	clientlog.Do("retrieving dataset version dimensions", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -210,7 +267,13 @@ func (c *Client) GetOptions(id, edition, version, dimension string) (m Options, 
 
 	clientlog.Do("retrieving options for dimension", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
