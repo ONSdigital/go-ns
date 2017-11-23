@@ -418,13 +418,13 @@ func (c *Client) AddDimensionValues(filterID, name string, options []string) err
 	return nil
 }
 
-// GetPreview attempts to retrieve a preview for a given filterID
-func (c *Client) GetPreview(filterID string) (p Preview, err error) {
-	uri := fmt.Sprintf("%s/filters/%s/preview", c.url, filterID)
+// GetPreview attempts to retrieve a preview for a given filterOutputID
+func (c *Client) GetPreview(filterOutputID string) (p Preview, err error) {
+	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.url, filterOutputID)
 
-	clientlog.Do("retrieving preview for filter job", service, uri, log.Data{
+	clientlog.Do("retrieving preview for filter output job", service, uri, log.Data{
 		"method":   "GET",
-		"filterID": filterID,
+		"filterID": filterOutputID,
 	})
 
 	resp, err := c.cli.Get(uri)
