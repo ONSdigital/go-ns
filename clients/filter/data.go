@@ -58,3 +58,11 @@ type Event struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
+
+// Preview represents a preview document returned from the filter api
+type Preview struct {
+	Headers         []string   `json:"headers"`
+	NumberOfRows    int        `json:"number_of_rows"`
+	NumberOfColumns int        `json:"number_of_columns"`
+	Rows            [][]string `json:"rows"`
+}
