@@ -23,6 +23,12 @@ func (consumer *MessageConsumer) Incoming() chan kafka.Message {
 	return consumer.messages
 }
 
+// CommitAndRelease commits the message, releases the listener to consume next
+func (consumer *MessageConsumer) CommitAndRelease(m kafka.Message) {
+	m.Commit()
+	return
+}
+
 // Closer returns the stored closer channel.
 func (consumer *MessageConsumer) Closer() chan bool {
 	return consumer.closer
