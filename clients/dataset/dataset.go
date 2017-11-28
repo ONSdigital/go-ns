@@ -119,6 +119,38 @@ func (c *Client) Get(id string) (m Model, err error) {
 	return
 }
 
+// GetEdition retrieves a single edition document from a given datasetID and edition label
+func (c *Client) GetEdition(datasetID, edition string) (m Edition, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)
+
+	clientlog.Do("retrieving dataset editions", service, uri)
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
 // GetEditions returns all editions for a dataset
 func (c *Client) GetEditions(id string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
