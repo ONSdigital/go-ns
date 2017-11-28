@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ONSdigital/go-ns/log"
@@ -16,15 +18,39 @@ type gettit struct {
 }
 
 func main() {
+	url := flag.String("url", "http://localhost:8081", "URL to access")
+	method := flag.String("method", "GET", "decide on GET, POST, PUT")
+	data := flag.String("data", "this is the payload", "data to send (if POST, PUT)")
+	contentType := flag.String("mime", "text/plain", "content type (header value)")
+	flag.Parse()
+	*method = strings.ToUpper(*method)
+
 	rcClient := rchttp.DefaultClient
 	rcClient.MaxRetries = 4
+	rcClient.HTTPClient.Timeout = 3 * time.Second
+
 	clientCompleteChan := make(chan *gettit)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// kick off a client GET
+	payloadReader := strings.NewReader(*data)
+
+	// kick off a client
 	go func() {
-		resp, err := rcClient.Get(ctx, "http://www.ons.gov.uk:8081")
+		var (
+			resp *http.Response
+			err  error
+		)
+		switch *method {
+		case "GET":
+			resp, err = rcClient.Get(ctx, *url)
+		case "POST":
+			resp, err = rcClient.Post(ctx, *url, *contentType, payloadReader)
+		case "PUT":
+			resp, err = rcClient.Put(ctx, *url, *contentType, payloadReader)
+		default:
+			panic("Bad method")
+		}
 		clientCompleteChan <- &gettit{resp, err}
 	}()
 

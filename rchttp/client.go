@@ -43,10 +43,25 @@ var DefaultClient = &Client{
 	},
 }
 
+// ClientWithTimeout facilitates creating a client and setting request timeout
+func ClientWithTimeout(timeout time.Duration) (c *Client) {
+	c = DefaultClient
+	c.HTTPClient.Timeout = timeout
+	return c
+}
+
 // Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	doer := func(args ...interface{}) (*http.Response, error) {
-		return ctxhttp.Do(args[0].(context.Context), args[1].(*http.Client), args[2].(*http.Request))
+		req := args[2].(*http.Request)
+		if req.ContentLength > 0 {
+			var err error
+			req.Body, err = req.GetBody()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return ctxhttp.Do(args[0].(context.Context), args[1].(*http.Client), req)
 	}
 
 	resp, err := doer(ctx, c.HTTPClient, req)
@@ -87,6 +102,17 @@ func (c *Client) Head(ctx context.Context, url string) (*http.Response, error) {
 // Post calls Do with a POST and the appropriate content-type and body
 func (c *Client) Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+
+	return c.Do(ctx, req)
+}
+
+// Put calls Do with a PUT and the appropriate content-type and body
+func (c *Client) Put(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest("PUT", url, body)
 	if err != nil {
 		return nil, err
 	}
