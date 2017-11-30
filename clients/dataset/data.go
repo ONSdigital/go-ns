@@ -4,30 +4,43 @@ import "unicode"
 
 // Model represents a response dataset model from the dataset api
 type Model struct {
-	CollectionID string    `json:"collection_id"`
-	Contacts     []Contact `json:"contacts"`
-	Description  string    `json:"description"`
-	Links        Links     `json:"links"`
-	NextRelease  string    `json:"next_release"`
-	Periodicity  string    `json:"yearly"`
-	Publisher    Publisher `json:"publisher"`
-	State        string    `json:"state"`
-	Theme        string    `json:"theme"`
-	Title        string    `json:"title"`
+	ID                string           `json:"id"`
+	CollectionID      string           `json:"collection_id"`
+	Contacts          []Contact        `json:"contacts"`
+	Description       string           `json:"description"`
+	Keywords          []string         `json:"keywords"`
+	License           string           `json:"license"`
+	Links             Links            `json:"links"`
+	Methodologies     []Methodology    `json:"methodologies"`
+	NationalStatistic bool             `json:"national_statistic"`
+	NextRelease       string           `json:"next_release"`
+	Publications      []Publication    `json:"publications"`
+	Publisher         Publisher        `json:"publisher"`
+	QMI               Publication      `json:"publication"`
+	RelatedDatasets   []RelatedDataset `json:"related_datasets"`
+	ReleaseFrequency  string           `json:"release_frequency"`
+	State             string           `json:"state"`
+	Theme             string           `json:"theme"`
+	Title             string           `json:"title"`
+	UnitOfMeasure     string           `json:"unit_of_measure"`
+	URI               string           `json:"uri"`
 }
 
 // Version represents a version within a dataset
 type Version struct {
-	CollectionID string              `json:"collection_id"`
-	Downloads    map[string]Download `json:"downloads"`
-	Edition      string              `json:"edition"`
-	ID           string              `json:"id"`
-	InstanceID   string              `json:"instance_id"`
-	License      string              `json:"license"`
-	Links        Links               `json:"links"`
-	ReleaseDate  string              `json:"release_date"`
-	State        string              `json:"date"`
-	Version      int                 `json:"version"`
+	Alerts        []Alert             `json:"alerts"`
+	CollectionID  string              `json:"collection_id"`
+	Downloads     map[string]Download `json:"downloads"`
+	Edition       string              `json:"edition"`
+	ID            string              `json:"id"`
+	InstanceID    string              `json:"instance_id"`
+	LatestChanges []Change            `json:"latest_changes"`
+	License       string              `json:"license"`
+	Links         Links               `json:"links"`
+	ReleaseDate   string              `json:"release_date"`
+	State         string              `json:"date"`
+	Temporal      []Temporal          `json:"temporal"`
+	Version       int                 `json:"version"`
 }
 
 // Download represents a version download from the dataset api
@@ -53,6 +66,7 @@ type Publisher struct {
 
 // Links represent the Links within a dataset model
 type Links struct {
+	AccessRights  Link `json:"access_rights,omitempty"`
 	Dataset       Link `json:"dataset,omitempty"`
 	Dimensions    Link `json:"dimensions,omitempty"`
 	Edition       Link `json:"edition,omitempty"`
@@ -135,4 +149,45 @@ type Option struct {
 	Label       string `json:"label"`
 	Links       Links  `json:"links"`
 	Option      string `json:"option"`
+}
+
+// Methodology represents a methodology document returned by the dataset api
+type Methodology struct {
+	Description string `json:"description"`
+	URL         string `json:"href"`
+	Title       string `json:"title"`
+}
+
+// Publication represents a publication document returned by the dataset api
+type Publication struct {
+	Description string `json:"description"`
+	URL         string `json:"href"`
+	Title       string `json:"title"`
+}
+
+// RelatedDataset represents a related dataset document returned by the dataset api
+type RelatedDataset struct {
+	URL   string `json:"href"`
+	Title string `json:"title"`
+}
+
+// Alert represents an alert returned by the dataset api
+type Alert struct {
+	Date        string `json:"date"`
+	Description string `json:"description"`
+	Type        string `json:"type"`
+}
+
+// Change represents a change returned for a version by the dataset api
+type Change struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+}
+
+// Temporal represents a temporal returned by the dataset api
+type Temporal struct {
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
+	Frequency string `json:"frequency"`
 }
