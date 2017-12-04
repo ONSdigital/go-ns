@@ -16,7 +16,7 @@ type Model struct {
 	NextRelease       string           `json:"next_release"`
 	Publications      []Publication    `json:"publications"`
 	Publisher         Publisher        `json:"publisher"`
-	QMI               Publication      `json:"publication"`
+	QMI               Publication      `json:"qmi"`
 	RelatedDatasets   []RelatedDataset `json:"related_datasets"`
 	ReleaseFrequency  string           `json:"release_frequency"`
 	State             string           `json:"state"`
