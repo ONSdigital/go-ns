@@ -262,6 +262,7 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 	return
 }
 
+// PutVersionDownloads add the given downloads to the specified dataset version
 func (c *Client) PutVersionDownloads(datasetID string, edition string, version string, downloadList map[string]Download) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/downloads", c.url, datasetID, edition, version)
 	clientlog.Do("updating version downloads", service, uri)
