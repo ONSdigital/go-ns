@@ -7,11 +7,17 @@ import (
 	"net/http"
 	"sort"
 
+	"bytes"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
+	"github.com/pkg/errors"
 )
 
-const service = "dataset-api"
+const (
+	service         = "dataset-api"
+	authTokenHeader = "Internal-Token"
+)
 
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
@@ -254,6 +260,41 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 
 	err = json.Unmarshal(b, &m)
 	return
+}
+
+// PutVersionDownloads add the given downloads to the specified dataset version
+func (c *Client) PutVersionDownloads(datasetID string, edition string, version string, downloadList map[string]Download) error {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/downloads", c.url, datasetID, edition, version)
+	clientlog.Do("updating version downloads", service, uri)
+
+	b, err := json.Marshal(downloadList)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall version")
+	}
+
+	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to create http request")
+	}
+
+	if c.internalToken == "" {
+		log.Info("no authentication provided, sending request without auth token header", nil)
+	} else {
+		log.Info("setting configured request authentication token header", nil)
+		req.Header.Set(authTokenHeader, c.internalToken)
+	}
+
+	resp, err := c.cli.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("incorrect http status, expected: %d, actual: %d, uri: %s", http.StatusOK, resp.StatusCode, uri)
+	}
+	return nil
 }
 
 // GetDimensions will return a versions dimensions
