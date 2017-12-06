@@ -292,7 +292,7 @@ func (c *Client) PutVersionDownloads(datasetID string, edition string, version s
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("incorrect http status, expected: %d, actual: %s, uri: %s", http.StatusOK, resp.StatusCode, uri)
+		return errors.Errorf("incorrect http status, expected: %d, actual: %d, uri: %s", http.StatusOK, resp.StatusCode, uri)
 	}
 	return nil
 }
