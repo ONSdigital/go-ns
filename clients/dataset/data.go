@@ -134,8 +134,9 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	ID    string `json:"dimension"`
-	Links Links  `json:"links"`
+	ID          string `json:"dimension"`
+	Links       Links  `json:"links"`
+	Description string `json:"description"`
 }
 
 // Options represents a list of options from the dataset api
