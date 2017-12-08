@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"bytes"
+
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
@@ -295,6 +296,38 @@ func (c *Client) PutVersionDownloads(datasetID string, edition string, version s
 		return errors.Errorf("incorrect http status, expected: %d, actual: %d, uri: %s", http.StatusOK, resp.StatusCode, uri)
 	}
 	return nil
+}
+
+// GetVersionMetadata returns the metadata for a given dataset id, edition and version
+func (c *Client) GetVersionMetadata(id, edition, version string) (m Metadata, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.url, id, edition, version)
+
+	clientlog.Do("retrieving dataset version metadata", service, uri)
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
 }
 
 // GetDimensions will return a versions dimensions
