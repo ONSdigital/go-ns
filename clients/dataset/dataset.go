@@ -12,6 +12,8 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/pkg/errors"
+	"io"
+	"net/url"
 )
 
 const (
@@ -19,12 +21,22 @@ const (
 	authTokenHeader = "Internal-Token"
 )
 
+//go:generate moq -out dataset_mocks/mocks.go -pkg dataset_mocks . RHTTPClient
+
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
 type ErrInvalidDatasetAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
+}
+
+type RHTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+	Get(url string) (*http.Response, error)
+	Head(url string) (*http.Response, error)
+	Post(url string, contentType string, body io.Reader) (*http.Response, error)
+	PostForm(uri string, data url.Values) (*http.Response, error)
 }
 
 // Error should be called by the user to print out the stringified version of the error
@@ -40,7 +52,7 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli           *rhttp.Client
+	cli           RHTTPClient
 	url           string
 	internalToken string
 }
@@ -262,12 +274,12 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 	return
 }
 
-// PutVersionDownloads add the given downloads to the specified dataset version
-func (c *Client) PutVersionDownloads(datasetID string, edition string, version string, downloadList map[string]Download) error {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/downloads", c.url, datasetID, edition, version)
-	clientlog.Do("updating version downloads", service, uri)
+// PutVersion update the version
+func (c *Client) PutVersion(datasetID string, edition string, version string, v Version) error {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
+	clientlog.Do("updating version", service, uri)
 
-	b, err := json.Marshal(downloadList)
+	b, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
@@ -280,7 +292,7 @@ func (c *Client) PutVersionDownloads(datasetID string, edition string, version s
 	if c.internalToken == "" {
 		log.Info("no authentication provided, sending request without auth token header", nil)
 	} else {
-		log.Info("setting configured request authentication token header", nil)
+		log.Info("applying configured request authentication token header", nil)
 		req.Header.Set(authTokenHeader, c.internalToken)
 	}
 
@@ -292,7 +304,7 @@ func (c *Client) PutVersionDownloads(datasetID string, edition string, version s
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("incorrect http status, expected: %d, actual: %d, uri: %s", http.StatusOK, resp.StatusCode, uri)
+		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
 	}
 	return nil
 }
