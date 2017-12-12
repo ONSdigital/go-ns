@@ -31,6 +31,7 @@ type ErrInvalidDatasetAPIResponse struct {
 	uri          string
 }
 
+// RHTTPClient retry http client.
 type RHTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 	Get(url string) (*http.Response, error)
@@ -275,7 +276,7 @@ func (c *Client) GetVersion(id, edition, version string) (m Version, err error) 
 }
 
 // PutVersion update the version
-func (c *Client) PutVersion(datasetID string, edition string, version string, v Version) error {
+func (c *Client) PutVersion(datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 	clientlog.Do("updating version", service, uri)
 
