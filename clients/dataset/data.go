@@ -1,6 +1,10 @@
 package dataset
 
-import "unicode"
+import (
+	"bytes"
+	"fmt"
+	"unicode"
+)
 
 // Model represents a response dataset model from the dataset api
 type Model struct {
@@ -41,6 +45,12 @@ type Version struct {
 	State         string              `json:"date"`
 	Temporal      []Temporal          `json:"temporal"`
 	Version       int                 `json:"version"`
+}
+
+// Metadata is a combination of version and dataset model fields
+type Metadata struct {
+	Version
+	Model
 }
 
 // Download represents a version download from the dataset api
@@ -134,8 +144,9 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	ID    string `json:"dimension"`
-	Links Links  `json:"links"`
+	ID          string `json:"dimension"`
+	Links       Links  `json:"links"`
+	Description string `json:"description"`
 }
 
 // Options represents a list of options from the dataset api
@@ -190,4 +201,51 @@ type Temporal struct {
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
 	Frequency string `json:"frequency"`
+}
+
+func (m Metadata) String() string {
+	var b bytes.Buffer
+
+	b.WriteString(fmt.Sprintf("Title: %s\n", m.Title))
+	b.WriteString(fmt.Sprintf("Description: %s\n", m.Description))
+	b.WriteString(fmt.Sprintf("Publisher: %s\n", m.Publisher))
+	b.WriteString(fmt.Sprintf("Issued: %s\n", m.ReleaseDate))
+	b.WriteString(fmt.Sprintf("Next Release: %s\n", m.NextRelease))
+	b.WriteString(fmt.Sprintf("Identifier: %s\n", m.Title))
+	b.WriteString(fmt.Sprintf("Keywords: %s\n", m.Keywords))
+	b.WriteString(fmt.Sprintf("Language: %s\n", "English"))
+	if len(m.Contacts) > 0 {
+		b.WriteString(fmt.Sprintf("Contact: %s, %s, %s\n", m.Contacts[0].Name, m.Contacts[0].Email, m.Contacts[0].Telephone))
+	}
+	if len(m.Temporal) > 0 {
+		b.WriteString(fmt.Sprintf("Temporal: %s\n", m.Temporal[0].Frequency))
+	}
+	b.WriteString(fmt.Sprintf("Latest Changes: %s\n", m.LatestChanges))
+	b.WriteString(fmt.Sprintf("Periodicity: %s\n", m.ReleaseFrequency))
+	b.WriteString(fmt.Sprintf("Distribution: %s\n", m.Downloads))
+	b.WriteString(fmt.Sprintf("Unit of measure: %s\n", m.UnitOfMeasure))
+	b.WriteString(fmt.Sprintf("License: %s\n", m.Model.License))
+	b.WriteString(fmt.Sprintf("Methodologies: %s\n", m.Methodologies))
+	b.WriteString(fmt.Sprintf("National Statistic: %t\n", m.NationalStatistic))
+	b.WriteString(fmt.Sprintf("Publications: %s\n", m.Publications))
+	b.WriteString(fmt.Sprintf("Related Links: %s\n", m.RelatedDatasets))
+
+	return b.String()
+}
+
+func (m Options) String() string {
+	var b bytes.Buffer
+
+	b.WriteString(fmt.Sprintf("\n\tTitle: %s\n", m.Items[0].DimensionID))
+	var labels, options []string
+
+	for _, dim := range m.Items {
+		labels = append(labels, dim.Label)
+		options = append(options, dim.Option)
+	}
+
+	b.WriteString(fmt.Sprintf("\tLabels: %s\n", labels))
+	b.WriteString(fmt.Sprintf("\tOptions: %v\n", options))
+
+	return b.String()
 }
