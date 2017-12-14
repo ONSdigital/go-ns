@@ -42,6 +42,8 @@ func MonitorExternal(clients ...Client) {
 	for _, client := range clients {
 		go func(client Client) {
 			if name, err := client.Healthcheck(); err != nil {
+				err := fmt.Errorf("unsuccessful healthcheck for %s: %v", name, err)
+				log.Error(err, nil)
 				errs <- externalError{name, err}
 			}
 			wg.Done()
@@ -63,10 +65,6 @@ func Do(w http.ResponseWriter, req *http.Request) {
 	defer mutex.RUnlock()
 
 	if len(healthState) > 0 {
-		for k, v := range healthState {
-			err := fmt.Errorf("unsuccessful healthcheck for %s: %v", k, v)
-			log.ErrorR(req, err, nil)
-		}
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
