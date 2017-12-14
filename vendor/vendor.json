@@ -15,6 +15,12 @@
 			"revisionTime": "2017-07-04T13:42:44Z"
 		},
 		{
+			"checksumSHA1": "8a5dX7Vl5C7iN6BfTcydX+yAbJ8=",
+			"path": "github.com/ONSdigital/golang-neo4j-bolt-driver",
+			"revision": "a537e9707f7251071beea84e9746c12163d78990",
+			"revisionTime": "2017-12-08T11:48:37Z"
+		},
+		{
 			"checksumSHA1": "+Jp0tVXfQ1TM8T+oun82oJtME5U=",
 			"path": "github.com/Shopify/sarama",
 			"revision": "2fd980e23bdcbb8edeb78fc704de0c39a6567ffc",
@@ -109,6 +115,42 @@
 			"path": "github.com/gorilla/schema",
 			"revision": "8b1100835db5bbdae88541510f70d114b91a7e4d",
 			"revisionTime": "2017-06-12T21:54:33Z"
+		},
+		{
+			"checksumSHA1": "GYtNDxyckMgJew8cMZggWD9xfhg=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/encoding",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
+		},
+		{
+			"checksumSHA1": "9lgMFoaIFZe75vv7ln+IbPKHasE=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/errors",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
+		},
+		{
+			"checksumSHA1": "MeB74aEJl/Vif3wfI/yyskLXgQ8=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/log",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
+		},
+		{
+			"checksumSHA1": "QBWn/ajykCeEt1W21Ufl9RxLeX4=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/structures",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
+		},
+		{
+			"checksumSHA1": "vLBWZ/5wRQ4PIyIOW3dbXlKbd3s=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/structures/graph",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
+		},
+		{
+			"checksumSHA1": "WSdNJOxRdPV0gCzq7mX6cqIf3/c=",
+			"path": "github.com/johnnadratowski/golang-neo4j-bolt-driver/structures/messages",
+			"revision": "2387cc1f01254d3a0055e034f5716278a1f420c7",
+			"revisionTime": "2016-12-20T21:52:15Z"
 		},
 		{
 			"checksumSHA1": "tewA7jXVGCw1zb5mA0BDecWi4iQ=",
