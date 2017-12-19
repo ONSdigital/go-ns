@@ -1,9 +1,11 @@
 package healthcheck
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ONSdigital/go-ns/log"
 )
@@ -14,9 +16,22 @@ type Client interface {
 }
 
 var (
-	healthState = make(map[string]error)
-	mutex       = &sync.RWMutex{}
+	healthState       = make(map[string]error)
+	healthLastChecked time.Time
+	healthLastSuccess time.Time
+	mutex             = &sync.RWMutex{}
 )
+
+type healthResponse struct {
+	Status      string         `json:"status"`
+	Errors      *[]healthError `json:"errors,omitempty"`
+	LastSuccess time.Time      `json:"last_success,omitempty"`
+	LastChecked time.Time      `json:"last_checked,omitempty"`
+}
+type healthError struct {
+	Namespace    string `json:"namespace"`
+	ErrorMessage string `json:"error"`
+}
 
 // MonitorExternal concurrently monitors external service health and if they are unhealthy,
 // records the status in a map
@@ -56,6 +71,10 @@ func MonitorExternal(clients ...Client) {
 
 	mutex.Lock()
 	healthState = hs
+	if len(hs) == 0 {
+		healthLastSuccess = time.Now()
+	}
+	healthLastChecked = time.Now()
 	mutex.Unlock()
 }
 
@@ -64,9 +83,29 @@ func Do(w http.ResponseWriter, req *http.Request) {
 	mutex.RLock()
 	defer mutex.RUnlock()
 
+	w.Header().Set("Content-Type", "application/json")
+
+	var healthStateInfo healthResponse
 	if len(healthState) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
+		healthStateInfo = healthResponse{Status: "error", Errors: &[]healthError{}}
+		// add errors to healthStateInfo and set its Status to "error"
+		for stateKey := range healthState {
+			*(healthStateInfo.Errors) = append(*(healthStateInfo.Errors), healthError{Namespace: stateKey, ErrorMessage: healthState[stateKey].Error()})
+		}
 	} else {
 		w.WriteHeader(http.StatusOK)
+		healthStateInfo.Status = "OK"
+	}
+	healthStateInfo.LastChecked = healthLastChecked
+	healthStateInfo.LastSuccess = healthLastSuccess
+
+	healthStateJSON, err := json.Marshal(healthStateInfo)
+	if err != nil {
+		log.ErrorC("marshal json", err, log.Data{"struct": healthStateInfo})
+		return
+	}
+	if _, err = w.Write(healthStateJSON); err != nil {
+		log.ErrorC("writing json body", err, log.Data{"json": string(healthStateJSON)})
 	}
 }

@@ -15,7 +15,7 @@ type Server struct {
 	ticker     *Ticker
 }
 
-func NewServer(bindAddr string, duration time.Duration, errorChannel chan error, clients ...Client) (*Server) {
+func NewServer(bindAddr string, duration time.Duration, errorChannel chan error, clients ...Client) *Server {
 
 	router := mux.NewRouter()
 	router.Path("/healthcheck").HandlerFunc(Do)
