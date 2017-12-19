@@ -28,7 +28,7 @@ func TestUnitHealthcheck(t *testing.T) {
 		output := w.Body.String()
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		So(output, ShouldStartWith, "{")
-		So(output, ShouldContainSubstring, "unsuccessful healthcheck for my-external-service: bad healthcheck - sad face")
+		So(output, ShouldContainSubstring, "bad healthcheck - sad face")
 	})
 
 	Convey("test Do returns status 200 when external service error found", t, func() {
