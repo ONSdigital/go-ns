@@ -44,11 +44,5 @@ func (neo4j *HealthCheckClient) Healthcheck() (string, error) {
 	}
 	defer rows.Close()
 
-	_, _, err = rows.All()
-	if err != nil {
-		log.ErrorC("neo4j healthcheck rows.All", err, logData)
-		return neo4j.serviceName, err
-	}
-
 	return neo4j.serviceName, nil
 }
