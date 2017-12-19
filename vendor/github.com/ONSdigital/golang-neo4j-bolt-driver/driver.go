@@ -3,8 +3,8 @@ package golangNeo4jBoltDriver
 import (
 	"database/sql"
 	"database/sql/driver"
+	"github.com/ONSdigital/golang-neo4j-bolt-driver/errors"
 	"sync"
-	"github.com/johnnadratowski/golang-neo4j-bolt-driver/errors"
 )
 
 var (

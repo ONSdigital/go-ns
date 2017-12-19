@@ -1,12 +1,12 @@
 # Golang Neo4J Bolt Driver
-[![Build Status](https://travis-ci.org/johnnadratowski/golang-neo4j-bolt-driver.svg?branch=master)](https://travis-ci.org/johnnadratowski/golang-neo4j-bolt-driver) *Tested against Golang 1.4.3 and up*
+[![Build Status](https://travis-ci.org/ONSdigital/golang-neo4j-bolt-driver.svg?branch=master)](https://travis-ci.org/ONSdigital/golang-neo4j-bolt-driver) *Tested against Golang 1.4.3 and up*
 
 
 Implements the Neo4J Bolt Protocol specification:
 As of the time of writing this, the current version is v3.1.0-M02
 
 ```
-go get github.com/johnnadratowski/golang-neo4j-bolt-driver
+go get github.com/ONSdigital/golang-neo4j-bolt-driver
 ```
 
 ## Features
@@ -194,7 +194,7 @@ func slowNClean() {
 ```
 ## API
 
-*_There is much more detailed information in [the godoc](http://godoc.org/github.com/johnnadratowski/golang-neo4j-bolt-driver)_*
+*_There is much more detailed information in [the godoc](http://godoc.org/github.com/ONSdigital/golang-neo4j-bolt-driver)_*
 
 This implementation attempts to follow the best practices as per the Bolt specification, but also implements compatibility with Golang's `sql.driver` interface.
 
