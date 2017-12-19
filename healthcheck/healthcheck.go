@@ -2,7 +2,6 @@ package healthcheck
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -57,8 +56,7 @@ func MonitorExternal(clients ...Client) {
 	for _, client := range clients {
 		go func(client Client) {
 			if name, err := client.Healthcheck(); err != nil {
-				err := fmt.Errorf("unsuccessful healthcheck for %s: %v", name, err)
-				log.Error(err, nil)
+				log.ErrorC("unsuccessful healthcheck", err, log.Data{"external_service": name})
 				errs <- externalError{name, err}
 			}
 			wg.Done()
