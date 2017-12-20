@@ -91,6 +91,9 @@ func Do(w http.ResponseWriter, req *http.Request) {
 		for stateKey := range healthState {
 			*(healthStateInfo.Errors) = append(*(healthStateInfo.Errors), healthError{Namespace: stateKey, ErrorMessage: healthState[stateKey].Error()})
 		}
+	} else if healthLastChecked.IsZero() {
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
 	} else {
 		w.WriteHeader(http.StatusOK)
 		healthStateInfo.Status = "OK"
