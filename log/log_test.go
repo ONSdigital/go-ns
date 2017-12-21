@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -122,6 +123,44 @@ func TestHandler(t *testing.T) {
 		So(eventData["method"], ShouldEqual, "GET")
 		So(eventData, ShouldContainKey, "path")
 		So(eventData["path"], ShouldEqual, "/")
+
+		// query should not be included if no query parameter exists
+		So(eventData, ShouldNotContainKey, "query")
+	})
+
+	Convey("Handler should capture query string values", t, func() {
+		oldEvent := Event
+		defer func() {
+			Event = oldEvent
+		}()
+
+		wrapped := Handler(dummyHandler)
+
+		var eventName, eventContext string
+		var eventData Data
+		Event = func(name string, context string, data Data) {
+			eventName = name
+			eventContext = context
+			eventData = data
+		}
+
+		req, err := http.NewRequest("GET", "/", nil)
+		So(err, ShouldBeNil)
+		req.Header.Set("X-Request-Id", "test")
+
+		q := req.URL.Query()
+		q.Add("foo", "bar")
+		q.Add("foo", "baz")
+		q.Add("uri", "/a/b/c")
+		req.URL.RawQuery = q.Encode()
+
+		w := httptest.NewRecorder()
+
+		wrapped.ServeHTTP(w, req)
+
+		So(eventData, ShouldContainKey, "query")
+		So(eventData["query"], ShouldHaveSameTypeAs, q)
+		So(eventData["query"], ShouldResemble, url.Values{"foo": []string{"bar", "baz"}, "uri": []string{"/a/b/c"}})
 	})
 }
 

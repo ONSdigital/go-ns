@@ -48,14 +48,18 @@ func Handler(h http.Handler) http.Handler {
 		e := time.Now()
 		d := e.Sub(s)
 
-		Event("request", Context(req), Data{
+		data := Data{
 			"start":    s,
 			"end":      e,
 			"duration": d,
 			"status":   rc.statusCode,
 			"method":   req.Method,
 			"path":     req.URL.Path,
-		})
+		}
+		if len(req.URL.RawQuery) > 0 {
+			data["query"] = req.URL.Query()
+		}
+		Event("request", Context(req), data)
 	})
 }
 
