@@ -11,6 +11,20 @@ import (
 // a function to be provided that is called for each message consumed.
 // It maintains its own go routine to consume messages, and provides a simple
 // graceful shutdown with a blocking close method.
+
+// // Create ConsumerGroup as before
+// consumer, err := kafka.NewConsumerGroup(...)
+//
+// asyncConsumer := kafka.NewAsyncConsumer()
+//
+// // Pass the consumer and the handler function into the AsyncConsumer consume function
+// asyncConsumer.Consume(consumer, func(message kafka.Message) {
+//	// handle message here
+// })
+//
+// // close the AsyncConsumer first
+// asyncConsumer.Close(context)
+// consumer.Close(context)
 type AsyncConsumer struct {
 	closing chan bool
 	closed  chan bool
