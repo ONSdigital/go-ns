@@ -13,39 +13,45 @@ import (
 )
 
 type Config struct {
-	Brokers       []string      `envconfig:"KAFKA_ADDR"`
-	KafkaMaxBytes int           `envconfig:"KAFKA_MAX_BYTES"`
-	ConsumedTopic string        `envconfig:"KAFKA_CONSUMED_TOPIC"`
-	ConsumedGroup string        `envconfig:"KAFKA_CONSUMED_GROUP"`
-	ProducedTopic string        `envconfig:"KAFKA_PRODUCED_TOPIC"`
-	ConsumeMax    int           `envconfig:"KAFKA_CONSUME_MAX"`
-	KafkaSync     bool          `envconfig:"KAFKA_SYNC"`
-	TimeOut       time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
-	Chomp         bool          `envconfig:"CHOMP_MSG"`
-	Snooze        bool          `envconfig:"SNOOZE"`
-	OverSleep     bool          `envconfig:"OVERSLEEP"`
+	Brokers          []string      `envconfig:"KAFKA_ADDR"`
+	KafkaMaxBytes    int           `envconfig:"KAFKA_MAX_BYTES"`
+	ConsumedTopic    string        `envconfig:"KAFKA_CONSUMED_TOPIC"`
+	ConsumedGroup    string        `envconfig:"KAFKA_CONSUMED_GROUP"`
+	ProducedTopic    string        `envconfig:"KAFKA_PRODUCED_TOPIC"`
+	ConsumeMax       int           `envconfig:"KAFKA_CONSUME_MAX"`
+	KafkaSync        bool          `envconfig:"KAFKA_SYNC"`
+	KafkaAsync       bool          `envconfig:"KAFKA_ASYNC"`
+	KafkaPipeline    bool          `envconfig:"KAFKA_PIPELINE"`
+	TimeOut          time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
+	Chomp            bool          `envconfig:"CHOMP_MSG"`
+	Snooze           bool          `envconfig:"SNOOZE"`
+	PostCommitSnooze time.Duration `envconfig:"POST_COMMIT_SNOOZE"`
+	OverSleep        bool          `envconfig:"OVERSLEEP"`
 }
 
 func main() {
 	log.Namespace = "kafka-example"
 	cfg := &Config{
-		Brokers:       []string{"locahost:9092"},
-		KafkaMaxBytes: 50 * 1024 * 1024,
-		KafkaSync:     true,
-		ConsumedGroup: log.Namespace,
-		ConsumedTopic: "input",
-		ProducedTopic: "output",
-		ConsumeMax:    0,
-		TimeOut:       5 * time.Second,
-		Chomp:         false,
-		Snooze:        false,
-		OverSleep:     false,
+		Brokers:          []string{"locahost:9092"},
+		KafkaMaxBytes:    50 * 1024 * 1024,
+		KafkaSync:        true,
+		KafkaAsync:       false,
+		KafkaPipeline:    false,
+		ConsumedGroup:    log.Namespace,
+		ConsumedTopic:    "input",
+		ProducedTopic:    "output",
+		ConsumeMax:       0,
+		TimeOut:          5 * time.Second,
+		Chomp:            false,
+		Snooze:           false,
+		PostCommitSnooze: 0,
+		OverSleep:        false,
 	}
 	if err := envconfig.Process("", cfg); err != nil {
 		panic(err)
 	}
 
-	log.Info("[KAFKA-TEST] Starting (consumer sent to stdout, stdin sent to producer)",
+	log.Info("[KAFKA-TEST] Starting (consumer sent to stdout, stdin sent to producer, or pipeline from consumer->producer)",
 		log.Data{"consumed_group": cfg.ConsumedGroup, "consumed_topic": cfg.ConsumedTopic, "produced_topic": cfg.ProducedTopic})
 
 	kafka.SetMaxMessageSize(int32(cfg.KafkaMaxBytes))
@@ -57,9 +63,9 @@ func main() {
 
 	var consumer *kafka.ConsumerGroup
 	if cfg.KafkaSync {
-		consumer, err = kafka.NewSyncConsumer(cfg.Brokers, cfg.ConsumedTopic, cfg.ConsumedGroup, kafka.OffsetNewest)
+		consumer, err = kafka.NewSyncConsumer(cfg.Brokers, cfg.ConsumedTopic, cfg.ConsumedGroup, kafka.OffsetOldest)
 	} else {
-		consumer, err = kafka.NewConsumerGroup(cfg.Brokers, cfg.ConsumedTopic, cfg.ConsumedGroup, kafka.OffsetNewest)
+		consumer, err = kafka.NewConsumerGroup(cfg.Brokers, cfg.ConsumedTopic, cfg.ConsumedGroup, kafka.OffsetOldest)
 	}
 	if err != nil {
 		log.ErrorC("[KAFKA-TEST] Could not create consumer", err, nil)
@@ -72,7 +78,26 @@ func main() {
 
 	eventLoopContext, eventLoopCancel := context.WithCancel(context.Background())
 	eventLoopDone := make(chan bool)
-	consumeCount := 0
+
+	var (
+		asyncConsumer *kafka.AsyncConsumer
+		consumeCount  = 0
+	)
+	if cfg.KafkaAsync {
+		asyncConsumer = kafka.NewAsyncConsumer()
+		asyncConsumer.Consume(consumer, func(consumedMessage kafka.Message) {
+			if cfg.ConsumeMax > 0 && consumeCount == cfg.ConsumeMax {
+				log.Trace("[KAFKA-TEST] consumed max - async skipping message", log.Data{"messageOffset": consumedMessage.Offset()})
+				return
+			}
+			consumeCount++
+			consumeMessage(consumedMessage, cfg, producer, consumer, consumeCount, true)
+			if cfg.ConsumeMax > 0 && consumeCount == cfg.ConsumeMax {
+				log.Trace("[KAFKA-TEST] consumed max - async cancelling eventLoop", log.Data{"messageOffset": consumedMessage.Offset()})
+				eventLoopCancel()
+			}
+		})
+	}
 
 	go func(ch chan string) {
 		reader := bufio.NewReader(os.Stdin)
@@ -101,48 +126,13 @@ func main() {
 			case <-eventLoopContext.Done():
 				log.Trace("[KAFKA-TEST] Event loop context done", log.Data{"eventLoopContextErr": eventLoopContext.Err()})
 				return
-			case consumedMessage := <-consumer.Incoming():
-				consumeCount++
-				logData := log.Data{"consumeCount": consumeCount, "consumeMax": cfg.ConsumeMax, "messageOffset": consumedMessage.Offset()}
-				log.Info("[KAFKA-TEST] Received message", logData)
-
-				consumedData := consumedMessage.GetData()
-				logData["messageString"] = string(consumedData)
-				logData["messageRaw"] = consumedData
-				logData["messageLen"] = len(consumedData)
-
-				var sleep time.Duration
-				if cfg.Snooze || cfg.OverSleep {
-					// Snooze slows consumption for testing
-					sleep = 500 * time.Millisecond
-					if cfg.OverSleep {
-						// OverSleep tests taking more than shutdown timeout to process a message
-						sleep += cfg.TimeOut
-					}
-					logData["sleep"] = sleep
-				}
-
-				log.Info("[KAFKA-TEST] Message consumed", logData)
-				if sleep > time.Duration(0) {
-					time.Sleep(sleep)
-					log.Trace("[KAFKA-TEST] done sleeping", nil)
-				}
-
-				// send downstream
-				producer.Output() <- consumedData
-
-				if cfg.KafkaSync {
-					log.Trace("[KAFKA-TEST] pre-release", nil)
-					consumer.CommitAndRelease(consumedMessage)
-				} else {
-					log.Trace("[KAFKA-TEST] pre-commit", nil)
-					consumedMessage.Commit()
-				}
-				log.Info("[KAFKA-TEST] committed message", log.Data{"messageOffset": consumedMessage.Offset()})
-				if consumeCount == cfg.ConsumeMax {
-					log.Trace("[KAFKA-TEST] consumed max - exiting eventLoop", nil)
-					return
-				}
+			// case consumedMessage := <-consumer.Incoming():
+			// 	consumeCount++
+			// 	consumeMessage(consumedMessage, cfg, producer, consumer, consumeCount, false)
+			// 	if cfg.ConsumeMax > 0 && consumeCount == cfg.ConsumeMax {
+			// 		log.Trace("[KAFKA-TEST] consumed max - exiting eventLoop", nil)
+			// 		return
+			// 	}
 			case stdinLine := <-stdinChannel:
 				producer.Output() <- []byte(stdinLine)
 				log.Info("[KAFKA-TEST] Message output", log.Data{"messageSent": stdinLine, "messageChars": []byte(stdinLine)})
@@ -167,9 +157,14 @@ func main() {
 
 	// background graceful shutdown
 	go func() {
-		log.Info("[KAFKA-TEST] Stopping kafka consumer listener", nil)
-		consumer.StopListeningToConsumer(ctx)
-		log.Info("[KAFKA-TEST] Stopped kafka consumer listener", nil)
+		if cfg.KafkaAsync {
+			log.Info("[KAFKA-TEST] Stopping kafka async consumer listener", nil)
+			asyncConsumer.Close(ctx)
+		} else {
+			log.Info("[KAFKA-TEST] Stopping kafka consumer listener", nil)
+			consumer.StopListeningToConsumer(ctx)
+			log.Info("[KAFKA-TEST] Stopped kafka consumer listener", nil)
+		}
 		eventLoopCancel()
 		// wait for eventLoopDone: all in-flight messages have been processed
 		<-eventLoopDone
@@ -192,4 +187,50 @@ func main() {
 		log.Info("[KAFKA-TEST] Done shutdown gracefully", log.Data{"context": ctx.Err()})
 	}
 	os.Exit(1)
+}
+
+func consumeMessage(consumedMessage kafka.Message, cfg *Config, producer kafka.MessageProducer, consumer *kafka.ConsumerGroup, consumeCount int, isAsync bool) {
+	logData := log.Data{"consumeCount": consumeCount, "consumeMax": cfg.ConsumeMax, "messageOffset": consumedMessage.Offset(), "is_async": isAsync}
+	log.Info("[KAFKA-TEST] Received message", logData)
+
+	consumedData := consumedMessage.GetData()
+	logData["messageString"] = string(consumedData)
+	logData["messageRaw"] = consumedData
+	logData["messageLen"] = len(consumedData)
+
+	var sleep time.Duration
+	if cfg.Snooze || cfg.OverSleep {
+		// Snooze slows consumption for testing
+		sleep = 500 * time.Millisecond
+		if cfg.OverSleep {
+			// OverSleep tests taking more than shutdown timeout to process a message
+			sleep += cfg.TimeOut
+		}
+		logData["sleep"] = sleep
+	}
+
+	log.Info("[KAFKA-TEST] Message consumed", logData)
+	if sleep > time.Duration(0) {
+		time.Sleep(sleep)
+		log.Trace("[KAFKA-TEST] done sleeping", nil)
+	}
+
+	// send downstream, if pipelining
+	if cfg.KafkaPipeline {
+		producer.Output() <- consumedData
+	}
+
+	if cfg.KafkaSync {
+		log.Trace("[KAFKA-TEST] pre-release", nil)
+		consumer.CommitAndRelease(consumedMessage)
+	} else {
+		log.Trace("[KAFKA-TEST] pre-commit", nil)
+		consumedMessage.Commit()
+	}
+	log.Info("[KAFKA-TEST] committed message", log.Data{"messageOffset": consumedMessage.Offset()})
+
+	if cfg.PostCommitSnooze > time.Duration(0) {
+		time.Sleep(cfg.PostCommitSnooze)
+		log.Trace("[KAFKA-TEST] done post-commit sleeping", log.Data{"messageOffset": consumedMessage.Offset()})
+	}
 }
