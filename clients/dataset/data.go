@@ -39,7 +39,6 @@ type Version struct {
 	ID            string              `json:"id"`
 	InstanceID    string              `json:"instance_id"`
 	LatestChanges []Change            `json:"latest_changes"`
-	License       string              `json:"license"`
 	Links         Links               `json:"links"`
 	ReleaseDate   string              `json:"release_date"`
 	State         string              `json:"date"`
@@ -222,9 +221,14 @@ func (m Metadata) String() string {
 	}
 	b.WriteString(fmt.Sprintf("Latest Changes: %s\n", m.LatestChanges))
 	b.WriteString(fmt.Sprintf("Periodicity: %s\n", m.ReleaseFrequency))
-	b.WriteString(fmt.Sprintf("Distribution: %s\n", m.Downloads))
+	b.WriteString("Distribution:\n")
+	for k, v := range m.Downloads {
+		b.WriteString(fmt.Sprintf("\tExtension: %s\n", k))
+		b.WriteString(fmt.Sprintf("\tSize: %s\n", v.Size))
+		b.WriteString(fmt.Sprintf("\tURL: %s\n\n", v.URL))
+	}
 	b.WriteString(fmt.Sprintf("Unit of measure: %s\n", m.UnitOfMeasure))
-	b.WriteString(fmt.Sprintf("License: %s\n", m.Model.License))
+	b.WriteString(fmt.Sprintf("License: %s\n", m.License))
 	b.WriteString(fmt.Sprintf("Methodologies: %s\n", m.Methodologies))
 	b.WriteString(fmt.Sprintf("National Statistic: %t\n", m.NationalStatistic))
 	b.WriteString(fmt.Sprintf("Publications: %s\n", m.Publications))
