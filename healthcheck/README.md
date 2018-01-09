@@ -6,6 +6,7 @@ Health checks
 Create a health check server to check neo4j and the filter API every 30 seconds:
 ```
 neoHealthChecker := neo4j.NewHealthCheckClient(neo4jConnPool)
+elasticsearchChecker := elasticsearch.NewHealthCheckClient(url)
 filterAPIHealthChecker := filterHealthCheck.New(config.FilterAPIURL)
 
 healthChecker := healthcheck.NewServer(
@@ -13,6 +14,7 @@ healthChecker := healthcheck.NewServer(
     config.HealthCheckInterval,
     errorChannel,
     filterAPIHealthChecker,
+    elasticsearchChecker,
     neoHealthChecker)
 ```
 
