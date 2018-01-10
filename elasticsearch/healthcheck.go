@@ -35,20 +35,7 @@ type HealthCheckClient struct {
 
 // ClusterHealth represents the response from the elasticsearch cluster health check
 type ClusterHealth struct {
-	CLusterName                 string `json:"cluster_name"`
-	Status                      string `json:"status"`
-	TimedOut                    bool   `json:"timed_out"`
-	NumberOfNodes               int64  `json:"number_of_nodes"`
-	NumberOfDataNodes           int64  `json:"number_of_data_nodes"`
-	ActivePrimaryShards         int64  `json:"active_primary_shards"`
-	ActiveShards                int64  `json:"active_shards"`
-	RelocatingShards            int64  `json:"relocating_shards"`
-	InitialisingShards          int64  `json:"initializing_shards"`
-	UnassignedShards            int64  `json:"unassigned_shards"`
-	DelayedUnassignedShards     int64  `json:"delayed_unassigned_shards"`
-	NumberOfPendingTasks        int64  `json:"number_of_pending_tasks"`
-	NumberOfInFlightFetch       int64  `json:"number_of_in_flight_fetch"`
-	TaskMaxWaitingInQueueMillis int64  `json:"task_max_waiting_in_queue_millis"`
+	Status string `json:"status"`
 }
 
 // NewHealthCheckClient returns a new elasticsearch health check client.
@@ -90,6 +77,7 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
+		log.Error(ErrorUnexpectedStatusCode, logData)
 		return elasticsearch.serviceName, ErrorUnexpectedStatusCode
 	}
 
@@ -102,10 +90,13 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 	var clusterHealth ClusterHealth
 	err = json.Unmarshal(jsonBody, &clusterHealth)
 	if err != nil {
+		log.Error(ErrorParsingBody, logData)
 		return elasticsearch.serviceName, ErrorParsingBody
 	}
 
+	logData["cluster_health"] = clusterHealth.Status
 	if clusterHealth.Status == unhealthy {
+		log.Error(ErrorUnhealthyClusterStatus, logData)
 		return elasticsearch.serviceName, ErrorUnhealthyClusterStatus
 	}
 
