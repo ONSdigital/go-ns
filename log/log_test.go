@@ -85,7 +85,7 @@ func TestEventC(t *testing.T) {
 	Convey("ONSContext to EventC() should output the correlation id as `context`", t, func() {
 		correlation_id := "my-cid"
 		ctx := common.NewONSContext(correlation_id)
-		So(ctx.GetContext(), ShouldEqual, correlation_id)
+		So(common.GetContextID(ctx), ShouldEqual, correlation_id)
 		stdout := captureOutput(func() {
 			EventC(ctx, ErrorLevel, "test message", Data{})
 		})
@@ -114,10 +114,10 @@ func TestHandler(t *testing.T) {
 
 		wrapped := Handler(dummyHandler)
 
-		var eventName Level
+		var eventName string
 		var eventContext string
 		var eventData Data
-		Event = func(name Level, context string, data Data) {
+		Event = func(name, context string, data Data) {
 			eventName = name
 			eventContext = context
 			eventData = data
@@ -157,10 +157,10 @@ func TestHandler(t *testing.T) {
 
 		wrapped := Handler(dummyHandler)
 
-		var eventName Level
+		var eventName string
 		var eventContext string
 		var eventData Data
-		Event = func(name Level, context string, data Data) {
+		Event = func(name, context string, data Data) {
 			eventName = name
 			eventContext = context
 			eventData = data
@@ -212,10 +212,10 @@ func TestError(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName Level
+	var eventName string
 	var eventContext string
 	var eventData Data
-	Event = func(name Level, context string, data Data) {
+	Event = func(name, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -266,10 +266,10 @@ func TestDebug(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName Level
+	var eventName string
 	var eventContext string
 	var eventData Data
-	Event = func(name Level, context string, data Data) {
+	Event = func(name, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -311,10 +311,10 @@ func TestTrace(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName Level
+	var eventName string
 	var eventContext string
 	var eventData Data
-	Event = func(name Level, context string, data Data) {
+	Event = func(name, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -356,10 +356,10 @@ func TestInfo(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName Level
+	var eventName string
 	var eventContext string
 	var eventData Data
-	Event = func(name Level, context string, data Data) {
+	Event = func(name, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data

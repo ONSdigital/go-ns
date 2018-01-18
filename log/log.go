@@ -100,7 +100,7 @@ func (r *responseCapture) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // Event records an event
 var Event = event
 
-func event(name Level, context string, data Data) {
+func event(name, context string, data Data) {
 	m := map[string]interface{}{
 		"created":   time.Now(),
 		"event":     name,
@@ -137,7 +137,7 @@ func event(name Level, context string, data Data) {
 	fmt.Fprintf(os.Stdout, "%s\n", b)
 }
 
-func printHumanReadable(name Level, context string, data Data, m map[string]interface{}) {
+func printHumanReadable(name, context string, data Data, m map[string]interface{}) {
 	hrMutex.Lock()
 	defer hrMutex.Unlock()
 
@@ -158,7 +158,7 @@ func printHumanReadable(name Level, context string, data Data, m map[string]inte
 	}
 	col := ansi.DefaultFG
 	switch name {
-	case ErrorLevel:
+	case "error":
 		col = ansi.LightRed
 	case "info":
 		col = ansi.LightCyan
@@ -179,7 +179,7 @@ func printHumanReadable(name Level, context string, data Data, m map[string]inte
 }
 
 // EventC logs an event with an ONSContext and level
-func EventC(ctx *common.ONSContext, level Level, msg string, data Data) {
+func EventC(ctx common.ONSContext, level Level, msg string, data Data) {
 
 	if data == nil {
 		data = Data{}
@@ -187,11 +187,11 @@ func EventC(ctx *common.ONSContext, level Level, msg string, data Data) {
 	if _, ok := data["error"]; ok && reflect.TypeOf(data["error"]) == reflect.TypeOf(errors.New("")) {
 		data["message"] = data["error"].(error).Error()
 	}
-	Event(level, ctx.GetContext(), data)
+	Event(string(level), common.GetContextID(ctx), data)
 }
 
 // EventError logs an error event
-func EventError(ctx *common.ONSContext, err error, msg string, data Data) {
+func EventError(ctx common.ONSContext, err error, msg string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
