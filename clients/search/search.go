@@ -60,7 +60,7 @@ func New(searchAPIURL string) *Client {
 	}
 }
 
-// SetInternalToken will set an internal token to use for the dataset api
+// SetInternalToken will set an internal token to use for the search api
 func (c *Client) SetInternalToken(token string) {
 	c.internalToken = token
 }
