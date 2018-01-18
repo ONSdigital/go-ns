@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/ONSdigital/go-ns/clients/search/search_mocks"
@@ -24,13 +25,24 @@ func TestSearchUnit(t *testing.T) {
 		So(cli.cli, ShouldHaveSameTypeAs, rhttp.DefaultClient)
 	})
 
+	Convey("test SetInternalToken methods", t, func() {
+		c := &Client{}
+		c.SetInternalToken("test-token")
+		So(c.internalToken, ShouldEqual, "test-token")
+
+		req := httptest.NewRequest("GET", "http://localhost:22000", nil)
+		c.setInternalTokenHeader(req)
+		So(req.Header.Get("Internal-token"), ShouldEqual, "test-token")
+	})
+
 	Convey("test Dimension Method", t, func() {
 		searchResp, err := ioutil.ReadFile("./search_mocks/search.json")
 		So(err, ShouldBeNil)
 
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
 			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?q=Newport&limit=1&offset=1").Return(
+
+			mockCli.EXPECT().Do(gomock.Any()).Return(
 				&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(bytes.NewReader(searchResp)),
@@ -65,7 +77,8 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
 			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?q=Newport&limit=1&offset=1").Return(
+
+			mockCli.EXPECT().Do(gomock.Any()).Return(
 				nil, errors.New("client threw an error"),
 			)
 
@@ -81,7 +94,8 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
 			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?q=Newport&limit=1&offset=1").Return(
+
+			mockCli.EXPECT().Do(gomock.Any()).Return(
 				&http.Response{
 					StatusCode: http.StatusBadRequest,
 					Body:       ioutil.NopCloser(bytes.NewReader(nil)),

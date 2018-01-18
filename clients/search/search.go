@@ -18,6 +18,7 @@ const (
 // HTTPClient provides an interface for methods on an HTTP Client
 type HTTPClient interface {
 	Get(url string) (*http.Response, error)
+	Do(req *http.Request) (*http.Response, error)
 }
 
 // ErrInvalidSearchAPIResponse is returned when the search api does not respond
@@ -46,8 +47,9 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	cli HTTPClient
-	url string
+	cli           HTTPClient
+	url           string
+	internalToken string
 }
 
 // New creates a new instance of Client with a given search api url
@@ -55,6 +57,17 @@ func New(searchAPIURL string) *Client {
 	return &Client{
 		cli: rhttp.DefaultClient,
 		url: searchAPIURL,
+	}
+}
+
+// SetInternalToken will set an internal token to use for the dataset api
+func (c *Client) SetInternalToken(token string) {
+	c.internalToken = token
+}
+
+func (c *Client) setInternalTokenHeader(req *http.Request) {
+	if len(c.internalToken) > 0 {
+		req.Header.Set("Internal-token", c.internalToken)
 	}
 }
 
@@ -98,7 +111,13 @@ func (c *Client) Dimension(datasetID, edition, version, name, query string, para
 
 	clientlog.Do("searching for dataset dimension option", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
