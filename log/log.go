@@ -8,10 +8,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/mgutz/ansi"
 )
 
@@ -32,6 +34,15 @@ func configureHumanReadable() {
 
 // Data contains structured log data
 type Data map[string]interface{}
+
+type Level string
+
+const (
+	ErrorLevel = Level("error")
+	InfoLevel  = Level("info")
+	TraceLevel = Level("trace")
+	DebugLevel = Level("debug")
+)
 
 // Context returns a context ID from a request (using X-Request-Id)
 func Context(req *http.Request) string {
@@ -89,7 +100,7 @@ func (r *responseCapture) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // Event records an event
 var Event = event
 
-func event(name string, context string, data Data) {
+func event(name Level, context string, data Data) {
 	m := map[string]interface{}{
 		"created":   time.Now(),
 		"event":     name,
@@ -126,7 +137,7 @@ func event(name string, context string, data Data) {
 	fmt.Fprintf(os.Stdout, "%s\n", b)
 }
 
-func printHumanReadable(name, context string, data Data, m map[string]interface{}) {
+func printHumanReadable(name Level, context string, data Data, m map[string]interface{}) {
 	hrMutex.Lock()
 	defer hrMutex.Unlock()
 
@@ -147,7 +158,7 @@ func printHumanReadable(name, context string, data Data, m map[string]interface{
 	}
 	col := ansi.DefaultFG
 	switch name {
-	case "error":
+	case ErrorLevel:
 		col = ansi.LightRed
 	case "info":
 		col = ansi.LightCyan
@@ -165,6 +176,27 @@ func printHumanReadable(name, context string, data Data, m map[string]interface{
 			fmt.Fprintf(os.Stdout, "  -> %s: %+v\n", k, v)
 		}
 	}
+}
+
+// EventC logs an event with an ONSContext and level
+func EventC(ctx *common.ONSContext, level Level, msg string, data Data) {
+
+	if data == nil {
+		data = Data{}
+	}
+	if _, ok := data["error"]; ok && reflect.TypeOf(data["error"]) == reflect.TypeOf(errors.New("")) {
+		data["message"] = data["error"].(error).Error()
+	}
+	Event(level, ctx.GetContext(), data)
+}
+
+// EventError logs an error event
+func EventError(ctx *common.ONSContext, err error, msg string, data Data) {
+	if data == nil {
+		data = Data{}
+	}
+	data["error"] = err.Error()
+	EventC(ctx, ErrorLevel, msg, data)
 }
 
 // ErrorC is a structured error message with context

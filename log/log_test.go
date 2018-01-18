@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/mgutz/ansi"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -80,6 +81,25 @@ func TestContext(t *testing.T) {
 	})
 }
 
+func TestEventC(t *testing.T) {
+	Convey("ONSContext to EventC() should output the correlation id as `context`", t, func() {
+		correlation_id := "my-cid"
+		ctx := common.NewONSContext(correlation_id)
+		So(ctx.GetContext(), ShouldEqual, correlation_id)
+		stdout := captureOutput(func() {
+			EventC(ctx, ErrorLevel, "test message", Data{})
+		})
+		var m map[string]interface{}
+		err := json.Unmarshal([]byte(stdout), &m)
+		So(err, ShouldBeNil)
+
+		So(m, ShouldContainKey, "context")
+		So(m["context"], ShouldEqual, correlation_id)
+		So(m, ShouldContainKey, "event")
+		So(m["event"], ShouldEqual, ErrorLevel)
+	})
+}
+
 func TestHandler(t *testing.T) {
 	Convey("Handler should wrap another handler", t, func() {
 		wrapped := Handler(dummyHandler)
@@ -94,9 +114,10 @@ func TestHandler(t *testing.T) {
 
 		wrapped := Handler(dummyHandler)
 
-		var eventName, eventContext string
+		var eventName Level
+		var eventContext string
 		var eventData Data
-		Event = func(name string, context string, data Data) {
+		Event = func(name Level, context string, data Data) {
 			eventName = name
 			eventContext = context
 			eventData = data
@@ -136,9 +157,10 @@ func TestHandler(t *testing.T) {
 
 		wrapped := Handler(dummyHandler)
 
-		var eventName, eventContext string
+		var eventName Level
+		var eventContext string
 		var eventData Data
-		Event = func(name string, context string, data Data) {
+		Event = func(name Level, context string, data Data) {
 			eventName = name
 			eventContext = context
 			eventData = data
@@ -190,9 +212,10 @@ func TestError(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName Level
+	var eventContext string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name Level, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -243,9 +266,10 @@ func TestDebug(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName Level
+	var eventContext string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name Level, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -287,9 +311,10 @@ func TestTrace(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName Level
+	var eventContext string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name Level, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
@@ -331,9 +356,10 @@ func TestInfo(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName Level
+	var eventContext string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name Level, context string, data Data) {
 		eventName = name
 		eventContext = context
 		eventData = data
