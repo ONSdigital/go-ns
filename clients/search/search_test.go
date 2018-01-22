@@ -19,6 +19,9 @@ func TestSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	limit := 1
+	offset := 1
+
 	Convey("test New creates a valid Client instance", t, func() {
 		cli := New("http://localhost:22000")
 		So(cli.url, ShouldEqual, "http://localhost:22000")
@@ -54,7 +57,7 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", 1, 1)
+			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err, ShouldBeNil)
 			So(m.Count, ShouldEqual, 1)
 			So(m.Limit, ShouldEqual, 1)
@@ -87,7 +90,7 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", 1, 1)
+			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err.Error(), ShouldEqual, "client threw an error")
 			So(m, ShouldBeNil)
 		})
@@ -107,8 +110,8 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", 1, 1)
-			So(err.Error(), ShouldEqual, "invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?q=Newport&limit=1&offset=1")
+			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
+			So(err.Error(), ShouldEqual, "invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
 			So(err.(*ErrInvalidSearchAPIResponse).Code(), ShouldEqual, http.StatusBadRequest)
 			So(m, ShouldBeNil)
 		})

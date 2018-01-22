@@ -109,7 +109,7 @@ func (c *Client) Dimension(datasetID, edition, version, name, query string, para
 		}
 	}
 
-	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s",
+	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s?",
 		c.url,
 		datasetID,
 		edition,
@@ -118,7 +118,7 @@ func (c *Client) Dimension(datasetID, edition, version, name, query string, para
 	)
 
 	v := url.Values{}
-	v.Set("q", query)
+	v.Add("q", query)
 	v.Add("limit", strconv.Itoa(limit))
 	v.Add("offset", strconv.Itoa(offset))
 
