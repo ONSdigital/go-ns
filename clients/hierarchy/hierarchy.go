@@ -30,6 +30,11 @@ func (e ErrInvalidHierarchyAPIResponse) Error() string {
 	)
 }
 
+// Code returns the status code received from hierarchy api if an error is returned
+func (e ErrInvalidHierarchyAPIResponse) Code() int {
+	return e.actualCode
+}
+
 var _ error = ErrInvalidHierarchyAPIResponse{}
 
 // Client is a hierarchy api client which can be used to make requests to the server

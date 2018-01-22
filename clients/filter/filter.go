@@ -33,6 +33,11 @@ func (e ErrInvalidFilterAPIResponse) Error() string {
 	)
 }
 
+// Code returns the status code received from filter api if an error is returned
+func (e ErrInvalidFilterAPIResponse) Code() int {
+	return e.actualCode
+}
+
 var _ error = ErrInvalidFilterAPIResponse{}
 
 // Client is a filter api client which can be used to make requests to the server
