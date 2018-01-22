@@ -4,16 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rhttp"
 )
 
 const (
-	service = "search-api"
-	limit   = 20
-	offset  = 0
+	service       = "search-api"
+	defaultLimit  = 20
+	defaultOffset = 0
 )
+
+// Config represents configuration required to conduct a search request
+type Config struct {
+	Limit  *int
+	Offset *int
+}
 
 // HTTPClient provides an interface for methods on an HTTP Client
 type HTTPClient interface {
@@ -86,28 +94,35 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Dimension allows the searching of a dimension for a specific dimension option, optionally
-// pass in offset and limit parameters respectively
-func (c *Client) Dimension(datasetID, edition, version, name, query string, params ...int) (m *Model, err error) {
-	offset := offset
-	limit := limit
+// pass in configuration parameters as an additional field. This can include a request specific
+// internal token
+func (c *Client) Dimension(datasetID, edition, version, name, query string, params ...Config) (m *Model, err error) {
+	offset := defaultOffset
+	limit := defaultLimit
 
 	if len(params) > 0 {
-		offset = params[0]
-	}
-	if len(params) > 1 {
-		limit = params[1]
+		if params[0].Offset != nil {
+			offset = *params[0].Offset
+		}
+		if params[0].Limit != nil {
+			limit = *params[0].Limit
+		}
 	}
 
-	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s?q=%s&limit=%d&offset=%d",
+	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s",
 		c.url,
 		datasetID,
 		edition,
 		version,
 		name,
-		query,
-		limit,
-		offset,
 	)
+
+	v := url.Values{}
+	v.Set("q", query)
+	v.Add("limit", strconv.Itoa(limit))
+	v.Add("offset", strconv.Itoa(offset))
+
+	uri = uri + v.Encode()
 
 	clientlog.Do("searching for dataset dimension option", service, uri)
 

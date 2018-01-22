@@ -11,22 +11,22 @@ type Model struct {
 
 // Item represents a single hierarchy item returned by the search api
 type Item struct {
-	Code               string  `json:"code"`
-	DimensionOptionURL string  `json:"dimension_option_url"`
-	HasData            bool    `json:"has_data"`
-	Label              string  `json:"label"`
-	Matches            Matches `json:"matches"`
-	NumberOfChildren   int     `json:"number_of_children"`
+	Code               string  `json:"code,omitempty"`
+	DimensionOptionURL string  `json:"dimension_option_url,omitempty"`
+	HasData            bool    `json:"has_data,omitempty"`
+	Label              string  `json:"label,omitempty"`
+	Matches            Matches `json:"matches,omitempty"`
+	NumberOfChildren   int     `json:"number_of_children,omitempty"`
 }
 
 // Matches represent matches from the input query against the returned item
 type Matches struct {
-	Code  []Match `json:"code"`
-	Label []Match `json:"label"`
+	Code  []Match `json:"code,omitempty"`
+	Label []Match `json:"label,omitempty"`
 }
 
 // Match defines the start and end character numbers that the item matched with
 type Match struct {
-	Start int `json:"start"`
-	End   int `json:"end"`
+	Start int `json:"start,omitempty"`
+	End   int `json:"end,omitempty"`
 }
