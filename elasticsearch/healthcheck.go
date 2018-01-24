@@ -60,7 +60,7 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 	}
 
 	path := URL.String()
-	logData["URL"] = path
+	logData["url"] = path
 
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
@@ -70,12 +70,12 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 
 	resp, err := elasticsearch.cli.Do(req)
 	if err != nil {
-		log.ErrorC("Failed to call elasticsearch", err, logData)
+		log.ErrorC("failed to call elasticsearch", err, logData)
 		return elasticsearch.serviceName, err
 	}
 	defer resp.Body.Close()
 
-	logData["httpCode"] = resp.StatusCode
+	logData["http_code"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
 		log.Error(ErrorUnexpectedStatusCode, logData)
 		return elasticsearch.serviceName, ErrorUnexpectedStatusCode
