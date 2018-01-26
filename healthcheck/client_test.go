@@ -1,7 +1,5 @@
 package healthcheck
 
-//go:generate moq -out mock_healthcheck/mock_httpclient.go -pkg mock_healthcheck . HttpClient http.Response
-
 import (
 	"errors"
 	"net/http"

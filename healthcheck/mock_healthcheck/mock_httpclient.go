@@ -9,21 +9,21 @@ import (
 )
 
 var (
-	lockHttpClientMockGet sync.RWMutex
+	lockhttpClientMockGet sync.RWMutex
 )
 
-// HttpClientMock is a mock implementation of HttpClient.
+// HttpClientMock is a mock implementation of httpClient.
 //
-//     func TestSomethingThatUsesHttpClient(t *testing.T) {
+//     func TestSomethingThatUseshttpClient(t *testing.T) {
 //
-//         // make and configure a mocked HttpClient
-//         mockedHttpClient := &HttpClientMock{
+//         // make and configure a mocked httpClient
+//         mockedhttpClient := &HttpClientMock{
 //             GetFunc: func(url string) (*http.Response, error) {
 // 	               panic("TODO: mock out the Get method")
 //             },
 //         }
 //
-//         // TODO: use mockedHttpClient in code that requires HttpClient
+//         // TODO: use mockedhttpClient in code that requires httpClient
 //         //       and then make assertions.
 //
 //     }
@@ -44,30 +44,30 @@ type HttpClientMock struct {
 // Get calls GetFunc.
 func (mock *HttpClientMock) Get(url string) (*http.Response, error) {
 	if mock.GetFunc == nil {
-		panic("moq: HttpClientMock.GetFunc is nil but HttpClient.Get was just called")
+		panic("moq: HttpClientMock.GetFunc is nil but httpClient.Get was just called")
 	}
 	callInfo := struct {
 		URL string
 	}{
 		URL: url,
 	}
-	lockHttpClientMockGet.Lock()
+	lockhttpClientMockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
-	lockHttpClientMockGet.Unlock()
+	lockhttpClientMockGet.Unlock()
 	return mock.GetFunc(url)
 }
 
 // GetCalls gets all the calls that were made to Get.
 // Check the length with:
-//     len(mockedHttpClient.GetCalls())
+//     len(mockedhttpClient.GetCalls())
 func (mock *HttpClientMock) GetCalls() []struct {
 	URL string
 } {
 	var calls []struct {
 		URL string
 	}
-	lockHttpClientMockGet.RLock()
+	lockhttpClientMockGet.RLock()
 	calls = mock.calls.Get
-	lockHttpClientMockGet.RUnlock()
+	lockhttpClientMockGet.RUnlock()
 	return calls
 }

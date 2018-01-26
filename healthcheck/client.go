@@ -8,13 +8,13 @@ import (
 
 // healthcheckClient is an implementation of Client that can be used to call the healthcheck endpoint of any service
 type healthcheckClient struct {
-	Client  HttpClient
+	Client  httpClient
 	Url     string
 	Service string
 }
 
-// HttpClient has a get method. Implemented by http.Client etc.
-type HttpClient interface {
+// httpClient has a get method. Implemented by http.Client etc.
+type httpClient interface {
 	Get(url string) (*http.Response, error)
 }
 
