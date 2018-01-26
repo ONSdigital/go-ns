@@ -50,7 +50,17 @@ There are also `healthcheck.Client` implementations for other services in go-ns 
 
 #### Creating new health check clients
 
-Any implementation of the healthcheck.Client interface can be used as a client:
+A default healthcheck client (that uses rhttp.DefaultClient to call the service endpoint) can be obtained by calling
+```
+healthcheck.NewClient(service, url)
+```
+e.g.
+```
+client := healthcheck.NewClient("service name", "http://service-host:80/healthcheck")
+```
+
+If you don't want to use the default client,
+any implementation of the healthcheck.Client interface can be used as a client:
 ```
 type Client interface {
 	Healthcheck() (string, error)
