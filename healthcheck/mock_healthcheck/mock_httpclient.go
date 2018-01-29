@@ -12,18 +12,18 @@ var (
 	lockhttpClientMockGet sync.RWMutex
 )
 
-// HttpClientMock is a mock implementation of httpClient.
+// HttpClientMock is a mock implementation of HttpClient.
 //
-//     func TestSomethingThatUseshttpClient(t *testing.T) {
+//     func TestSomethingThatUsesHttpClient(t *testing.T) {
 //
-//         // make and configure a mocked httpClient
-//         mockedhttpClient := &HttpClientMock{
+//         // make and configure a mocked HttpClient
+//         mockedHttpClient := &HttpClientMock{
 //             GetFunc: func(url string) (*http.Response, error) {
 // 	               panic("TODO: mock out the Get method")
 //             },
 //         }
 //
-//         // TODO: use mockedhttpClient in code that requires httpClient
+//         // TODO: use mockedHttpClient in code that requires HttpClient
 //         //       and then make assertions.
 //
 //     }

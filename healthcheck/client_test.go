@@ -1,4 +1,4 @@
-package healthcheck
+package healthcheck_test
 
 import (
 	"errors"
@@ -7,53 +7,90 @@ import (
 
 	"github.com/ONSdigital/go-ns/healthcheck/mock_healthcheck"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/ONSdigital/go-ns/healthcheck"
 )
 
-func TestUnitHealthcheckClient(t *testing.T) {
+
+func TestHealthcheckClientWithoutError(t *testing.T) {
 
 	service := "myService"
+	url := "http://foo/bar"
 
-	Convey("Healthcheck returns nil when no error", t, func() {
+	Convey("Given a healthcheck client with mocked HttpClient", t, func() {
 		mock := &mock_healthcheck.HttpClientMock{
 			GetFunc: func(url string) (*http.Response, error) {
-				return &http.Response{StatusCode:http.StatusOK}, nil
+				return &http.Response{StatusCode: http.StatusOK}, nil
 			},
 		}
 
-		client := healthcheckClient{Client:mock, Url:"http://foo/bar", Service: service}
+		client := healthcheck.NewClient(service, url, mock)
 
-		s, e := client.Healthcheck()
-		So(s, ShouldEqual, service)
-		So(e, ShouldBeNil)
+		Convey("When healthcheck is invoked", func() {
+
+			s, err := client.Healthcheck()
+
+			Convey("Healthcheck invokes HttpClient correctly and returns nil", func() {
+
+				So(s, ShouldEqual, service)
+				So(err, ShouldBeNil)
+				So(len(mock.GetCalls()), ShouldEqual, 1)
+				So(mock.GetCalls()[0].URL, ShouldEqual, url)
+			})
+		})
 	})
+}
 
-	Convey("Healthcheck returns error when status != 200", t, func() {
+func TestHealthcheckClientReportsError(t *testing.T) {
+
+	service := "myService"
+
+	Convey("Given a healthcheck client with mocked HttpClient returning a 500 error", t, func() {
 		mock := &mock_healthcheck.HttpClientMock{
 			GetFunc: func(url string) (*http.Response, error) {
 				return &http.Response{StatusCode:http.StatusInternalServerError}, nil
 			},
 		}
 
-		client := healthcheckClient{Client:mock, Url:"http://foo/bar", Service: service}
+		client := healthcheck.NewClient(service, "http://foo/bar", mock)
 
-		s, e := client.Healthcheck()
-		So(s, ShouldEqual, service)
-		So(e, ShouldNotBeNil)
+		Convey("When healthcheck is invoked", func() {
+
+			s, err := client.Healthcheck()
+
+			Convey("Healthcheck returns an error", func() {
+
+				So(s, ShouldEqual, service)
+				So(err, ShouldNotBeNil)
+			})
+		})
 	})
 
-	Convey("Healthcheck returns error when Get returns error", t, func() {
-		err := errors.New("This is an error")
+}
+
+func TestHealthcheckClientReturnsError(t *testing.T) {
+
+	service := "myService"
+
+	Convey("Given a healthcheck client with mocked HttpClient returning a connection error", t, func() {
+		mockErr := errors.New("This is an error")
 		mock := &mock_healthcheck.HttpClientMock{
 			GetFunc: func(url string) (*http.Response, error) {
-				return &http.Response{StatusCode:http.StatusInternalServerError}, err
+				return &http.Response{StatusCode:http.StatusInternalServerError}, mockErr
 			},
 		}
 
-		client := healthcheckClient{Client:mock, Url:"http://foo/bar", Service: service}
+		client := healthcheck.NewClient(service, "http://foo/bar", mock)
 
-		s, e := client.Healthcheck()
-		So(s, ShouldEqual, service)
-		So(e, ShouldEqual, err)
+		Convey("When healthcheck is invoked", func() {
+
+			s, err := client.Healthcheck()
+
+			Convey("Healthcheck returns the error error", func() {
+
+				So(s, ShouldEqual, service)
+				So(err, ShouldEqual, mockErr)
+			})
+		})
 	})
 
 }
