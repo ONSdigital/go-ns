@@ -1,9 +1,9 @@
 package neo4j
 
 import (
+	"github.com/ONSdigital/go-ns/healthcheck"
 	"github.com/ONSdigital/go-ns/log"
 	bolt "github.com/ONSdigital/golang-neo4j-bolt-driver"
-	"github.com/ONSdigital/go-ns/healthcheck"
 )
 
 // ensure the Neo4jClient satisfies the Client interface.

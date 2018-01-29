@@ -1,0 +1,23 @@
+{
+    "count": 1,
+    "items": [
+        {
+            "code": "6789",
+            "dimension_option_url": "http://localhost:22000/datasets/12345/editions/time-series/versions/1/dimensions/geography/options/6789",
+            "has_data": true,
+            "label": "Newport",
+            "matches": {
+                "label": [
+                    {
+                        "start": 0,
+                        "end": 6
+                    }
+                ]
+            },
+            "number_of_children": 3
+        }
+    ],
+    "limit": 1,
+    "offset": 0,
+    "total_count": 1
+}

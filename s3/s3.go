@@ -1,9 +1,9 @@
 package s3
 
 import (
-	"io"
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/s3"
+	"io"
 	"time"
 )
 

@@ -24,6 +24,11 @@ func (e ErrInvalidRendererResponse) Error() string {
 	return fmt.Sprintf("invalid response from renderer service - status %d", e.responseCode)
 }
 
+// Code returns the status code received from renderer if an error is returned
+func (e ErrInvalidRendererResponse) Code() int {
+	return e.responseCode
+}
+
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
 	client *rhttp.Client

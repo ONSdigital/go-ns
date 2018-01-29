@@ -6,6 +6,7 @@ Health checks
 Create a health check server to check neo4j and the filter API every 30 seconds:
 ```
 neoHealthChecker := neo4j.NewHealthCheckClient(neo4jConnPool)
+elasticsearchChecker := elasticsearch.NewHealthCheckClient(url)
 filterAPIHealthChecker := filterHealthCheck.New(config.FilterAPIURL)
 
 healthChecker := healthcheck.NewServer(
@@ -13,6 +14,7 @@ healthChecker := healthcheck.NewServer(
     config.HealthCheckInterval,
     errorChannel,
     filterAPIHealthChecker,
+    elasticsearchChecker,
     neoHealthChecker)
 ```
 
@@ -48,7 +50,17 @@ There are also `healthcheck.Client` implementations for other services in go-ns 
 
 #### Creating new health check clients
 
-Any implementation of the healthcheck.Client interface can be used as a client:
+A default healthcheck client (that uses rhttp.DefaultClient to call the service endpoint) can be obtained by calling
+```
+healthcheck.NewDefaultClient(service, url)
+```
+e.g.
+```
+client := healthcheck.NewDefaultClient("service name", "http://service-host:80/healthcheck")
+```
+
+If you don't want to use the default client,
+any implementation of the healthcheck.Client interface can be used as a client:
 ```
 type Client interface {
 	Healthcheck() (string, error)
