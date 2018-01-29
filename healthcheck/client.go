@@ -1,9 +1,9 @@
 package healthcheck
 
 import (
+	"fmt"
 	"github.com/ONSdigital/go-ns/rhttp"
 	"net/http"
-	"fmt"
 )
 
 // healthcheckClient is an implementation of Client that can be used to call the healthcheck endpoint of any service
@@ -41,7 +41,7 @@ func NewClient(service string, url string, client HttpClient) *healthcheckClient
 // NewDefaultClient creates a new Client for a service with the given name and healthcheck endpoint (url).
 // it uses rhttp.DefaultClient to make requests to the given url, reporting on any response status code != 200.
 func NewDefaultClient(service string, url string) *healthcheckClient {
-	return NewClient(service, url,rhttp.DefaultClient)
+	return NewClient(service, url, rhttp.DefaultClient)
 }
 
 // Healthcheck calls the endpoint url and alerts the caller of any errors

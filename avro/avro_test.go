@@ -323,11 +323,11 @@ func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.
 		testData := &testData4{
 			Team: "Doncaster",
 			Footballers: []Footballer{
-				Footballer{
+				{
 					Email: "jgregory@gmail.com",
 					Name:  "jack gregory",
 				},
-				Footballer{
+				{
 					Email: "pdoherty@gmail.com",
 					Name:  "paul doherty",
 				},

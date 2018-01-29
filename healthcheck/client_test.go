@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/ONSdigital/go-ns/healthcheck"
 	"github.com/ONSdigital/go-ns/healthcheck/mock_healthcheck"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/ONSdigital/go-ns/healthcheck"
 )
-
 
 func TestHealthcheckClientWithoutError(t *testing.T) {
 
@@ -47,7 +46,7 @@ func TestHealthcheckClientReportsError(t *testing.T) {
 	Convey("Given a healthcheck client with mocked HttpClient returning a 500 error", t, func() {
 		mock := &mock_healthcheck.HttpClientMock{
 			GetFunc: func(url string) (*http.Response, error) {
-				return &http.Response{StatusCode:http.StatusInternalServerError}, nil
+				return &http.Response{StatusCode: http.StatusInternalServerError}, nil
 			},
 		}
 
@@ -75,7 +74,7 @@ func TestHealthcheckClientReturnsError(t *testing.T) {
 		mockErr := errors.New("This is an error")
 		mock := &mock_healthcheck.HttpClientMock{
 			GetFunc: func(url string) (*http.Response, error) {
-				return &http.Response{StatusCode:http.StatusInternalServerError}, mockErr
+				return &http.Response{StatusCode: http.StatusInternalServerError}, mockErr
 			},
 		}
 

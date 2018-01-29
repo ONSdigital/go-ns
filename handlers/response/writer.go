@@ -1,8 +1,8 @@
 package response
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
 )
 
 const contentTypeHeader = "Content-Type"
@@ -19,7 +19,7 @@ var jsonResponseEncoder JSONEncoder = &onsJSONEncoder{}
 
 // WriteJSON set the content type header to JSON, writes the response object as json and sets the http status code.
 func WriteJSON(w http.ResponseWriter, value interface{}, status int) error {
-	return jsonResponseEncoder.writeResponseJSON(w, value, status);
+	return jsonResponseEncoder.writeResponseJSON(w, value, status)
 }
 
 func (j *onsJSONEncoder) writeResponseJSON(w http.ResponseWriter, value interface{}, status int) error {
