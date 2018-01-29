@@ -52,11 +52,11 @@ There are also `healthcheck.Client` implementations for other services in go-ns 
 
 A default healthcheck client (that uses rhttp.DefaultClient to call the service endpoint) can be obtained by calling
 ```
-healthcheck.NewClient(service, url)
+healthcheck.NewDefaultClient(service, url)
 ```
 e.g.
 ```
-client := healthcheck.NewClient("service name", "http://service-host:80/healthcheck")
+client := healthcheck.NewDefaultClient("service name", "http://service-host:80/healthcheck")
 ```
 
 If you don't want to use the default client,

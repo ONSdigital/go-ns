@@ -28,8 +28,8 @@ type errorResponse struct {
 	uri          string
 }
 
-// NewClient creates a new Client for a service with the given name and healthcheck endpoint (url).
-// it uses rhttp.DefaultClient to make requests to the given url, reporting on any response status code != 200.
+// NewClient creates a new Client for a service with the given name, healthcheck endpoint (url) and HttpClient,
+// reporting on any response status code != 200.
 func NewClient(service string, url string, client HttpClient) *healthcheckClient {
 	return &healthcheckClient{
 		client:  client,
