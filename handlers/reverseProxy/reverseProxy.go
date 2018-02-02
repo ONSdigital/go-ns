@@ -1,10 +1,10 @@
 package reverseProxy
 
 import (
-	"net/url"
+	"net"
 	"net/http"
 	"net/http/httputil"
-	"net"
+	"net/url"
 	"time"
 )
 

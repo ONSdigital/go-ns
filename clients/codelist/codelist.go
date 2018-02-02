@@ -29,6 +29,11 @@ func (e ErrInvalidCodelistAPIResponse) Error() string {
 	)
 }
 
+// Code returns the status code received from code list api if an error is returned
+func (e ErrInvalidCodelistAPIResponse) Code() int {
+	return e.actualCode
+}
+
 var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server

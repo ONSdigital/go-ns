@@ -9,12 +9,13 @@ import (
 
 	"bytes"
 
+	"io"
+	"net/url"
+
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/pkg/errors"
-	"io"
-	"net/url"
 )
 
 const (
@@ -48,6 +49,11 @@ func (e ErrInvalidDatasetAPIResponse) Error() string {
 		e.actualCode,
 		e.uri,
 	)
+}
+
+// Code returns the status code received from dataset api if an error is returned
+func (e ErrInvalidDatasetAPIResponse) Code() int {
+	return e.actualCode
 }
 
 var _ error = ErrInvalidDatasetAPIResponse{}
