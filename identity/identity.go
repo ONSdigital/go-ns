@@ -15,7 +15,13 @@ var zebedeeURL = os.Getenv("ZEBEDEE_URL")
 func Handler(doAuth bool) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if doAuth && len(req.Header.Get("X-Florence-Token")) > 0 && len(zebedeeURL) > 0 {
+			if doAuth && len(req.Header.Get("X-Florence-Token")) > 0 {
+
+				// set a default zebedee value if it isn't set
+				if len(zebedeeURL) == 0 {
+					zebedeeURL = "http://localhost:8082"
+				}
+
 				cli := rchttp.DefaultClient
 
 				zebReq, err := http.NewRequest("GET", zebedeeURL+"/permission", nil)

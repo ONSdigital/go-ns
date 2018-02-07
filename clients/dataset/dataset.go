@@ -140,7 +140,7 @@ func (c *Client) Get(id string, cfg ...Config) (m Model, err error) {
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && len(c.internalToken) > 0 {
+	if next, ok := body["next"]; ok && len(req.Header.Get("Internal-Token")) > 0 {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
