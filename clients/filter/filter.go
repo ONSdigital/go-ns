@@ -24,6 +24,11 @@ type ErrInvalidFilterAPIResponse struct {
 	uri          string
 }
 
+// Config contains any configuration required to send requests to the filter api
+type Config struct {
+	InternalToken string
+}
+
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidFilterAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from filter api - should be: %d, got: %d, path: %s",
@@ -44,6 +49,12 @@ var _ error = ErrInvalidFilterAPIResponse{}
 type Client struct {
 	cli *rhttp.Client
 	url string
+}
+
+func (c *Client) setInternalTokenHeader(req *http.Request, cfg ...Config) {
+	if len(cfg) > 0 {
+		req.Header.Set("Internal-token", cfg[0].InternalToken)
+	}
 }
 
 // New creates a new instance of Client with a given filter api url
@@ -69,12 +80,18 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // GetOutput returns a filter output job for a given filter output id
-func (c *Client) GetOutput(filterOutputID string) (m Model, err error) {
+func (c *Client) GetOutput(filterOutputID string, cfg ...Config) (m Model, err error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterOutputID)
 
 	clientlog.Do("retrieving filter output", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -95,12 +112,18 @@ func (c *Client) GetOutput(filterOutputID string) (m Model, err error) {
 }
 
 // GetDimension returns information on a requested dimension name for a given filterID
-func (c *Client) GetDimension(filterID, name string) (dim Dimension, err error) {
+func (c *Client) GetDimension(filterID, name string, cfg ...Config) (dim Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
 	clientlog.Do("retrieving dimension information", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -126,12 +149,18 @@ func (c *Client) GetDimension(filterID, name string) (dim Dimension, err error) 
 }
 
 // GetDimensions will return the dimensions associated with the provided filter id
-func (c *Client) GetDimensions(filterID string) (dims []Dimension, err error) {
+func (c *Client) GetDimensions(filterID string, cfg ...Config) (dims []Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.url, filterID)
 
 	clientlog.Do("retrieving all dimensions for given filter job", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -152,12 +181,18 @@ func (c *Client) GetDimensions(filterID string) (dims []Dimension, err error) {
 }
 
 // GetDimensionOptions retrieves a list of the dimension options
-func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOption, err error) {
+func (c *Client) GetDimensionOptions(filterID, name string, cfg ...Config) (opts []DimensionOption, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.url, filterID, name)
 
 	clientlog.Do("retrieving selected dimension options for filter job", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -180,7 +215,7 @@ func (c *Client) GetDimensionOptions(filterID, name string) (opts []DimensionOpt
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
-func (c *Client) CreateBlueprint(instanceID string, names []string) (string, error) {
+func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Config) (string, error) {
 	fj := Model{InstanceID: instanceID}
 
 	var dimensions []ModelDimension
@@ -201,7 +236,13 @@ func (c *Client) CreateBlueprint(instanceID string, names []string) (string, err
 		"instanceID": instanceID,
 	})
 
-	resp, err := c.cli.Post(uri, "application/json", bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -224,7 +265,7 @@ func (c *Client) CreateBlueprint(instanceID string, names []string) (string, err
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model
-func (c *Client) UpdateBlueprint(m Model, doSubmit bool) (mdl Model, err error) {
+func (c *Client) UpdateBlueprint(m Model, doSubmit bool, cfg ...Config) (mdl Model, err error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return
@@ -245,6 +286,7 @@ func (c *Client) UpdateBlueprint(m Model, doSubmit bool) (mdl Model, err error) 
 	if err != nil {
 		return
 	}
+	c.setInternalTokenHeader(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -269,7 +311,7 @@ func (c *Client) UpdateBlueprint(m Model, doSubmit bool) (mdl Model, err error) 
 
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and name
-func (c *Client) AddDimensionValue(filterID, name, value string) error {
+func (c *Client) AddDimensionValue(filterID, name, value string, cfg ...Config) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
 
 	clientlog.Do("adding dimension option to filter job", service, uri, log.Data{
@@ -281,6 +323,7 @@ func (c *Client) AddDimensionValue(filterID, name, value string) error {
 	if err != nil {
 		return err
 	}
+	c.setInternalTokenHeader(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -295,12 +338,13 @@ func (c *Client) AddDimensionValue(filterID, name, value string) error {
 
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID
 // and name
-func (c *Client) RemoveDimensionValue(filterID, name, value string) error {
+func (c *Client) RemoveDimensionValue(filterID, name, value string, cfg ...Config) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
 	req, err := http.NewRequest("DELETE", uri, nil)
 	if err != nil {
 		return err
 	}
+	c.setInternalTokenHeader(req, cfg...)
 
 	clientlog.Do("removing dimension option from filter job", service, uri, log.Data{
 		"method": "DELETE",
@@ -319,7 +363,7 @@ func (c *Client) RemoveDimensionValue(filterID, name, value string) error {
 }
 
 // RemoveDimension removes a given dimension from a filter job
-func (c *Client) RemoveDimension(filterID, name string) (err error) {
+func (c *Client) RemoveDimension(filterID, name string, cfg ...Config) (err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
 	clientlog.Do("removing dimension from filter job", service, uri, log.Data{
@@ -331,6 +375,7 @@ func (c *Client) RemoveDimension(filterID, name string) (err error) {
 	if err != nil {
 		return
 	}
+	c.setInternalTokenHeader(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -346,14 +391,20 @@ func (c *Client) RemoveDimension(filterID, name string) (err error) {
 }
 
 // AddDimension adds a new dimension to a filter job
-func (c *Client) AddDimension(id, name string) error {
+func (c *Client) AddDimension(id, name string, cfg ...Config) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name)
 	clientlog.Do("adding dimension to filter job", service, uri, log.Data{
 		"method":    "POST",
 		"dimension": name,
 	})
 
-	resp, err := c.cli.Post(uri, "application/json", bytes.NewBufferString(`{}`))
+	req, err := http.NewRequest("POST", uri, bytes.NewBufferString(`{}`))
+	if err != nil {
+		return err
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return err
 	}
@@ -366,12 +417,18 @@ func (c *Client) AddDimension(id, name string) error {
 }
 
 // GetJobState will return the current state of the filter job
-func (c *Client) GetJobState(filterID string) (m Model, err error) {
+func (c *Client) GetJobState(filterID string, cfg ...Config) (m Model, err error) {
 	uri := fmt.Sprintf("%s/filters/%s", c.url, filterID)
 
 	clientlog.Do("retrieving filter job state", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
@@ -392,7 +449,7 @@ func (c *Client) GetJobState(filterID string) (m Model, err error) {
 }
 
 // AddDimensionValues adds many options to a filter job dimension
-func (c *Client) AddDimensionValues(filterID, name string, options []string) error {
+func (c *Client) AddDimensionValues(filterID, name string, options []string, cfg ...Config) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
 	clientlog.Do("adding multiple dimension values to filter job", service, uri, log.Data{
@@ -411,7 +468,13 @@ func (c *Client) AddDimensionValues(filterID, name string, options []string) err
 		return err
 	}
 
-	resp, err := c.cli.Post(uri, "application/json", bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return err
 	}
@@ -424,7 +487,7 @@ func (c *Client) AddDimensionValues(filterID, name string, options []string) err
 }
 
 // GetPreview attempts to retrieve a preview for a given filterOutputID
-func (c *Client) GetPreview(filterOutputID string) (p Preview, err error) {
+func (c *Client) GetPreview(filterOutputID string, cfg ...Config) (p Preview, err error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.url, filterOutputID)
 
 	clientlog.Do("retrieving preview for filter output job", service, uri, log.Data{
@@ -432,7 +495,13 @@ func (c *Client) GetPreview(filterOutputID string) (p Preview, err error) {
 		"filterID": filterOutputID,
 	})
 
-	resp, err := c.cli.Get(uri)
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setInternalTokenHeader(req, cfg...)
+
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		return
 	}
