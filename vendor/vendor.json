@@ -153,6 +153,12 @@
 			"revisionTime": "2017-06-12T21:54:33Z"
 		},
 		{
+			"checksumSHA1": "T9ZELc3R0iF2fpS7+MXfxWRESk8=",
+			"path": "github.com/hashicorp/vault/api",
+			"revision": "0cd6c833fe0df3fe6ff4a949321325745b586a5a",
+			"revisionTime": "2018-03-01T01:09:21Z"
+		},
+		{
 			"checksumSHA1": "Js/yx9fZ3+wH1wZpHNIxSTMIaCg=",
 			"path": "github.com/jtolds/gls",
 			"revision": "77f18212c9c7edc9bd6a33d383a7b545ce62f064",
