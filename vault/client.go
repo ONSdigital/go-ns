@@ -23,6 +23,19 @@ func CreateVaultClient(token, vaultAddress string, retries int) (*VaultClient, e
 	return &VaultClient{token, client}, nil
 }
 
+// CreateTLSVaultClient by providing a auth token, vault address and the maxium number of retries for a request
+func CreateTLSVaultClient(token, vaultAddress string, retries int, cacert, cert, key string) (*VaultClient, error) {
+	config := vaultapi.Config{Address: vaultAddress, MaxRetries: retries}
+	config.ConfigureTLS(&vaultapi.TLSConfig{CACert: cacert, ClientCert: cert, ClientKey: key})
+	client, err := vaultapi.NewClient(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	client.SetToken(token)
+	return &VaultClient{token, client}, nil
+}
+
 // Read a secret from vault. If the token does not have the correct policy this shall return an error or if the
 // vault server is not reachable. This method shall return all the information store about the secret
 func (c *VaultClient) Read(path string) (map[string]interface{}, error) {
