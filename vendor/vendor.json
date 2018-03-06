@@ -358,6 +358,12 @@
 			"revisionTime": "2017-06-07T22:27:57Z"
 		},
 		{
+			"checksumSHA1": "iy7TNc01LWFOGwRwD6v0iDRqtLU=",
+			"path": "github.com/smartystreets/go-aws-auth",
+			"revision": "8ef1316913ee4f44bc48c2456e44a5c1c68ea53b",
+			"revisionTime": "2017-05-04T20:50:21Z"
+		},
+		{
 			"checksumSHA1": "f4m09DHEetaanti/GqUJzyCBTaI=",
 			"path": "github.com/smartystreets/goconvey/convey",
 			"revision": "9e8dc3f972df6c8fcc0375ef492c24d0bb204857",
