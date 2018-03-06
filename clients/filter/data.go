@@ -17,7 +17,7 @@ type Model struct {
 	FilterID   string              `json:"filter_id"`
 	InstanceID string              `json:"instance_id"`
 	Links      Links               `json:"links"`
-	Dataset    string              `json:"dataset"`
+	DatasetID  string              `json:"dataset_id"`
 	Edition    string              `json:"edition"`
 	Version    string              `json:"version"`
 	State      string              `json:"state"`

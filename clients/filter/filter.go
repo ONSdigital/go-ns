@@ -215,8 +215,8 @@ func (c *Client) GetDimensionOptions(filterID, name string, cfg ...Config) (opts
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
-func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Config) (string, error) {
-	fj := Model{InstanceID: instanceID}
+func (c *Client) CreateBlueprint(datasetID, edition, version string, names []string, cfg ...Config) (string, error) {
+	fj := Model{DatasetID: datasetID, Edition: edition, Version: version}
 
 	var dimensions []ModelDimension
 	for _, name := range names {
@@ -232,8 +232,10 @@ func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Confi
 
 	uri := c.url + "/filters"
 	clientlog.Do("attemping to create filter blueprint", service, uri, log.Data{
-		"method":     "POST",
-		"instanceID": instanceID,
+		"method":    "POST",
+		"datasetID": datasetID,
+		"edition":   edition,
+		"version":   version,
 	})
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
@@ -248,7 +250,7 @@ func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Confi
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.New("invalid status from filter api")
+		return "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
 	defer resp.Body.Close()
 
