@@ -10,14 +10,14 @@ import (
 func main() {
 
 	log.Namespace = "vault-example"
-	log.Debug("Creating vault client", log.Data{})
-	devAddress := "http://127.0.0.1:8200"
+	devAddress := os.Getenv("VAULT_ADDR")
 	token := os.Getenv("VAULT_TOKEN")
 
 	client, err := vault.CreateVaultClient(token, devAddress, 3)
 
 	// In production no tokens should be logged
 	logData := log.Data{"address": devAddress, "token": token}
+	log.Debug("Created vault client", logData)
 
 	if err != nil {
 		log.ErrorC("failed to connect to vault", err, logData)

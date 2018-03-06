@@ -8,11 +8,10 @@ import (
 
 // VaultClient Used to read and write secrets from vault
 type VaultClient struct {
-	token  string
 	client *vaultapi.Client
 }
 
-// CreateVaultClient by providing a auth token, vault address and the maxium number of retries for a request
+// CreateVaultClient by providing an auth token, vault address and the maximum number of retries for a request
 func CreateVaultClient(token, vaultAddress string, retries int) (*VaultClient, error) {
 	config := vaultapi.Config{Address: vaultAddress, MaxRetries: retries}
 	client, err := vaultapi.NewClient(&config)
@@ -20,11 +19,11 @@ func CreateVaultClient(token, vaultAddress string, retries int) (*VaultClient, e
 		return nil, err
 	}
 	client.SetToken(token)
-	return &VaultClient{token, client}, nil
+	return &VaultClient{client}, nil
 }
 
-// CreateTLSVaultClient by providing a auth token, vault address and the maxium number of retries for a request
-func CreateTLSVaultClient(token, vaultAddress string, retries int, cacert, cert, key string) (*VaultClient, error) {
+// CreateVaultClientTLS is like the CreateVaultClient function but wraps the HTTP client with TLS
+func CreateVaultClientTLS(token, vaultAddress string, retries int, cacert, cert, key string) (*VaultClient, error) {
 	config := vaultapi.Config{Address: vaultAddress, MaxRetries: retries}
 	config.ConfigureTLS(&vaultapi.TLSConfig{CACert: cacert, ClientCert: cert, ClientKey: key})
 	client, err := vaultapi.NewClient(&config)
@@ -33,11 +32,11 @@ func CreateTLSVaultClient(token, vaultAddress string, retries int, cacert, cert,
 	}
 
 	client.SetToken(token)
-	return &VaultClient{token, client}, nil
+	return &VaultClient{client}, nil
 }
 
-// Read a secret from vault. If the token does not have the correct policy this shall return an error or if the
-// vault server is not reachable. This method shall return all the information store about the secret
+// Read reads a secret from vault. If the token does not have the correct policy this returns an error;
+// if the vault server is not reachable, return all the information stored about the secret.
 func (c *VaultClient) Read(path string) (map[string]interface{}, error) {
 	secret, err := c.client.Logical().Read(path)
 	if err != nil {
@@ -63,8 +62,8 @@ func (c *VaultClient) ReadKey(path, key string) (string, error) {
 	return val.(string), nil
 }
 
-// Write a secret to vault. If the token does not have the correct policy this shall return an error or if the
-// vault server is not reachable. If nil is returned the operation was successful
+// Write writes a secret to vault. Returns an error if the token does not have the correct policy or the
+// vault server is not reachable. Returns nil when the operation was successful.
 func (c *VaultClient) Write(path string, data map[string]interface{}) error {
 	_, err := c.client.Logical().Write(path, data)
 	return err
