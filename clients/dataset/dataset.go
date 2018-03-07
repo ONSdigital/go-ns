@@ -1,11 +1,14 @@
 package dataset
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sort"
+
+	"github.com/ONSdigital/go-ns/rchttp"
 
 	"bytes"
 
@@ -25,6 +28,7 @@ const (
 // Config contains any configuration required to send requests to the dataset api
 type Config struct {
 	InternalToken string
+	ctx           context.Context
 }
 
 //go:generate moq -out dataset_mocks/mocks.go -pkg dataset_mocks . RHTTPClient
@@ -46,6 +50,15 @@ type RHTTPClient interface {
 	PostForm(uri string, data url.Values) (*http.Response, error)
 }
 
+// RCHTTPClient retry http client.
+type RCHTTPClient interface {
+	Do(ctx context.Context, req *http.Request) (*http.Response, error)
+	Get(ctx context.Context, url string) (*http.Response, error)
+	Head(ctx context.Context, url string) (*http.Response, error)
+	Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
+	PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error)
+}
+
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from dataset api - should be: %d, got: %d, path: %s",
@@ -65,15 +78,17 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
 	cli           RHTTPClient
+	ctxcli        RCHTTPClient
 	url           string
 	internalToken string
 }
 
-// New creates a new instance of Client with a given filter api url
+// New creates a new instance of Client with a given dataset api url
 func New(datasetAPIURL string) *Client {
 	return &Client{
-		cli: rhttp.DefaultClient,
-		url: datasetAPIURL,
+		cli:    rhttp.DefaultClient,
+		ctxcli: rchttp.DefaultClient,
+		url:    datasetAPIURL,
 	}
 }
 
@@ -104,6 +119,13 @@ func (c *Client) Healthcheck() (string, error) {
 	return service, nil
 }
 
+func (c *Client) doRequest(req *http.Request, cfg ...Config) (resp *http.Response, err error) {
+	if len(cfg) > 0 && cfg[0].ctx != nil {
+		return c.ctxcli.Do(cfg[0].ctx, req)
+	}
+	return c.cli.Do(req)
+}
+
 // Get returns dataset level information for a given dataset id
 func (c *Client) Get(id string, cfg ...Config) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
@@ -116,7 +138,7 @@ func (c *Client) Get(id string, cfg ...Config) (m Model, err error) {
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -163,7 +185,7 @@ func (c *Client) GetEdition(datasetID, edition string, cfg ...Config) (m Edition
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -195,7 +217,7 @@ func (c *Client) GetEditions(id string, cfg ...Config) (m []Edition, err error) 
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -231,7 +253,7 @@ func (c *Client) GetVersions(id, edition string, cfg ...Config) (m []Version, er
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -268,7 +290,7 @@ func (c *Client) GetVersion(id, edition, version string, cfg ...Config) (m Versi
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -305,7 +327,7 @@ func (c *Client) PutVersion(datasetID, edition, version string, v Version, cfg .
 
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
@@ -330,7 +352,7 @@ func (c *Client) GetVersionMetadata(id, edition, version string, cfg ...Config) 
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -362,7 +384,7 @@ func (c *Client) GetDimensions(id, edition, version string, cfg ...Config) (m Di
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
@@ -399,7 +421,7 @@ func (c *Client) GetOptions(id, edition, version, dimension string, cfg ...Confi
 	}
 	c.setInternalTokenHeader(req, cfg...)
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
 		return
 	}
