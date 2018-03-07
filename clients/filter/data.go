@@ -12,6 +12,20 @@ type DimensionOption struct {
 	Option              string `json:"option"`
 }
 
+// CreateBlueprint represents the fields required to create a filter blueprint
+type CreateBlueprint struct {
+	Dataset    Dataset          `json:"dataset"`
+	Dimensions []ModelDimension `json:"dimensions"`
+	FilterID   string           `json:"filter_id"`
+}
+
+// Dataset represents the dataset fields required to create a filter blueprint
+type Dataset struct {
+	DatasetID string `json:"dataset_id"`
+	Edition   string `json:"edition"`
+	Version   int    `json:"version"`
+}
+
 // Model represents a model returned from the filter api
 type Model struct {
 	FilterID   string              `json:"filter_id"`
@@ -41,9 +55,8 @@ type Link struct {
 
 // ModelDimension represents a dimension to be filtered upon
 type ModelDimension struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
-	IDs    []string `json:"ids"`
+	Name    string   `json:"name"`
+	Options []string `json:"options"`
 }
 
 // Download represents a download within a filter from api response

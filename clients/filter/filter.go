@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/log"
@@ -216,16 +217,21 @@ func (c *Client) GetDimensionOptions(filterID, name string, cfg ...Config) (opts
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
 func (c *Client) CreateBlueprint(datasetID, edition, version string, names []string, cfg ...Config) (string, error) {
-	fj := Model{DatasetID: datasetID, Edition: edition, Version: version}
+	ver, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+
+	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
 
 	var dimensions []ModelDimension
 	for _, name := range names {
 		dimensions = append(dimensions, ModelDimension{Name: name})
 	}
 
-	fj.Dimensions = dimensions
+	cb.Dimensions = dimensions
 
-	b, err := json.Marshal(fj)
+	b, err := json.Marshal(cb)
 	if err != nil {
 		return "", err
 	}
@@ -259,11 +265,11 @@ func (c *Client) CreateBlueprint(datasetID, edition, version string, names []str
 		return "", err
 	}
 
-	if err = json.Unmarshal(b, &fj); err != nil {
+	if err = json.Unmarshal(b, &cb); err != nil {
 		return "", err
 	}
 
-	return fj.FilterID, nil
+	return cb.FilterID, nil
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model
