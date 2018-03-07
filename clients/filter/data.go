@@ -57,6 +57,7 @@ type Link struct {
 type ModelDimension struct {
 	Name    string   `json:"name"`
 	Options []string `json:"options"`
+	Values  []string `json:"values"`
 }
 
 // Download represents a download within a filter from api response
