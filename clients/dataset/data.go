@@ -36,6 +36,7 @@ type Version struct {
 	CollectionID  string              `json:"collection_id"`
 	Downloads     map[string]Download `json:"downloads"`
 	Edition       string              `json:"edition"`
+	Dimensions    []Dimension         `json:"dimensions"`
 	ID            string              `json:"id"`
 	InstanceID    string              `json:"instance_id"`
 	LatestChanges []Change            `json:"latest_changes"`
@@ -146,6 +147,7 @@ type Dimension struct {
 	ID          string `json:"dimension"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
+	Label       string `json:"label"`
 }
 
 // Options represents a list of options from the dataset api
