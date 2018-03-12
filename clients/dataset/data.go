@@ -41,7 +41,7 @@ type Version struct {
 	LatestChanges []Change            `json:"latest_changes"`
 	Links         Links               `json:"links"`
 	ReleaseDate   string              `json:"release_date"`
-	State         string              `json:"date"`
+	State         string              `json:"state"`
 	Temporal      []Temporal          `json:"temporal"`
 	Version       int                 `json:"version"`
 }
@@ -54,8 +54,10 @@ type Metadata struct {
 
 // Download represents a version download from the dataset api
 type Download struct {
-	URL  string `json:"url"`
-	Size string `json:"size"`
+	URL     string `json:"url"`
+	Size    string `json:"size"`
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // Edition represents an edition within a dataset
