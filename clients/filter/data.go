@@ -21,7 +21,7 @@ type CreateBlueprint struct {
 
 // Dataset represents the dataset fields required to create a filter blueprint
 type Dataset struct {
-	DatasetID string `json:"dataset_id"`
+	DatasetID string `json:"id"`
 	Edition   string `json:"edition"`
 	Version   int    `json:"version"`
 }
