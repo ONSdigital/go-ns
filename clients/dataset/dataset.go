@@ -99,7 +99,7 @@ func (c *Client) SetInternalToken(token string) {
 	c.internalToken = token
 }
 
-func (c *Client) setInternalTokenHeader(req *http.Request, cfg ...Config) {
+func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
 	if len(cfg) > 0 {
 		req.Header.Set(authTokenHeader, cfg[0].InternalToken)
 		req.Header.Set(xDownloadServiceHeader, cfg[0].XDownloadServiceToken)
@@ -139,7 +139,7 @@ func (c *Client) Get(id string, cfg ...Config) (m Model, err error) {
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -186,7 +186,7 @@ func (c *Client) GetEdition(datasetID, edition string, cfg ...Config) (m Edition
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -218,7 +218,7 @@ func (c *Client) GetEditions(id string, cfg ...Config) (m []Edition, err error) 
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -254,7 +254,7 @@ func (c *Client) GetVersions(id, edition string, cfg ...Config) (m []Version, er
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -291,7 +291,7 @@ func (c *Client) GetVersion(id, edition, version string, cfg ...Config) (m Versi
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -328,7 +328,7 @@ func (c *Client) PutVersion(datasetID, edition, version string, v Version, cfg .
 		return errors.Wrap(err, "error while attempting to create http request")
 	}
 
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -353,7 +353,7 @@ func (c *Client) GetVersionMetadata(id, edition, version string, cfg ...Config) 
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -385,7 +385,7 @@ func (c *Client) GetDimensions(id, edition, version string, cfg ...Config) (m Di
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
@@ -422,7 +422,7 @@ func (c *Client) GetOptions(id, edition, version, dimension string, cfg ...Confi
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.doRequest(req, cfg...)
 	if err != nil {
