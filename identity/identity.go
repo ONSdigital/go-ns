@@ -6,13 +6,24 @@ import (
 
 	"github.com/ONSdigital/go-ns/rchttp"
 
+	"context"
 	"github.com/ONSdigital/go-ns/log"
 )
 
+//go:generate moq -out identitytest/http_client.go -pkg identitytest . HttpClient
+
 var zebedeeURL = os.Getenv("ZEBEDEE_URL")
 
-// Handler controls the authenticating of a request
+type HttpClient interface {
+	Do(ctx context.Context, req *http.Request) (*http.Response, error)
+}
+
 func Handler(doAuth bool) func(http.Handler) http.Handler {
+	return handler(doAuth, rchttp.DefaultClient)
+}
+
+// Handler controls the authenticating of a request
+func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if doAuth && len(req.Header.Get("X-Florence-Token")) > 0 {
@@ -21,8 +32,6 @@ func Handler(doAuth bool) func(http.Handler) http.Handler {
 				if len(zebedeeURL) == 0 {
 					zebedeeURL = "http://localhost:8082"
 				}
-
-				cli := rchttp.DefaultClient
 
 				zebReq, err := http.NewRequest("GET", zebedeeURL+"/permission", nil)
 				if err != nil {
