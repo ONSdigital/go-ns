@@ -204,6 +204,18 @@ func (c *Client) GetEdition(datasetID, edition string, cfg ...Config) (m Edition
 	}
 	defer resp.Body.Close()
 
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return
+	}
+
+	if next, ok := body["next"]; ok && len(req.Header.Get("Internal-Token")) > 0 {
+		b, err = json.Marshal(next)
+		if err != nil {
+			return
+		}
+	}
+
 	err = json.Unmarshal(b, &m)
 	return
 }
@@ -235,6 +247,22 @@ func (c *Client) GetEditions(id string, cfg ...Config) (m []Edition, err error) 
 		return
 	}
 	defer resp.Body.Close()
+
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return nil, nil
+	}
+
+	if _, ok := body["items"].([]map[string]interface{})[0]["next"]; ok && len(req.Header.Get(authTokenHeader)) > 0 {
+		var items []map[string]interface{}
+		for _, item := range body["items"].([]map[string]interface{}) {
+			items = append(items, item["next"].(map[string]interface{}))
+		}
+		b, err = json.Marshal(items)
+		if err != nil {
+			return
+		}
+	}
 
 	editions := struct {
 		Items []Edition `json:"items"`
