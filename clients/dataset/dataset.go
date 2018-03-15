@@ -253,10 +253,10 @@ func (c *Client) GetEditions(id string, cfg ...Config) (m []Edition, err error) 
 		return nil, nil
 	}
 
-	if _, ok := body["items"].([]map[string]interface{})[0]["next"]; ok && len(req.Header.Get(authTokenHeader)) > 0 {
+	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && len(req.Header.Get(authTokenHeader)) > 0 {
 		var items []map[string]interface{}
-		for _, item := range body["items"].([]map[string]interface{}) {
-			items = append(items, item["next"].(map[string]interface{}))
+		for _, item := range body["items"].([]interface{}) {
+			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))
 		}
 		b, err = json.Marshal(items)
 		if err != nil {
