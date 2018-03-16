@@ -15,10 +15,10 @@ import (
 //go:generate moq -out identitytest/http_client.go -pkg identitytest . HttpClient
 
 var zebedeeURL = os.Getenv("ZEBEDEE_URL")
-var florenceHeaderKey = "X-Florence-Token"
-var authHeaderKey = "Authorization"
-var userIdentityKey = "User-Identity"
-var callerIdentityKey = "Caller-Identity"
+const florenceHeaderKey = "X-Florence-Token"
+const authHeaderKey = "Authorization"
+const userIdentityKey = "User-Identity"
+const callerIdentityKey = "Caller-Identity"
 
 type HttpClient interface {
 	Do(ctx context.Context, req *http.Request) (*http.Response, error)
@@ -62,7 +62,7 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 
 					if isUserReq {
 						zebReq.Header.Set(florenceHeaderKey, florenceToken)
-					} else if isServiceReq {
+					} else {
 						zebReq.Header.Set(authHeaderKey, authToken)
 					}
 
@@ -73,8 +73,10 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 						return
 					}
 
-					// Check to see if the florence user is authorised
+					// Check to see if the user is authorised
 					if resp.StatusCode != http.StatusOK {
+						log.DebugR(req, "unexpected status code returned from zebedee identity endpoint",
+							log.Data{"status": resp.StatusCode})
 						w.WriteHeader(resp.StatusCode)
 						return
 					}
@@ -101,9 +103,7 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 	}
 }
 
-func unmarshalResponse(resp *http.Response) (*identityResponse, error) {
-
-	var identityResp *identityResponse
+func unmarshalResponse(resp *http.Response) (identityResp *identityResponse, err error) {
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
