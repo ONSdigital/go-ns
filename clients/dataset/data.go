@@ -46,6 +46,11 @@ type Version struct {
 	Version       int                 `json:"version"`
 }
 
+// Instance represents an instance within a dataset
+type Instance struct {
+	Version
+}
+
 // Metadata is a combination of version and dataset model fields
 type Metadata struct {
 	Version

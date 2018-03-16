@@ -341,6 +341,38 @@ func (c *Client) GetVersion(id, edition, version string, cfg ...Config) (m Versi
 	return
 }
 
+// GetInstance returns an instance from the dataset api
+func (c *Client) GetInstance(instanceID string, cfg ...Config) (m Instance, err error) {
+	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+
+	clientlog.Do("retrieving dataset version", service, uri)
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setRequestHeaders(req, cfg...)
+
+	resp, err := c.doRequest(req, cfg...)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
 // PutVersion update the version
 func (c *Client) PutVersion(datasetID, edition, version string, v Version, cfg ...Config) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
