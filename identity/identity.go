@@ -24,16 +24,17 @@ type HttpClient interface {
 	Do(ctx context.Context, req *http.Request) (*http.Response, error)
 }
 
-// Handler controls the authenticating of a request
-func Handler(doAuth bool) func(http.Handler) http.Handler {
-	return handler(doAuth, rchttp.DefaultClient)
-}
-
 type identityResponse struct {
 	Identifier string `json:"identifier"`
 }
 
-func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
+// Handler controls the authenticating of a request
+func Handler(doAuth bool) func(http.Handler) http.Handler {
+	return HandlerForHttpClient(doAuth, rchttp.DefaultClient)
+}
+
+// HandlerForHttpClient allows a handler to be created that uses the given HTTP client
+func HandlerForHttpClient(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 

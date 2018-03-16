@@ -39,7 +39,7 @@ func TestHandler_NoAuth(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -71,7 +71,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -106,7 +106,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -152,7 +152,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -210,7 +210,7 @@ func TestHandler_florenceToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -267,7 +267,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -329,7 +329,7 @@ func TestHandler_authToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -392,7 +392,7 @@ func TestHandler_bothTokens(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := handler(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
