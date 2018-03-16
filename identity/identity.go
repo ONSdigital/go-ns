@@ -37,14 +37,23 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
+			logData := log.Data{}
+			log.DebugR(req, "identity middleware called", logData)
+
 			ctx := req.Context()
 
 			if doAuth {
+
 				florenceToken := req.Header.Get(florenceHeaderKey)
 				authToken := req.Header.Get(authHeaderKey)
 
 				isUserReq := len(florenceToken) > 0
 				isServiceReq := len(authToken) > 0
+
+				logData["is_user_request"] = isUserReq
+				logData["is_service_request"] = isServiceReq
+
+				log.DebugR(req, "authentication enabled, checking for expected tokens", logData)
 
 				if isUserReq || isServiceReq {
 
@@ -53,9 +62,14 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 						zebedeeURL = "http://localhost:8082"
 					}
 
-					zebReq, err := http.NewRequest("GET", zebedeeURL+"/identity", nil)
+					url := zebedeeURL + "/identity"
+
+					logData["url"] = url
+					log.DebugR(req, "calling zebedee to authenticate", logData)
+
+					zebReq, err := http.NewRequest("GET", url, nil)
 					if err != nil {
-						log.ErrorR(req, err, nil)
+						log.ErrorR(req, err, logData)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
@@ -68,22 +82,22 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 
 					resp, err := cli.Do(ctx, zebReq)
 					if err != nil {
-						log.ErrorR(req, err, nil)
+						log.ErrorR(req, err, logData)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
 					// Check to see if the user is authorised
 					if resp.StatusCode != http.StatusOK {
-						log.DebugR(req, "unexpected status code returned from zebedee identity endpoint",
-							log.Data{"status": resp.StatusCode})
+						logData["status"] = resp.StatusCode
+						log.DebugR(req, "unexpected status code returned from zebedee identity endpoint", logData)
 						w.WriteHeader(resp.StatusCode)
 						return
 					}
 
 					identityResp, err := unmarshalResponse(resp)
 					if err != nil {
-						log.ErrorR(req, err, nil)
+						log.ErrorR(req, err, logData)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
@@ -93,10 +107,18 @@ func handler(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
 						userIdentity = req.Header.Get(userIdentityKey)
 					}
 
+					logData["user_identity"] = userIdentity
+					logData["caller_identity"] = identityResp.Identifier
+					log.DebugR(req, "user identity retrieved, setting context values", logData)
+
 					ctx = context.WithValue(ctx, userIdentityKey, userIdentity)
 					ctx = context.WithValue(ctx, callerIdentityKey, identityResp.Identifier)
 				}
+			} else {
+				log.DebugR(req, "skipping authentication against zebedee, auth is not enabled", nil)
 			}
+
+			log.DebugR(req, "identity middleware finished, calling downstream handler", logData)
 
 			h.ServeHTTP(w, req.WithContext(ctx))
 		})
