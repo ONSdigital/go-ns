@@ -26,12 +26,12 @@ type identityResponse struct {
 }
 
 // Handler controls the authenticating of a request
-func Handler(doAuth bool, zebedeeUrl string) func(http.Handler) http.Handler {
-	return HandlerForHttpClient(doAuth, rchttp.DefaultClient, zebedeeUrl)
+func Handler(doAuth bool, zebedeeURL string) func(http.Handler) http.Handler {
+	return HandlerForHttpClient(doAuth, rchttp.DefaultClient, zebedeeURL)
 }
 
 // HandlerForHttpClient allows a handler to be created that uses the given HTTP client
-func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeUrl string) func(http.Handler) http.Handler {
+func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeURL string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
@@ -55,7 +55,7 @@ func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeUrl string) func(h
 
 				if isUserReq || isServiceReq {
 
-					url := zebedeeUrl + "/identity"
+					url := zebedeeURL + "/identity"
 
 					logData["url"] = url
 					log.DebugR(req, "calling zebedee to authenticate", logData)
