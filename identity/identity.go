@@ -2,8 +2,6 @@ package identity
 
 import (
 	"net/http"
-	"os"
-
 	"github.com/ONSdigital/go-ns/rchttp"
 
 	"context"
@@ -14,7 +12,6 @@ import (
 
 //go:generate moq -out identitytest/http_client.go -pkg identitytest . HttpClient
 
-var zebedeeURL = os.Getenv("ZEBEDEE_URL")
 const florenceHeaderKey = "X-Florence-Token"
 const authHeaderKey = "Authorization"
 const userIdentityKey = "User-Identity"
@@ -29,12 +26,12 @@ type identityResponse struct {
 }
 
 // Handler controls the authenticating of a request
-func Handler(doAuth bool) func(http.Handler) http.Handler {
-	return HandlerForHttpClient(doAuth, rchttp.DefaultClient)
+func Handler(doAuth bool, zebedeeUrl string) func(http.Handler) http.Handler {
+	return HandlerForHttpClient(doAuth, rchttp.DefaultClient, zebedeeUrl)
 }
 
 // HandlerForHttpClient allows a handler to be created that uses the given HTTP client
-func HandlerForHttpClient(doAuth bool, cli HttpClient) func(http.Handler) http.Handler {
+func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeUrl string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
@@ -58,12 +55,7 @@ func HandlerForHttpClient(doAuth bool, cli HttpClient) func(http.Handler) http.H
 
 				if isUserReq || isServiceReq {
 
-					// set a default zebedee value if it isn't set
-					if len(zebedeeURL) == 0 {
-						zebedeeURL = "http://localhost:8082"
-					}
-
-					url := zebedeeURL + "/identity"
+					url := zebedeeUrl + "/identity"
 
 					logData["url"] = url
 					log.DebugR(req, "calling zebedee to authenticate", logData)

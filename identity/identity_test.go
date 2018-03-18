@@ -13,12 +13,13 @@ import (
 	"encoding/json"
 )
 
-var url = "/whatever"
-var florenceToken = "123"
-var authToken = "345"
-var serviceIdentifier = "api1"
-var userIdentifier = "fred@ons.gov.uk"
-var expectedZebedeeUrl = "http://localhost:8082/identity"
+const url = "/whatever"
+const florenceToken = "123"
+const authToken = "345"
+const serviceIdentifier = "api1"
+const userIdentifier = "fred@ons.gov.uk"
+const zebedeeUrl = "http://localhost:8082"
+const expectedZebedeeUrl = "http://localhost:8082/identity"
 
 func TestHandler_NoAuth(t *testing.T) {
 
@@ -39,7 +40,7 @@ func TestHandler_NoAuth(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -71,7 +72,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -106,7 +107,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -152,7 +153,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -210,7 +211,7 @@ func TestHandler_florenceToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -267,7 +268,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -329,7 +330,7 @@ func TestHandler_authToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -392,7 +393,7 @@ func TestHandler_bothTokens(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHttpClient(doAuth, httpClient)(httpHandler)
+		identityHandler := HandlerForHttpClient(doAuth, httpClient, zebedeeUrl)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
