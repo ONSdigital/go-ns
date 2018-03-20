@@ -258,7 +258,9 @@ func (c *Client) GetEditions(id string, cfg ...Config) (m []Edition, err error) 
 		for _, item := range body["items"].([]interface{}) {
 			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))
 		}
-		b, err = json.Marshal(items)
+		parentItems := make(map[string]interface{})
+		parentItems["items"] = items
+		b, err = json.Marshal(parentItems)
 		if err != nil {
 			return
 		}
