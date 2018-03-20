@@ -4,6 +4,7 @@
 package dataset_mocks
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,77 +12,85 @@ import (
 )
 
 var (
-	lockRHTTPClientMockDo       sync.RWMutex
-	lockRHTTPClientMockGet      sync.RWMutex
-	lockRHTTPClientMockHead     sync.RWMutex
-	lockRHTTPClientMockPost     sync.RWMutex
-	lockRHTTPClientMockPostForm sync.RWMutex
+	lockRCHTTPClientMockDo       sync.RWMutex
+	lockRCHTTPClientMockGet      sync.RWMutex
+	lockRCHTTPClientMockHead     sync.RWMutex
+	lockRCHTTPClientMockPost     sync.RWMutex
+	lockRCHTTPClientMockPostForm sync.RWMutex
 )
 
-// RHTTPClientMock is a mock implementation of RHTTPClient.
+// RCHTTPClientMock is a mock implementation of RCHTTPClient.
 //
-//     func TestSomethingThatUsesRHTTPClient(t *testing.T) {
+//     func TestSomethingThatUsesRCHTTPClient(t *testing.T) {
 //
-//         // make and configure a mocked RHTTPClient
-//         mockedRHTTPClient := &RHTTPClientMock{
-//             DoFunc: func(req *http.Request) (*http.Response, error) {
+//         // make and configure a mocked RCHTTPClient
+//         mockedRCHTTPClient := &RCHTTPClientMock{
+//             DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 // 	               panic("TODO: mock out the Do method")
 //             },
-//             GetFunc: func(url string) (*http.Response, error) {
+//             GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
 // 	               panic("TODO: mock out the Get method")
 //             },
-//             HeadFunc: func(url string) (*http.Response, error) {
+//             HeadFunc: func(ctx context.Context, url string) (*http.Response, error) {
 // 	               panic("TODO: mock out the Head method")
 //             },
-//             PostFunc: func(url string, contentType string, body io.Reader) (*http.Response, error) {
+//             PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 // 	               panic("TODO: mock out the Post method")
 //             },
-//             PostFormFunc: func(uri string, data url.Values) (*http.Response, error) {
+//             PostFormFunc: func(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
 // 	               panic("TODO: mock out the PostForm method")
 //             },
 //         }
 //
-//         // TODO: use mockedRHTTPClient in code that requires RHTTPClient
+//         // TODO: use mockedRCHTTPClient in code that requires RCHTTPClient
 //         //       and then make assertions.
 //
 //     }
-type RHTTPClientMock struct {
+type RCHTTPClientMock struct {
 	// DoFunc mocks the Do method.
-	DoFunc func(req *http.Request) (*http.Response, error)
+	DoFunc func(ctx context.Context, req *http.Request) (*http.Response, error)
 
 	// GetFunc mocks the Get method.
-	GetFunc func(url string) (*http.Response, error)
+	GetFunc func(ctx context.Context, url string) (*http.Response, error)
 
 	// HeadFunc mocks the Head method.
-	HeadFunc func(url string) (*http.Response, error)
+	HeadFunc func(ctx context.Context, url string) (*http.Response, error)
 
 	// PostFunc mocks the Post method.
-	PostFunc func(url string, contentType string, body io.Reader) (*http.Response, error)
+	PostFunc func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
 
 	// PostFormFunc mocks the PostForm method.
-	PostFormFunc func(uri string, data url.Values) (*http.Response, error)
+	PostFormFunc func(ctx context.Context, uri string, data url.Values) (*http.Response, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Do holds details about calls to the Do method.
 		Do []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Req is the req argument value.
 			Req *http.Request
 		}
 		// Get holds details about calls to the Get method.
 		Get []struct {
-			// Url is the url argument value.
-			Url string
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// URL is the url argument value.
+			URL string
 		}
 		// Head holds details about calls to the Head method.
 		Head []struct {
-			// Url is the url argument value.
-			Url string
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// URL is the url argument value.
+			URL string
 		}
 		// Post holds details about calls to the Post method.
 		Post []struct {
-			// Url is the url argument value.
-			Url string
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// URL is the url argument value.
+			URL string
 			// ContentType is the contentType argument value.
 			ContentType string
 			// Body is the body argument value.
@@ -89,8 +98,10 @@ type RHTTPClientMock struct {
 		}
 		// PostForm holds details about calls to the PostForm method.
 		PostForm []struct {
-			// Uri is the uri argument value.
-			Uri string
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// URI is the uri argument value.
+			URI string
 			// Data is the data argument value.
 			Data url.Values
 		}
@@ -98,168 +109,188 @@ type RHTTPClientMock struct {
 }
 
 // Do calls DoFunc.
-func (mock *RHTTPClientMock) Do(req *http.Request) (*http.Response, error) {
+func (mock *RCHTTPClientMock) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	if mock.DoFunc == nil {
-		panic("moq: RHTTPClientMock.DoFunc is nil but RHTTPClient.Do was just called")
+		panic("moq: RCHTTPClientMock.DoFunc is nil but RCHTTPClient.Do was just called")
 	}
 	callInfo := struct {
+		Ctx context.Context
 		Req *http.Request
 	}{
+		Ctx: ctx,
 		Req: req,
 	}
-	lockRHTTPClientMockDo.Lock()
+	lockRCHTTPClientMockDo.Lock()
 	mock.calls.Do = append(mock.calls.Do, callInfo)
-	lockRHTTPClientMockDo.Unlock()
-	return mock.DoFunc(req)
+	lockRCHTTPClientMockDo.Unlock()
+	return mock.DoFunc(ctx, req)
 }
 
 // DoCalls gets all the calls that were made to Do.
 // Check the length with:
-//     len(mockedRHTTPClient.DoCalls())
-func (mock *RHTTPClientMock) DoCalls() []struct {
+//     len(mockedRCHTTPClient.DoCalls())
+func (mock *RCHTTPClientMock) DoCalls() []struct {
+	Ctx context.Context
 	Req *http.Request
 } {
 	var calls []struct {
+		Ctx context.Context
 		Req *http.Request
 	}
-	lockRHTTPClientMockDo.RLock()
+	lockRCHTTPClientMockDo.RLock()
 	calls = mock.calls.Do
-	lockRHTTPClientMockDo.RUnlock()
+	lockRCHTTPClientMockDo.RUnlock()
 	return calls
 }
 
 // Get calls GetFunc.
-func (mock *RHTTPClientMock) Get(url string) (*http.Response, error) {
+func (mock *RCHTTPClientMock) Get(ctx context.Context, url string) (*http.Response, error) {
 	if mock.GetFunc == nil {
-		panic("moq: RHTTPClientMock.GetFunc is nil but RHTTPClient.Get was just called")
+		panic("moq: RCHTTPClientMock.GetFunc is nil but RCHTTPClient.Get was just called")
 	}
 	callInfo := struct {
-		Url string
+		Ctx context.Context
+		URL string
 	}{
-		Url: url,
+		Ctx: ctx,
+		URL: url,
 	}
-	lockRHTTPClientMockGet.Lock()
+	lockRCHTTPClientMockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
-	lockRHTTPClientMockGet.Unlock()
-	return mock.GetFunc(url)
+	lockRCHTTPClientMockGet.Unlock()
+	return mock.GetFunc(ctx, url)
 }
 
 // GetCalls gets all the calls that were made to Get.
 // Check the length with:
-//     len(mockedRHTTPClient.GetCalls())
-func (mock *RHTTPClientMock) GetCalls() []struct {
-	Url string
+//     len(mockedRCHTTPClient.GetCalls())
+func (mock *RCHTTPClientMock) GetCalls() []struct {
+	Ctx context.Context
+	URL string
 } {
 	var calls []struct {
-		Url string
+		Ctx context.Context
+		URL string
 	}
-	lockRHTTPClientMockGet.RLock()
+	lockRCHTTPClientMockGet.RLock()
 	calls = mock.calls.Get
-	lockRHTTPClientMockGet.RUnlock()
+	lockRCHTTPClientMockGet.RUnlock()
 	return calls
 }
 
 // Head calls HeadFunc.
-func (mock *RHTTPClientMock) Head(url string) (*http.Response, error) {
+func (mock *RCHTTPClientMock) Head(ctx context.Context, url string) (*http.Response, error) {
 	if mock.HeadFunc == nil {
-		panic("moq: RHTTPClientMock.HeadFunc is nil but RHTTPClient.Head was just called")
+		panic("moq: RCHTTPClientMock.HeadFunc is nil but RCHTTPClient.Head was just called")
 	}
 	callInfo := struct {
-		Url string
+		Ctx context.Context
+		URL string
 	}{
-		Url: url,
+		Ctx: ctx,
+		URL: url,
 	}
-	lockRHTTPClientMockHead.Lock()
+	lockRCHTTPClientMockHead.Lock()
 	mock.calls.Head = append(mock.calls.Head, callInfo)
-	lockRHTTPClientMockHead.Unlock()
-	return mock.HeadFunc(url)
+	lockRCHTTPClientMockHead.Unlock()
+	return mock.HeadFunc(ctx, url)
 }
 
 // HeadCalls gets all the calls that were made to Head.
 // Check the length with:
-//     len(mockedRHTTPClient.HeadCalls())
-func (mock *RHTTPClientMock) HeadCalls() []struct {
-	Url string
+//     len(mockedRCHTTPClient.HeadCalls())
+func (mock *RCHTTPClientMock) HeadCalls() []struct {
+	Ctx context.Context
+	URL string
 } {
 	var calls []struct {
-		Url string
+		Ctx context.Context
+		URL string
 	}
-	lockRHTTPClientMockHead.RLock()
+	lockRCHTTPClientMockHead.RLock()
 	calls = mock.calls.Head
-	lockRHTTPClientMockHead.RUnlock()
+	lockRCHTTPClientMockHead.RUnlock()
 	return calls
 }
 
 // Post calls PostFunc.
-func (mock *RHTTPClientMock) Post(url string, contentType string, body io.Reader) (*http.Response, error) {
+func (mock *RCHTTPClientMock) Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 	if mock.PostFunc == nil {
-		panic("moq: RHTTPClientMock.PostFunc is nil but RHTTPClient.Post was just called")
+		panic("moq: RCHTTPClientMock.PostFunc is nil but RCHTTPClient.Post was just called")
 	}
 	callInfo := struct {
-		Url         string
+		Ctx         context.Context
+		URL         string
 		ContentType string
 		Body        io.Reader
 	}{
-		Url:         url,
+		Ctx:         ctx,
+		URL:         url,
 		ContentType: contentType,
 		Body:        body,
 	}
-	lockRHTTPClientMockPost.Lock()
+	lockRCHTTPClientMockPost.Lock()
 	mock.calls.Post = append(mock.calls.Post, callInfo)
-	lockRHTTPClientMockPost.Unlock()
-	return mock.PostFunc(url, contentType, body)
+	lockRCHTTPClientMockPost.Unlock()
+	return mock.PostFunc(ctx, url, contentType, body)
 }
 
 // PostCalls gets all the calls that were made to Post.
 // Check the length with:
-//     len(mockedRHTTPClient.PostCalls())
-func (mock *RHTTPClientMock) PostCalls() []struct {
-	Url         string
+//     len(mockedRCHTTPClient.PostCalls())
+func (mock *RCHTTPClientMock) PostCalls() []struct {
+	Ctx         context.Context
+	URL         string
 	ContentType string
 	Body        io.Reader
 } {
 	var calls []struct {
-		Url         string
+		Ctx         context.Context
+		URL         string
 		ContentType string
 		Body        io.Reader
 	}
-	lockRHTTPClientMockPost.RLock()
+	lockRCHTTPClientMockPost.RLock()
 	calls = mock.calls.Post
-	lockRHTTPClientMockPost.RUnlock()
+	lockRCHTTPClientMockPost.RUnlock()
 	return calls
 }
 
 // PostForm calls PostFormFunc.
-func (mock *RHTTPClientMock) PostForm(uri string, data url.Values) (*http.Response, error) {
+func (mock *RCHTTPClientMock) PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
 	if mock.PostFormFunc == nil {
-		panic("moq: RHTTPClientMock.PostFormFunc is nil but RHTTPClient.PostForm was just called")
+		panic("moq: RCHTTPClientMock.PostFormFunc is nil but RCHTTPClient.PostForm was just called")
 	}
 	callInfo := struct {
-		Uri  string
+		Ctx  context.Context
+		URI  string
 		Data url.Values
 	}{
-		Uri:  uri,
+		Ctx:  ctx,
+		URI:  uri,
 		Data: data,
 	}
-	lockRHTTPClientMockPostForm.Lock()
+	lockRCHTTPClientMockPostForm.Lock()
 	mock.calls.PostForm = append(mock.calls.PostForm, callInfo)
-	lockRHTTPClientMockPostForm.Unlock()
-	return mock.PostFormFunc(uri, data)
+	lockRCHTTPClientMockPostForm.Unlock()
+	return mock.PostFormFunc(ctx, uri, data)
 }
 
 // PostFormCalls gets all the calls that were made to PostForm.
 // Check the length with:
-//     len(mockedRHTTPClient.PostFormCalls())
-func (mock *RHTTPClientMock) PostFormCalls() []struct {
-	Uri  string
+//     len(mockedRCHTTPClient.PostFormCalls())
+func (mock *RCHTTPClientMock) PostFormCalls() []struct {
+	Ctx  context.Context
+	URI  string
 	Data url.Values
 } {
 	var calls []struct {
-		Uri  string
+		Ctx  context.Context
+		URI  string
 		Data url.Values
 	}
-	lockRHTTPClientMockPostForm.RLock()
+	lockRCHTTPClientMockPostForm.RLock()
 	calls = mock.calls.PostForm
-	lockRHTTPClientMockPostForm.RUnlock()
+	lockRCHTTPClientMockPostForm.RUnlock()
 	return calls
 }
