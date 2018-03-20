@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/log"
+	"context"
 )
 
 // Check wraps a HTTP handler. If authentication fails an error code is returned else the HTTP handler is called
@@ -17,7 +18,7 @@ func Check(handle func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 		logData := log.Data{ "caller_identity": callerIdentity }
 
 		// just checking if an identity exists until permissions are being provided.
-		if callerIdentity == nil || callerIdentity == ""{
+		if !IsPresent(r.Context()){
 			http.Error(w, "requested resource not found", http.StatusNotFound)
 			log.ErrorR(r, errors.New("no identity was found in the context of this request"), logData)
 			return
@@ -28,4 +29,13 @@ func Check(handle func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 		// The request has been authenticated, now run the clients request
 		handle(w, r)
 	})
+}
+
+// IsPresent determines if an identity is present on the given context.
+func IsPresent(context context.Context) bool {
+
+	callerIdentity := context.Value(callerIdentityKey)
+	isPresent := callerIdentity != nil && callerIdentity != ""
+
+	return isPresent
 }
