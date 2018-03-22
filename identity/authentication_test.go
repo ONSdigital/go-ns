@@ -137,3 +137,106 @@ func TestIsPresent_withEmptyIdentity(t *testing.T) {
 		})
 	})
 }
+
+func TestUser(t *testing.T) {
+
+	Convey("Given a context with a user identity", t, func() {
+
+		ctx := context.WithValue(context.Background(), userIdentityKey, "Frederico")
+
+		Convey("When User is called with the context", func() {
+
+			user := User(ctx)
+
+			Convey("Then the response had the user identity", func() {
+				So(user, ShouldEqual, "Frederico")
+			})
+		})
+	})
+}
+
+func TestUser_noUserIdentity(t *testing.T) {
+
+	Convey("Given a context with no user identity", t, func() {
+
+		ctx := context.Background()
+
+		Convey("When User is called with the context", func() {
+
+			user := User(ctx)
+
+			Convey("Then the response is empty", func() {
+				So(user, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+func TestUser_emptyUserIdentity(t *testing.T) {
+
+	Convey("Given a context with an empty user identity", t, func() {
+
+		ctx := context.WithValue(context.Background(), userIdentityKey, "")
+
+		Convey("When User is called with the context", func() {
+
+			user := User(ctx)
+
+			Convey("Then the response is empty", func() {
+				So(user, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+
+func TestCaller(t *testing.T) {
+
+	Convey("Given a context with a caller identity", t, func() {
+
+		ctx := context.WithValue(context.Background(), callerIdentityKey, "Frederico")
+
+		Convey("When Caller is called with the context", func() {
+
+			caller := Caller(ctx)
+
+			Convey("Then the response had the caller identity", func() {
+				So(caller, ShouldEqual, "Frederico")
+			})
+		})
+	})
+}
+
+func TestCaller_noCallerIdentity(t *testing.T) {
+
+	Convey("Given a context with no caller identity", t, func() {
+
+		ctx := context.Background()
+
+		Convey("When Caller is called with the context", func() {
+
+			caller := Caller(ctx)
+
+			Convey("Then the response is empty", func() {
+				So(caller, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+func TestCaller_emptyCallerIdentity(t *testing.T) {
+
+	Convey("Given a context with an empty caller identity", t, func() {
+
+		ctx := context.WithValue(context.Background(), callerIdentityKey, "")
+
+		Convey("When Caller is called with the context", func() {
+
+			caller := Caller(ctx)
+
+			Convey("Then the response is empty", func() {
+				So(caller, ShouldEqual, "")
+			})
+		})
+	})
+}
