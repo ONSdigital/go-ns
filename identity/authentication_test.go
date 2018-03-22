@@ -149,6 +149,24 @@ func TestIsPresent_withEmptyIdentity(t *testing.T) {
 	})
 }
 
+func TestSetUser(t *testing.T) {
+
+	Convey("Given a context", t, func() {
+
+		ctx := context.Background()
+
+		Convey("When SetUser is called", func() {
+
+			user := "someone@ons.gov.uk"
+			ctx = SetUser(ctx, user)
+
+			Convey("Then the response had the caller identity", func() {
+				So(ctx.Value(userIdentityKey), ShouldEqual, user)
+			})
+		})
+	})
+}
+
 func TestUser(t *testing.T) {
 
 	Convey("Given a context with a user identity", t, func() {
@@ -217,6 +235,24 @@ func TestCaller(t *testing.T) {
 	})
 }
 
+func TestSetCaller(t *testing.T) {
+
+	Convey("Given a context", t, func() {
+
+		ctx := context.Background()
+
+		Convey("When SetCaller is called", func() {
+
+			caller := "dp-dataset-api"
+			ctx = SetCaller(ctx, caller)
+
+			Convey("Then the response had the caller identity", func() {
+				So(ctx.Value(callerIdentityKey), ShouldEqual, caller)
+			})
+		})
+	})
+}
+
 func TestCaller_noCallerIdentity(t *testing.T) {
 
 	Convey("Given a context with no caller identity", t, func() {
@@ -251,16 +287,16 @@ func TestCaller_emptyCallerIdentity(t *testing.T) {
 	})
 }
 
-func TestSetUser(t *testing.T) {
+func TestAddUserHeader(t *testing.T) {
 
 	Convey("Given a request", t, func() {
 
 		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
 
-		Convey("When SetUser is called", func() {
+		Convey("When AddUserHeader is called", func() {
 
 			user := "someone@ons.gov.uk"
-			SetUser(user, r)
+			AddUserHeader(r, user)
 
 			Convey("Then the request has the user header set", func() {
 				So(r.Header.Get(userHeaderKey), ShouldEqual, user)
@@ -269,16 +305,16 @@ func TestSetUser(t *testing.T) {
 	})
 }
 
-func TestSetServiceToken(t *testing.T) {
+func TestAddServiceTokenHeader(t *testing.T) {
 
 	Convey("Given a request", t, func() {
 
 		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
 
-		Convey("When SetServiceToken is called", func() {
+		Convey("When AddServiceTokenHeader is called", func() {
 
 			serviceToken := "123"
-			SetServiceToken(serviceToken, r)
+			AddServiceTokenHeader(r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
 				So(r.Header.Get(authHeaderKey), ShouldEqual, serviceToken)

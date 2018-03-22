@@ -47,6 +47,12 @@ func Caller(ctx context.Context) string {
 	return callerIdentity
 }
 
+// SetCaller sets the caller identity on the context
+func SetCaller(ctx context.Context, caller string) context.Context {
+
+	return context.WithValue(ctx, callerIdentityKey, caller)
+}
+
 // User gets the user identity from the context
 func User(ctx context.Context) string {
 
@@ -54,14 +60,20 @@ func User(ctx context.Context) string {
 	return userIdentity
 }
 
-// SetUser sets the given user ID on the given request
-func SetUser(user string, r *http.Request) {
+// SetUser sets the user identity on the context
+func SetUser(ctx context.Context, user string) context.Context {
+
+	return context.WithValue(ctx, userIdentityKey, user)
+}
+
+// AddUserHeader sets the given user ID on the given request
+func AddUserHeader(r *http.Request, user string) {
 
 	r.Header.Add(userHeaderKey, user)
 }
 
-// SetServiceToken sets the given service token on the given request
-func SetServiceToken(serviceToken string, r *http.Request) {
+// AddServiceTokenHeader sets the given service token on the given request
+func AddServiceTokenHeader(r *http.Request, serviceToken string) {
 
 	r.Header.Add(authHeaderKey, serviceToken)
 }
