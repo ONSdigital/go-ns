@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ONSdigital/go-ns/log"
 	"context"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 // Check wraps a HTTP handler. If authentication fails an error code is returned else the HTTP handler is called
@@ -41,15 +41,27 @@ func IsPresent(ctx context.Context) bool {
 }
 
 // Caller gets the caller identity from the context
-func Caller(ctx context.Context) (string) {
+func Caller(ctx context.Context) string {
 
 	callerIdentity, _ := ctx.Value(callerIdentityKey).(string)
 	return callerIdentity
 }
 
 // User gets the user identity from the context
-func User(ctx context.Context) (string) {
+func User(ctx context.Context) string {
 
 	userIdentity, _ := ctx.Value(userIdentityKey).(string)
 	return userIdentity
+}
+
+// SetUser sets the given user ID on the given request
+func SetUser(user string, r *http.Request) {
+
+	r.Header.Add(userHeaderKey, user)
+}
+
+// SetServiceToken sets the given service token on the given request
+func SetServiceToken(serviceToken string, r *http.Request) {
+
+	r.Header.Add(authHeaderKey, serviceToken)
 }

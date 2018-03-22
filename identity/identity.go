@@ -1,23 +1,28 @@
 package identity
 
 import (
-	"net/http"
 	"github.com/ONSdigital/go-ns/rchttp"
+	"net/http"
 
 	"context"
-	"github.com/ONSdigital/go-ns/log"
 	"encoding/json"
+	"github.com/ONSdigital/go-ns/log"
 	"io/ioutil"
 )
 
-//go:generate moq -out identitytest/http_client.go -pkg identitytest . HttpClient
+//go:generate moq -out identitytest/http_client.go -pkg identitytest . HTTPClient
+
+type contextKey string
 
 const florenceHeaderKey = "X-Florence-Token"
 const authHeaderKey = "Authorization"
-const userIdentityKey = "User-Identity"
-const callerIdentityKey = "Caller-Identity"
+const userHeaderKey = "User-Identity"
 
-type HttpClient interface {
+const userIdentityKey = contextKey("User-Identity")
+const callerIdentityKey = contextKey("Caller-Identity")
+
+// HTTPClient represents the HTTP client used internally to the identity handler.
+type HTTPClient interface {
 	Do(ctx context.Context, req *http.Request) (*http.Response, error)
 }
 
@@ -27,11 +32,11 @@ type identityResponse struct {
 
 // Handler controls the authenticating of a request
 func Handler(doAuth bool, zebedeeURL string) func(http.Handler) http.Handler {
-	return HandlerForHttpClient(doAuth, rchttp.DefaultClient, zebedeeURL)
+	return HandlerForHTTPClient(doAuth, rchttp.DefaultClient, zebedeeURL)
 }
 
-// HandlerForHttpClient allows a handler to be created that uses the given HTTP client
-func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeURL string) func(http.Handler) http.Handler {
+// HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
+func HandlerForHTTPClient(doAuth bool, cli HTTPClient, zebedeeURL string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
@@ -97,7 +102,7 @@ func HandlerForHttpClient(doAuth bool, cli HttpClient, zebedeeURL string) func(h
 
 					userIdentity := identityResp.Identifier
 					if !isUserReq {
-						userIdentity = req.Header.Get(userIdentityKey)
+						userIdentity = req.Header.Get(userHeaderKey)
 					}
 
 					logData["user_identity"] = userIdentity
@@ -124,7 +129,13 @@ func unmarshalResponse(resp *http.Response) (identityResp *identityResponse, err
 	if err != nil {
 		return identityResp, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			log.ErrorC("error closing response body", err, nil)
+		}
+	}()
 
 	return identityResp, json.Unmarshal(b, &identityResp)
 }

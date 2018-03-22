@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
 	"context"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestCheck_nilIdentity(t *testing.T) {
@@ -27,6 +27,10 @@ func TestCheck_nilIdentity(t *testing.T) {
 
 			Convey("Then a 404 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusNotFound)
+			})
+
+			Convey("Then the downstream HTTP handler is not called", func() {
+				So(handlerCalled, ShouldBeFalse)
 			})
 		})
 	})
@@ -55,10 +59,13 @@ func TestCheck_emptyIdentity(t *testing.T) {
 			Convey("Then a 404 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusNotFound)
 			})
+
+			Convey("Then the downstream HTTP handler is not called", func() {
+				So(handlerCalled, ShouldBeFalse)
+			})
 		})
 	})
 }
-
 
 func TestCheck_identityProvided(t *testing.T) {
 
@@ -83,6 +90,10 @@ func TestCheck_identityProvided(t *testing.T) {
 
 			Convey("Then the response is true", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusOK)
+			})
+
+			Convey("Then the downstream HTTP handler is called", func() {
+				So(handlerCalled, ShouldBeTrue)
 			})
 		})
 	})
@@ -189,7 +200,6 @@ func TestUser_emptyUserIdentity(t *testing.T) {
 	})
 }
 
-
 func TestCaller(t *testing.T) {
 
 	Convey("Given a context with a caller identity", t, func() {
@@ -236,6 +246,42 @@ func TestCaller_emptyCallerIdentity(t *testing.T) {
 
 			Convey("Then the response is empty", func() {
 				So(caller, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+func TestSetUser(t *testing.T) {
+
+	Convey("Given a request", t, func() {
+
+		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+
+		Convey("When SetUser is called", func() {
+
+			user := "someone@ons.gov.uk"
+			SetUser(user, r)
+
+			Convey("Then the request has the user header set", func() {
+				So(r.Header.Get(userHeaderKey), ShouldEqual, user)
+			})
+		})
+	})
+}
+
+func TestSetServiceToken(t *testing.T) {
+
+	Convey("Given a request", t, func() {
+
+		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+
+		Convey("When SetServiceToken is called", func() {
+
+			serviceToken := "123"
+			SetServiceToken(serviceToken, r)
+
+			Convey("Then the request has the service token header set", func() {
+				So(r.Header.Get(authHeaderKey), ShouldEqual, serviceToken)
 			})
 		})
 	})
