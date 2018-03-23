@@ -10,25 +10,25 @@ import (
 )
 
 var (
-	lockHttpClientMockDo sync.RWMutex
+	lockHTTPClientMockDo sync.RWMutex
 )
 
-// HttpClientMock is a mock implementation of HttpClient.
+// HTTPClientMock is a mock implementation of HTTPClient.
 //
-//     func TestSomethingThatUsesHttpClient(t *testing.T) {
+//     func TestSomethingThatUsesHTTPClient(t *testing.T) {
 //
-//         // make and configure a mocked HttpClient
-//         mockedHttpClient := &HttpClientMock{
+//         // make and configure a mocked HTTPClient
+//         mockedHTTPClient := &HTTPClientMock{
 //             DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 // 	               panic("TODO: mock out the Do method")
 //             },
 //         }
 //
-//         // TODO: use mockedHttpClient in code that requires HttpClient
+//         // TODO: use mockedHTTPClient in code that requires HTTPClient
 //         //       and then make assertions.
 //
 //     }
-type HttpClientMock struct {
+type HTTPClientMock struct {
 	// DoFunc mocks the Do method.
 	DoFunc func(ctx context.Context, req *http.Request) (*http.Response, error)
 
@@ -45,9 +45,9 @@ type HttpClientMock struct {
 }
 
 // Do calls DoFunc.
-func (mock *HttpClientMock) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (mock *HTTPClientMock) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	if mock.DoFunc == nil {
-		panic("moq: HttpClientMock.DoFunc is nil but HttpClient.Do was just called")
+		panic("moq: HTTPClientMock.DoFunc is nil but HTTPClient.Do was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -56,16 +56,16 @@ func (mock *HttpClientMock) Do(ctx context.Context, req *http.Request) (*http.Re
 		Ctx: ctx,
 		Req: req,
 	}
-	lockHttpClientMockDo.Lock()
+	lockHTTPClientMockDo.Lock()
 	mock.calls.Do = append(mock.calls.Do, callInfo)
-	lockHttpClientMockDo.Unlock()
+	lockHTTPClientMockDo.Unlock()
 	return mock.DoFunc(ctx, req)
 }
 
 // DoCalls gets all the calls that were made to Do.
 // Check the length with:
-//     len(mockedHttpClient.DoCalls())
-func (mock *HttpClientMock) DoCalls() []struct {
+//     len(mockedHTTPClient.DoCalls())
+func (mock *HTTPClientMock) DoCalls() []struct {
 	Ctx context.Context
 	Req *http.Request
 } {
@@ -73,8 +73,8 @@ func (mock *HttpClientMock) DoCalls() []struct {
 		Ctx context.Context
 		Req *http.Request
 	}
-	lockHttpClientMockDo.RLock()
+	lockHTTPClientMockDo.RLock()
 	calls = mock.calls.Do
-	lockHttpClientMockDo.RUnlock()
+	lockHTTPClientMockDo.RUnlock()
 	return calls
 }
