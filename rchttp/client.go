@@ -1,6 +1,7 @@
 package rchttp
 
 import (
+	"errors"
 	"io"
 	"math"
 	"math/rand"
@@ -67,13 +68,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	resp, err := doer(ctx, c.HTTPClient, req)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.backoff(doer, ctx, c.HTTPClient, req)
+			return c.backoff(doer, err, ctx, c.HTTPClient, req)
 		}
 		return nil, err
 	}
 
 	if c.ExponentialBackoff && resp.StatusCode >= http.StatusInternalServerError {
-		return c.backoff(doer, ctx, c.HTTPClient, req)
+		return c.backoff(doer, err, ctx, c.HTTPClient, req, errors.New("Bad server status"))
 	}
 
 	return resp, err
@@ -126,7 +127,10 @@ func (c *Client) PostForm(ctx context.Context, uri string, data url.Values) (*ht
 	return c.Post(ctx, uri, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
-func (c *Client) backoff(f func(...interface{}) (*http.Response, error), args ...interface{}) (resp *http.Response, err error) {
+func (c *Client) backoff(f func(...interface{}) (*http.Response, error), retryErr error, args ...interface{}) (resp *http.Response, err error) {
+	if c.MaxRetries < 1 {
+		return nil, retryErr
+	}
 	for attempt := 1; attempt <= c.MaxRetries; attempt++ {
 		// ensure that the context is not cancelled before iterating
 		if args[0].(context.Context).Err() != nil {
