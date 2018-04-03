@@ -35,6 +35,20 @@ func CreateVaultClientTLS(token, vaultAddress string, retries int, cacert, cert,
 	return &VaultClient{client}, nil
 }
 
+// Healthcheck determines the state of vault
+func (c *VaultClient) Healthcheck() (string, error) {
+	resp, err := c.client.Sys().Health()
+	if err != nil {
+		return "vault", err
+	}
+
+	if !resp.Initialized {
+		return "vault", errors.New("vault not initialised")
+	}
+
+	return "", nil
+}
+
 // Read reads a secret from vault. If the token does not have the correct policy this returns an error;
 // if the vault server is not reachable, return all the information stored about the secret.
 func (c *VaultClient) Read(path string) (map[string]interface{}, error) {
