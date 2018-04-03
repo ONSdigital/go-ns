@@ -23,12 +23,14 @@ import (
 const (
 	service                = "dataset-api"
 	authTokenHeader        = "Internal-Token"
+	authorizationHeader    = "Authorization"
 	xDownloadServiceHeader = "X-Download-Service-Token"
 )
 
 // Config contains any configuration required to send requests to the dataset api
 type Config struct {
 	InternalToken         string
+	AuthToken             string
 	XDownloadServiceToken string
 	Ctx                   context.Context
 }
@@ -102,6 +104,7 @@ func (c *Client) SetInternalToken(token string) {
 func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
 	if len(cfg) > 0 {
 		req.Header.Set(authTokenHeader, cfg[0].InternalToken)
+		req.Header.Set(authorizationHeader, cfg[0].AuthToken)
 		req.Header.Set(xDownloadServiceHeader, cfg[0].XDownloadServiceToken)
 	} else if len(c.internalToken) > 0 {
 		req.Header.Set("Internal-token", c.internalToken)
