@@ -17,13 +17,20 @@ import (
 )
 
 const (
-	service         = "dataset-api"
-	authTokenHeader = "Internal-Token"
+	service                = "dataset-api"
+	authTokenHeader        = "Internal-Token"
+	authorizationHeader    = "Authorization"
+	xDownloadServiceHeader = "X-Download-Service-Token"
+	florenceToken          = "X-Florence-Token"
 )
 
 // Config contains any configuration required to send requests to the dataset api
 type Config struct {
-	InternalToken string
+	InternalToken         string
+	AuthToken             string
+	XDownloadServiceToken string
+	FlorenceToken         string
+	Ctx                   context.Context
 }
 
 //go:generate moq -out dataset_mocks/mocks.go -pkg dataset_mocks . RCHTTPClient
@@ -34,6 +41,15 @@ type ErrInvalidDatasetAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
+}
+
+// RCHTTPClient retry http client.
+type RCHTTPClient interface {
+	Do(ctx context.Context, req *http.Request) (*http.Response, error)
+	Get(ctx context.Context, url string) (*http.Response, error)
+	Head(ctx context.Context, url string) (*http.Response, error)
+	Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
+	PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error)
 }
 
 // RCHTTPClient retry http client.
@@ -68,7 +84,7 @@ type Client struct {
 	internalToken string
 }
 
-// New creates a new instance of Client with a given filter api url
+// New creates a new instance of Client with a given dataset api url
 func New(datasetAPIURL string) *Client {
 	return &Client{
 		cli: rchttp.DefaultClient,
@@ -81,9 +97,12 @@ func (c *Client) SetInternalToken(token string) {
 	c.internalToken = token
 }
 
-func (c *Client) setInternalTokenHeader(req *http.Request, cfg ...Config) {
+func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
 	if len(cfg) > 0 {
-		req.Header.Set("Internal-token", cfg[0].InternalToken)
+		req.Header.Set(authTokenHeader, cfg[0].InternalToken)
+		req.Header.Set(authorizationHeader, cfg[0].AuthToken)
+		req.Header.Set(xDownloadServiceHeader, cfg[0].XDownloadServiceToken)
+		req.Header.Set(florenceToken, cfg[0].FlorenceToken)
 	} else if len(c.internalToken) > 0 {
 		req.Header.Set("Internal-token", c.internalToken)
 	}
@@ -105,6 +124,13 @@ func (c *Client) Healthcheck() (string, error) {
 	return service, nil
 }
 
+func (c *Client) doRequest(req *http.Request, cfg ...Config) (resp *http.Response, err error) {
+	if len(cfg) > 0 && cfg[0].Ctx != nil {
+		return c.ctxcli.Do(cfg[0].Ctx, req)
+	}
+	return c.cli.Do(req)
+}
+
 // Get returns dataset level information for a given dataset id
 func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
@@ -115,7 +141,7 @@ func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, er
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -162,7 +188,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg 
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -179,6 +205,18 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg 
 		return
 	}
 	defer resp.Body.Close()
+
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return
+	}
+
+	if next, ok := body["next"]; ok && len(req.Header.Get("Internal-Token")) > 0 {
+		b, err = json.Marshal(next)
+		if err != nil {
+			return
+		}
+	}
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -194,7 +232,7 @@ func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m [
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -211,6 +249,24 @@ func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m [
 		return
 	}
 	defer resp.Body.Close()
+
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return nil, nil
+	}
+
+	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && len(req.Header.Get(authTokenHeader)) > 0 {
+		var items []map[string]interface{}
+		for _, item := range body["items"].([]interface{}) {
+			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))
+		}
+		parentItems := make(map[string]interface{})
+		parentItems["items"] = items
+		b, err = json.Marshal(parentItems)
+		if err != nil {
+			return
+		}
+	}
 
 	editions := struct {
 		Items []Edition `json:"items"`
@@ -230,7 +286,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition string, cfg ...Con
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -267,7 +323,39 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cf
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
+
+	resp, err := c.doRequest(req, cfg...)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetInstance returns an instance from the dataset api
+func (c *Client) GetInstance(instanceID string, cfg ...Config) (m Instance, err error) {
+	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+
+	clientlog.Do("retrieving dataset version", service, uri)
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -304,7 +392,7 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version str
 		return errors.Wrap(err, "error while attempting to create http request")
 	}
 
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -329,7 +417,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version st
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -361,7 +449,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version string,
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -398,7 +486,7 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {

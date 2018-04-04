@@ -109,7 +109,7 @@ func TestIsPresent_withIdentity(t *testing.T) {
 
 			identityIsPresent := IsPresent(ctx)
 
-			Convey("Then a 404 response is returned", func() {
+			Convey("Then the response is true", func() {
 				So(identityIsPresent, ShouldBeTrue)
 			})
 		})

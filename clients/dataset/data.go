@@ -36,14 +36,20 @@ type Version struct {
 	CollectionID  string              `json:"collection_id"`
 	Downloads     map[string]Download `json:"downloads"`
 	Edition       string              `json:"edition"`
+	Dimensions    []Dimension         `json:"dimensions"`
 	ID            string              `json:"id"`
 	InstanceID    string              `json:"instance_id"`
 	LatestChanges []Change            `json:"latest_changes"`
 	Links         Links               `json:"links"`
 	ReleaseDate   string              `json:"release_date"`
-	State         string              `json:"date"`
+	State         string              `json:"state"`
 	Temporal      []Temporal          `json:"temporal"`
 	Version       int                 `json:"version"`
+}
+
+// Instance represents an instance within a dataset
+type Instance struct {
+	Version
 }
 
 // Metadata is a combination of version and dataset model fields
@@ -54,8 +60,10 @@ type Metadata struct {
 
 // Download represents a version download from the dataset api
 type Download struct {
-	URL  string `json:"url"`
-	Size string `json:"size"`
+	URL     string `json:"url"`
+	Size    string `json:"size"`
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
 }
 
 // Edition represents an edition within a dataset
@@ -146,6 +154,7 @@ type Dimension struct {
 	ID          string `json:"dimension"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
+	Label       string `json:"label"`
 }
 
 // Options represents a list of options from the dataset api
