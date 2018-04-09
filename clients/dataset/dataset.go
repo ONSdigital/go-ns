@@ -5,24 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"sort"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/rchttp"
 	"github.com/pkg/errors"
 )
 
-const (
-	service                = "dataset-api"
-	authTokenHeader        = "Internal-Token"
-	authorizationHeader    = "Authorization"
-	xDownloadServiceHeader = "X-Download-Service-Token"
-	florenceToken          = "X-Florence-Token"
-)
+const service = "dataset-api"
 
 // Config contains any configuration required to send requests to the dataset api
 type Config struct {
@@ -30,10 +23,7 @@ type Config struct {
 	AuthToken             string
 	XDownloadServiceToken string
 	FlorenceToken         string
-	Ctx                   context.Context
 }
-
-//go:generate moq -out dataset_mocks/mocks.go -pkg dataset_mocks . RCHTTPClient
 
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
@@ -41,24 +31,6 @@ type ErrInvalidDatasetAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
-}
-
-// RCHTTPClient retry http client.
-type RCHTTPClient interface {
-	Do(ctx context.Context, req *http.Request) (*http.Response, error)
-	Get(ctx context.Context, url string) (*http.Response, error)
-	Head(ctx context.Context, url string) (*http.Response, error)
-	Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
-	PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error)
-}
-
-// RCHTTPClient retry http client.
-type RCHTTPClient interface {
-	Do(ctx context.Context, req *http.Request) (*http.Response, error)
-	Get(ctx context.Context, url string) (*http.Response, error)
-	Head(ctx context.Context, url string) (*http.Response, error)
-	Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
-	PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error)
 }
 
 // Error should be called by the user to print out the stringified version of the error
@@ -79,32 +51,24 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli           RCHTTPClient
-	url           string
-	internalToken string
+	cli common.RCHTTPClienter
+	url string
 }
 
 // New creates a new instance of Client with a given dataset api url
-func New(datasetAPIURL string) *Client {
+func New(datasetAPIURL, serviceToken string) *Client {
 	return &Client{
-		cli: rchttp.DefaultClient,
+		cli: rchttp.ClientWithServiceToken(nil, serviceToken),
 		url: datasetAPIURL,
 	}
 }
 
-// SetInternalToken will set an internal token to use for the dataset api
-func (c *Client) SetInternalToken(token string) {
-	c.internalToken = token
-}
-
 func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
+	// TODO XXX remove this function
 	if len(cfg) > 0 {
-		req.Header.Set(authTokenHeader, cfg[0].InternalToken)
-		req.Header.Set(authorizationHeader, cfg[0].AuthToken)
-		req.Header.Set(xDownloadServiceHeader, cfg[0].XDownloadServiceToken)
-		req.Header.Set(florenceToken, cfg[0].FlorenceToken)
-	} else if len(c.internalToken) > 0 {
-		req.Header.Set("Internal-token", c.internalToken)
+		req.Header.Set(common.AuthHeaderKey, cfg[0].AuthToken)
+		req.Header.Set(common.DownloadServiceHeaderKey, cfg[0].XDownloadServiceToken)
+		req.Header.Set(common.FlorenceHeaderKey, cfg[0].FlorenceToken)
 	}
 }
 
@@ -122,13 +86,6 @@ func (c *Client) Healthcheck() (string, error) {
 	}
 
 	return service, nil
-}
-
-func (c *Client) doRequest(req *http.Request, cfg ...Config) (resp *http.Response, err error) {
-	if len(cfg) > 0 && cfg[0].Ctx != nil {
-		return c.ctxcli.Do(cfg[0].Ctx, req)
-	}
-	return c.cli.Do(req)
 }
 
 // Get returns dataset level information for a given dataset id
@@ -167,7 +124,7 @@ func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, er
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && len(req.Header.Get("Internal-Token")) > 0 {
+	if next, ok := body["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -211,7 +168,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg 
 		return
 	}
 
-	if next, ok := body["next"]; ok && len(req.Header.Get("Internal-Token")) > 0 {
+	if next, ok := body["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -255,7 +212,7 @@ func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m [
 		return nil, nil
 	}
 
-	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && len(req.Header.Get(authTokenHeader)) > 0 {
+	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
 		var items []map[string]interface{}
 		for _, item := range body["items"].([]interface{}) {
 			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))
@@ -325,7 +282,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cf
 	}
 	c.setRequestHeaders(req, cfg...)
 
-	resp, err := c.doRequest(req, cfg...)
+	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
 	}
@@ -346,7 +303,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cf
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(instanceID string, cfg ...Config) (m Instance, err error) {
+func (c *Client) GetInstance(ctx context.Context, instanceID string, cfg ...Config) (m Instance, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do("retrieving dataset version", service, uri)

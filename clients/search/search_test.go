@@ -2,18 +2,20 @@ package search
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/clients/search/search_mocks"
-	"github.com/ONSdigital/go-ns/rhttp"
+	"github.com/ONSdigital/go-ns/common/mock_common"
+	"github.com/ONSdigital/go-ns/rchttp"
 	"github.com/golang/mock/gomock"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+var ctx = context.Background()
 
 func TestSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -25,17 +27,7 @@ func TestSearchUnit(t *testing.T) {
 	Convey("test New creates a valid Client instance", t, func() {
 		cli := New("http://localhost:22000")
 		So(cli.url, ShouldEqual, "http://localhost:22000")
-		So(cli.cli, ShouldHaveSameTypeAs, rhttp.DefaultClient)
-	})
-
-	Convey("test SetInternalToken methods", t, func() {
-		c := &Client{}
-		c.SetInternalToken("test-token")
-		So(c.internalToken, ShouldEqual, "test-token")
-
-		req := httptest.NewRequest("GET", "http://localhost:22000", nil)
-		c.setInternalTokenHeader(req)
-		So(req.Header.Get("Internal-token"), ShouldEqual, "test-token")
+		So(cli.cli, ShouldHaveSameTypeAs, rchttp.DefaultClient)
 	})
 
 	Convey("test Dimension Method", t, func() {
@@ -43,9 +35,9 @@ func TestSearchUnit(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
 
-			mockCli.EXPECT().Do(gomock.Any()).Return(
+			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(bytes.NewReader(searchResp)),
@@ -56,8 +48,8 @@ func TestSearchUnit(t *testing.T) {
 				cli: mockCli,
 				url: "http://localhost:22000",
 			}
-
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
+			ctx := context.Background()
+			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err, ShouldBeNil)
 			So(m.Count, ShouldEqual, 1)
 			So(m.Limit, ShouldEqual, 1)
@@ -79,9 +71,9 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
 
-			mockCli.EXPECT().Do(gomock.Any()).Return(
+			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				nil, errors.New("client threw an error"),
 			)
 
@@ -90,15 +82,15 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
+			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err.Error(), ShouldEqual, "client threw an error")
 			So(m, ShouldBeNil)
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
 
-			mockCli.EXPECT().Do(gomock.Any()).Return(
+			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				&http.Response{
 					StatusCode: http.StatusBadRequest,
 					Body:       ioutil.NopCloser(bytes.NewReader(nil)),
@@ -110,7 +102,7 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			m, err := searchCli.Dimension("12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
+			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err.Error(), ShouldEqual, "invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
 			So(err.(*ErrInvalidSearchAPIResponse).Code(), ShouldEqual, http.StatusBadRequest)
 			So(m, ShouldBeNil)
@@ -119,8 +111,8 @@ func TestSearchUnit(t *testing.T) {
 
 	Convey("test Healthcheck method", t, func() {
 		Convey("test Healthcheck returns no error upon a 200 response from search api", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/healthcheck").Return(
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				&http.Response{
 					StatusCode: http.StatusOK,
 				}, nil,
@@ -137,8 +129,8 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Healthcheck returns error from HTTPClient if it throws an error", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/healthcheck").Return(
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				nil, errors.New("client threw an error"),
 			)
 
@@ -153,8 +145,8 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := search_mocks.NewMockHTTPClient(mockCtrl)
-			mockCli.EXPECT().Get("http://localhost:22000/healthcheck").Return(
+			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				&http.Response{
 					StatusCode: http.StatusInternalServerError,
 				}, nil,

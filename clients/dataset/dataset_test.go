@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/clients/dataset/dataset_mocks"
+	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -17,7 +17,7 @@ var ctx = context.Background()
 
 func TestClient_PutVersion(t *testing.T) {
 
-	checkResponse := func(mockRCHTTPCli *dataset_mocks.RCHTTPClientMock, expectedVersion Version) {
+	checkResponse := func(mockRCHTTPCli *commontest.RCHTTPClientMock, expectedVersion Version) {
 		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
@@ -27,7 +27,7 @@ func TestClient_PutVersion(t *testing.T) {
 	}
 
 	Convey("Given a valid version", t, func() {
-		mockRCHTTPCli := &dataset_mocks.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClientMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -37,9 +37,8 @@ func TestClient_PutVersion(t *testing.T) {
 		}
 
 		cli := Client{
-			internalToken: "1234",
-			cli:           mockRCHTTPCli,
-			url:           "http://localhost:8080",
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
 		}
 
 		Convey("when put version is called", func() {
@@ -53,15 +52,11 @@ func TestClient_PutVersion(t *testing.T) {
 			Convey("and rchttp client is called one time with the expected parameters", func() {
 				checkResponse(mockRCHTTPCli, v)
 			})
-
-			Convey("and the configured auth token is set on the outbound request", func() {
-				So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(authTokenHeader), ShouldEqual, "1234")
-			})
 		})
 	})
 
 	Convey("Given no auth token has been configured", t, func() {
-		mockRCHTTPCli := &dataset_mocks.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClientMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -87,15 +82,12 @@ func TestClient_PutVersion(t *testing.T) {
 				checkResponse(mockRCHTTPCli, v)
 			})
 
-			Convey("and the outbound request is sent without any auth tokent", func() {
-				So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(authTokenHeader), ShouldEqual, "")
-			})
 		})
 	})
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("spectacular explosion")
-		mockRCHTTPCli := &dataset_mocks.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClientMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -118,7 +110,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
-		mockRCHTTPCli := &dataset_mocks.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClientMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
