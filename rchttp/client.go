@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -22,6 +23,7 @@ type Client struct {
 	ExponentialBackoff bool
 	RetryTime          time.Duration
 	HTTPClient         *http.Client
+	AuthToken          string
 }
 
 // DefaultClient is a go-ns specific http client with sensible timeouts,
@@ -45,14 +47,51 @@ var DefaultClient = &Client{
 }
 
 // ClientWithTimeout facilitates creating a client and setting request timeout
-func ClientWithTimeout(timeout time.Duration) (c *Client) {
-	c = DefaultClient
-	c.HTTPClient.Timeout = timeout
+func ClientWithTimeout(c common.RCHTTPClienter, timeout time.Duration) common.RCHTTPClienter {
+	if c == nil {
+		c = DefaultClient
+	}
+	c.SetTimeout(timeout)
 	return c
+} // ClientWithTimeout facilitates creating a client and setting request timeout
+
+func (c *Client) SetTimeout(timeout time.Duration) {
+	c.HTTPClient.Timeout = timeout
+}
+
+// ClientWithServiceToken facilitates creating a client and setting service auth
+func ClientWithServiceToken(c common.RCHTTPClienter, authToken string) common.RCHTTPClienter {
+	if c == nil {
+		c = DefaultClient
+	}
+	c.SetAuthToken(authToken)
+	return c
+}
+
+func (c *Client) SetAuthToken(authToken string) {
+	c.AuthToken = authToken
+}
+
+func (c *Client) GetMaxRetries() int {
+	return c.MaxRetries
+}
+func (c *Client) SetMaxRetries(maxRetries int) {
+	c.MaxRetries = maxRetries
 }
 
 // Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+
+	if len(c.AuthToken) > 0 {
+		// TODO remove this deprecated header when all services stop needing it
+		common.AddDeprecatedHeader(req, c.AuthToken)
+
+		// only add this header if not already set (e.g. for authClient)
+		if len(req.Header.Get(common.AuthHeaderKey)) == 0 {
+			common.AddServiceTokenHeader(req, c.AuthToken)
+		}
+	}
+
 	doer := func(args ...interface{}) (*http.Response, error) {
 		req := args[2].(*http.Request)
 		if req.ContentLength > 0 {
@@ -128,10 +167,10 @@ func (c *Client) PostForm(ctx context.Context, uri string, data url.Values) (*ht
 }
 
 func (c *Client) backoff(f func(...interface{}) (*http.Response, error), retryErr error, args ...interface{}) (resp *http.Response, err error) {
-	if c.MaxRetries < 1 {
+	if c.GetMaxRetries() < 1 {
 		return nil, retryErr
 	}
-	for attempt := 1; attempt <= c.MaxRetries; attempt++ {
+	for attempt := 1; attempt <= c.GetMaxRetries(); attempt++ {
 		// ensure that the context is not cancelled before iterating
 		if args[0].(context.Context).Err() != nil {
 			err = args[0].(context.Context).Err()

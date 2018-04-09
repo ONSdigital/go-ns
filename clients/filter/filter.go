@@ -10,15 +10,12 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-
 	"github.com/ONSdigital/go-ns/rhttp"
 )
 
-const (
-	service       = "filter-api"
-	florenceToken = "X-Florence-Token"
-)
+const service = "filter-api"
 
 // ErrInvalidFilterAPIResponse is returned when the filter api does not respond
 // with a valid status
@@ -58,8 +55,8 @@ type Client struct {
 
 func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
 	if len(cfg) > 0 {
-		req.Header.Set("Internal-token", cfg[0].InternalToken)
-		req.Header.Set(florenceToken, cfg[0].FlorenceToken)
+		req.Header.Set(common.DeprecatedAuthHeader, cfg[0].InternalToken)
+		req.Header.Set(common.FlorenceHeaderKey, cfg[0].FlorenceToken)
 	}
 }
 
