@@ -55,20 +55,17 @@ type Client struct {
 	url string
 }
 
-// New creates a new instance of Client with a given dataset api url
-func New(datasetAPIURL, serviceToken string) *Client {
+// NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
+func NewAPIClient(datasetAPIURL, serviceToken, xDownloadServiceToken, florenceToken string) *Client {
 	return &Client{
-		cli: rchttp.ClientWithServiceToken(nil, serviceToken),
+		cli: rchttp.ClientWithDownloadServiceToken(
+			rchttp.ClientWithFlorenceToken(
+				rchttp.ClientWithServiceToken(nil, serviceToken),
+				florenceToken,
+			),
+			xDownloadServiceToken,
+		),
 		url: datasetAPIURL,
-	}
-}
-
-func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
-	// TODO XXX remove this function
-	if len(cfg) > 0 {
-		req.Header.Set(common.AuthHeaderKey, cfg[0].AuthToken)
-		req.Header.Set(common.DownloadServiceHeaderKey, cfg[0].XDownloadServiceToken)
-		req.Header.Set(common.FlorenceHeaderKey, cfg[0].FlorenceToken)
 	}
 }
 
@@ -89,7 +86,7 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, err error) {
+func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
 
 	clientlog.Do("retrieving dataset", service, uri)
@@ -98,7 +95,6 @@ func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, er
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -136,7 +132,7 @@ func (c *Client) Get(ctx context.Context, id string, cfg ...Config) (m Model, er
 }
 
 // GetEdition retrieves a single edition document from a given datasetID and edition label
-func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg ...Config) (m Edition, err error) {
+func (c *Client) GetEdition(ctx context.Context, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)
 
 	clientlog.Do("retrieving dataset editions", service, uri)
@@ -145,7 +141,6 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg 
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -180,7 +175,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string, cfg 
 }
 
 // GetEditions returns all editions for a dataset
-func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m []Edition, err error) {
+func (c *Client) GetEditions(ctx context.Context, id string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
 
 	clientlog.Do("retrieving dataset editions", service, uri)
@@ -189,7 +184,6 @@ func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m [
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -234,7 +228,7 @@ func (c *Client) GetEditions(ctx context.Context, id string, cfg ...Config) (m [
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, id, edition string, cfg ...Config) (m []Version, err error) {
+func (c *Client) GetVersions(ctx context.Context, id, edition string) (m []Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
 
 	clientlog.Do("retrieving dataset versions", service, uri)
@@ -243,7 +237,6 @@ func (c *Client) GetVersions(ctx context.Context, id, edition string, cfg ...Con
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -271,7 +264,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition string, cfg ...Con
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cfg ...Config) (m Version, err error) {
+func (c *Client) GetVersion(ctx context.Context, id, edition, version string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 
 	clientlog.Do("retrieving dataset version", service, uri)
@@ -280,7 +273,6 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cf
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -303,7 +295,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string, cf
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(ctx context.Context, instanceID string, cfg ...Config) (m Instance, err error) {
+func (c *Client) GetInstance(ctx context.Context, instanceID string) (m Instance, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do("retrieving dataset version", service, uri)
@@ -312,7 +304,6 @@ func (c *Client) GetInstance(ctx context.Context, instanceID string, cfg ...Conf
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -335,7 +326,7 @@ func (c *Client) GetInstance(ctx context.Context, instanceID string, cfg ...Conf
 }
 
 // PutVersion update the version
-func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version string, v Version, cfg ...Config) error {
+func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 	clientlog.Do("updating version", service, uri)
 
@@ -348,8 +339,6 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version str
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to create http request")
 	}
-
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -365,7 +354,7 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version str
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
-func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version string, cfg ...Config) (m Metadata, err error) {
+func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version string) (m Metadata, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.url, id, edition, version)
 
 	clientlog.Do("retrieving dataset version metadata", service, uri)
@@ -374,7 +363,6 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version st
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -397,7 +385,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version st
 }
 
 // GetDimensions will return a versions dimensions
-func (c *Client) GetDimensions(ctx context.Context, id, edition, version string, cfg ...Config) (m Dimensions, err error) {
+func (c *Client) GetDimensions(ctx context.Context, id, edition, version string) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
 	clientlog.Do("retrieving dataset version dimensions", service, uri)
@@ -406,7 +394,6 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version string,
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -434,7 +421,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version string,
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension string, cfg ...Config) (m Options, err error) {
+func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension string) (m Options, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
 
 	clientlog.Do("retrieving options for dimension", service, uri)
@@ -443,7 +430,6 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	if err != nil {
 		return
 	}
-	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {

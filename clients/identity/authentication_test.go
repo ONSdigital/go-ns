@@ -31,7 +31,7 @@ func TestHandler_NoAuth(t *testing.T) {
 	Convey("Given a request with no auth info - not even serviceToken in idClient", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		httpClient := &commontest.RCHTTPClientMock{}
+		httpClient := &commontest.RCHTTPClienterMock{}
 		idClient := NewAPIClient(httpClient, zebedeeURL, "")
 
 		Convey("When CheckRequest is called", func() {
@@ -56,7 +56,7 @@ func TestHandler_LegacyAuth(t *testing.T) {
 			common.DeprecatedAuthHeader: {serviceToken},
 		}
 
-		httpClient := &commontest.RCHTTPClientMock{}
+		httpClient := &commontest.RCHTTPClienterMock{}
 		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
 
 		Convey("When CheckRequest is called", func() {
@@ -78,7 +78,7 @@ func TestHandler_LegacyAuth(t *testing.T) {
 			common.DeprecatedAuthHeader: {"WrongServiceToken"},
 		}
 
-		httpClient := &commontest.RCHTTPClientMock{}
+		httpClient := &commontest.RCHTTPClienterMock{}
 		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
 
 		Convey("When CheckRequest is called", func() {
@@ -134,7 +134,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			common.FlorenceHeaderKey: {florenceToken},
 		}
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
@@ -204,7 +204,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			common.FlorenceHeaderKey: {florenceToken},
 		}
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
@@ -308,8 +308,8 @@ func TestHandler_bothTokens(t *testing.T) {
 	})
 }
 
-func getClientReturningIdentifier(id string) *commontest.RCHTTPClientMock {
-	return &commontest.RCHTTPClientMock{
+func getClientReturningIdentifier(id string) *commontest.RCHTTPClienterMock {
+	return &commontest.RCHTTPClienterMock{
 		SetAuthTokenFunc: func(string) {},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			response := &common.IdentityResponse{Identifier: id}
@@ -321,8 +321,8 @@ func getClientReturningIdentifier(id string) *commontest.RCHTTPClientMock {
 		},
 	}
 }
-func getClientReturningError(err error) *commontest.RCHTTPClientMock {
-	return &commontest.RCHTTPClientMock{
+func getClientReturningError(err error) *commontest.RCHTTPClienterMock {
+	return &commontest.RCHTTPClienterMock{
 		SetAuthTokenFunc: func(string) {},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return nil, err

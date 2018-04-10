@@ -35,7 +35,7 @@ func TestHandler_NoAuth(t *testing.T) {
 		req := httptest.NewRequest("GET", url, nil)
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, nil
 			},
@@ -68,7 +68,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 		req := httptest.NewRequest("GET", url, nil)
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, nil
 			},
@@ -104,7 +104,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, errors.New("broken")
@@ -150,7 +150,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
@@ -198,7 +198,7 @@ func TestHandler_florenceToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
@@ -258,7 +258,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
@@ -313,7 +313,7 @@ func TestHandler_authToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: serviceIdentifier}
@@ -376,7 +376,7 @@ func TestHandler_legacyAuthToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{}
+		httpClient := &commontest.RCHTTPClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
 
 		handlerCalled := false
@@ -420,7 +420,7 @@ func TestHandler_bothTokens(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClientMock{
+		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 

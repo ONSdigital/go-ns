@@ -35,7 +35,7 @@ func TestSearchUnit(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 
 			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				&http.Response{
@@ -71,7 +71,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 
 			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				nil, errors.New("client threw an error"),
@@ -88,7 +88,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 
 			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
 				&http.Response{
@@ -111,7 +111,7 @@ func TestSearchUnit(t *testing.T) {
 
 	Convey("test Healthcheck method", t, func() {
 		Convey("test Healthcheck returns no error upon a 200 response from search api", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				&http.Response{
 					StatusCode: http.StatusOK,
@@ -129,7 +129,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Healthcheck returns error from HTTPClient if it throws an error", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				nil, errors.New("client threw an error"),
 			)
@@ -145,7 +145,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := mock_common.NewMockRCHTTPClient(mockCtrl)
+			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
 				&http.Response{
 					StatusCode: http.StatusInternalServerError,

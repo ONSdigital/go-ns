@@ -13,24 +13,26 @@ import (
 )
 
 var (
-	lockRCHTTPClientMockDo            sync.RWMutex
-	lockRCHTTPClientMockGet           sync.RWMutex
-	lockRCHTTPClientMockGetMaxRetries sync.RWMutex
-	lockRCHTTPClientMockHead          sync.RWMutex
-	lockRCHTTPClientMockPost          sync.RWMutex
-	lockRCHTTPClientMockPostForm      sync.RWMutex
-	lockRCHTTPClientMockPut           sync.RWMutex
-	lockRCHTTPClientMockSetAuthToken  sync.RWMutex
-	lockRCHTTPClientMockSetMaxRetries sync.RWMutex
-	lockRCHTTPClientMockSetTimeout    sync.RWMutex
+	lockRCHTTPClienterMockDo                      sync.RWMutex
+	lockRCHTTPClienterMockGet                     sync.RWMutex
+	lockRCHTTPClienterMockGetMaxRetries           sync.RWMutex
+	lockRCHTTPClienterMockHead                    sync.RWMutex
+	lockRCHTTPClienterMockPost                    sync.RWMutex
+	lockRCHTTPClienterMockPostForm                sync.RWMutex
+	lockRCHTTPClienterMockPut                     sync.RWMutex
+	lockRCHTTPClienterMockSetAuthToken            sync.RWMutex
+	lockRCHTTPClienterMockSetDownloadServiceToken sync.RWMutex
+	lockRCHTTPClienterMockSetFlorenceToken        sync.RWMutex
+	lockRCHTTPClienterMockSetMaxRetries           sync.RWMutex
+	lockRCHTTPClienterMockSetTimeout              sync.RWMutex
 )
 
-// RCHTTPClientMock is a mock implementation of RCHTTPClient.
+// RCHTTPClienterMock is a mock implementation of RCHTTPClienter.
 //
-//     func TestSomethingThatUsesRCHTTPClient(t *testing.T) {
+//     func TestSomethingThatUsesRCHTTPClienter(t *testing.T) {
 //
-//         // make and configure a mocked RCHTTPClient
-//         mockedRCHTTPClient := &RCHTTPClientMock{
+//         // make and configure a mocked RCHTTPClienter
+//         mockedRCHTTPClienter := &RCHTTPClienterMock{
 //             DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 // 	               panic("TODO: mock out the Do method")
 //             },
@@ -52,8 +54,14 @@ var (
 //             PutFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 // 	               panic("TODO: mock out the Put method")
 //             },
-//             SetAuthTokenFunc: func(authToken string)  {
+//             SetAuthTokenFunc: func(token string)  {
 // 	               panic("TODO: mock out the SetAuthToken method")
+//             },
+//             SetDownloadServiceTokenFunc: func(token string)  {
+// 	               panic("TODO: mock out the SetDownloadServiceToken method")
+//             },
+//             SetFlorenceTokenFunc: func(token string)  {
+// 	               panic("TODO: mock out the SetFlorenceToken method")
 //             },
 //             SetMaxRetriesFunc: func(in1 int)  {
 // 	               panic("TODO: mock out the SetMaxRetries method")
@@ -63,11 +71,11 @@ var (
 //             },
 //         }
 //
-//         // TODO: use mockedRCHTTPClient in code that requires RCHTTPClient
+//         // TODO: use mockedRCHTTPClienter in code that requires RCHTTPClienter
 //         //       and then make assertions.
 //
 //     }
-type RCHTTPClientMock struct {
+type RCHTTPClienterMock struct {
 	// DoFunc mocks the Do method.
 	DoFunc func(ctx context.Context, req *http.Request) (*http.Response, error)
 
@@ -90,7 +98,13 @@ type RCHTTPClientMock struct {
 	PutFunc func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error)
 
 	// SetAuthTokenFunc mocks the SetAuthToken method.
-	SetAuthTokenFunc func(authToken string)
+	SetAuthTokenFunc func(token string)
+
+	// SetDownloadServiceTokenFunc mocks the SetDownloadServiceToken method.
+	SetDownloadServiceTokenFunc func(token string)
+
+	// SetFlorenceTokenFunc mocks the SetFlorenceToken method.
+	SetFlorenceTokenFunc func(token string)
 
 	// SetMaxRetriesFunc mocks the SetMaxRetries method.
 	SetMaxRetriesFunc func(in1 int)
@@ -157,8 +171,18 @@ type RCHTTPClientMock struct {
 		}
 		// SetAuthToken holds details about calls to the SetAuthToken method.
 		SetAuthToken []struct {
-			// AuthToken is the authToken argument value.
-			AuthToken string
+			// Token is the token argument value.
+			Token string
+		}
+		// SetDownloadServiceToken holds details about calls to the SetDownloadServiceToken method.
+		SetDownloadServiceToken []struct {
+			// Token is the token argument value.
+			Token string
+		}
+		// SetFlorenceToken holds details about calls to the SetFlorenceToken method.
+		SetFlorenceToken []struct {
+			// Token is the token argument value.
+			Token string
 		}
 		// SetMaxRetries holds details about calls to the SetMaxRetries method.
 		SetMaxRetries []struct {
@@ -174,9 +198,9 @@ type RCHTTPClientMock struct {
 }
 
 // Do calls DoFunc.
-func (mock *RCHTTPClientMock) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	if mock.DoFunc == nil {
-		panic("moq: RCHTTPClientMock.DoFunc is nil but RCHTTPClient.Do was just called")
+		panic("moq: RCHTTPClienterMock.DoFunc is nil but RCHTTPClienter.Do was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -185,16 +209,16 @@ func (mock *RCHTTPClientMock) Do(ctx context.Context, req *http.Request) (*http.
 		Ctx: ctx,
 		Req: req,
 	}
-	lockRCHTTPClientMockDo.Lock()
+	lockRCHTTPClienterMockDo.Lock()
 	mock.calls.Do = append(mock.calls.Do, callInfo)
-	lockRCHTTPClientMockDo.Unlock()
+	lockRCHTTPClienterMockDo.Unlock()
 	return mock.DoFunc(ctx, req)
 }
 
 // DoCalls gets all the calls that were made to Do.
 // Check the length with:
-//     len(mockedRCHTTPClient.DoCalls())
-func (mock *RCHTTPClientMock) DoCalls() []struct {
+//     len(mockedRCHTTPClienter.DoCalls())
+func (mock *RCHTTPClienterMock) DoCalls() []struct {
 	Ctx context.Context
 	Req *http.Request
 } {
@@ -202,16 +226,16 @@ func (mock *RCHTTPClientMock) DoCalls() []struct {
 		Ctx context.Context
 		Req *http.Request
 	}
-	lockRCHTTPClientMockDo.RLock()
+	lockRCHTTPClienterMockDo.RLock()
 	calls = mock.calls.Do
-	lockRCHTTPClientMockDo.RUnlock()
+	lockRCHTTPClienterMockDo.RUnlock()
 	return calls
 }
 
 // Get calls GetFunc.
-func (mock *RCHTTPClientMock) Get(ctx context.Context, url string) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) Get(ctx context.Context, url string) (*http.Response, error) {
 	if mock.GetFunc == nil {
-		panic("moq: RCHTTPClientMock.GetFunc is nil but RCHTTPClient.Get was just called")
+		panic("moq: RCHTTPClienterMock.GetFunc is nil but RCHTTPClienter.Get was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -220,16 +244,16 @@ func (mock *RCHTTPClientMock) Get(ctx context.Context, url string) (*http.Respon
 		Ctx: ctx,
 		URL: url,
 	}
-	lockRCHTTPClientMockGet.Lock()
+	lockRCHTTPClienterMockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
-	lockRCHTTPClientMockGet.Unlock()
+	lockRCHTTPClienterMockGet.Unlock()
 	return mock.GetFunc(ctx, url)
 }
 
 // GetCalls gets all the calls that were made to Get.
 // Check the length with:
-//     len(mockedRCHTTPClient.GetCalls())
-func (mock *RCHTTPClientMock) GetCalls() []struct {
+//     len(mockedRCHTTPClienter.GetCalls())
+func (mock *RCHTTPClienterMock) GetCalls() []struct {
 	Ctx context.Context
 	URL string
 } {
@@ -237,42 +261,42 @@ func (mock *RCHTTPClientMock) GetCalls() []struct {
 		Ctx context.Context
 		URL string
 	}
-	lockRCHTTPClientMockGet.RLock()
+	lockRCHTTPClienterMockGet.RLock()
 	calls = mock.calls.Get
-	lockRCHTTPClientMockGet.RUnlock()
+	lockRCHTTPClienterMockGet.RUnlock()
 	return calls
 }
 
 // GetMaxRetries calls GetMaxRetriesFunc.
-func (mock *RCHTTPClientMock) GetMaxRetries() int {
+func (mock *RCHTTPClienterMock) GetMaxRetries() int {
 	if mock.GetMaxRetriesFunc == nil {
-		panic("moq: RCHTTPClientMock.GetMaxRetriesFunc is nil but RCHTTPClient.GetMaxRetries was just called")
+		panic("moq: RCHTTPClienterMock.GetMaxRetriesFunc is nil but RCHTTPClienter.GetMaxRetries was just called")
 	}
 	callInfo := struct {
 	}{}
-	lockRCHTTPClientMockGetMaxRetries.Lock()
+	lockRCHTTPClienterMockGetMaxRetries.Lock()
 	mock.calls.GetMaxRetries = append(mock.calls.GetMaxRetries, callInfo)
-	lockRCHTTPClientMockGetMaxRetries.Unlock()
+	lockRCHTTPClienterMockGetMaxRetries.Unlock()
 	return mock.GetMaxRetriesFunc()
 }
 
 // GetMaxRetriesCalls gets all the calls that were made to GetMaxRetries.
 // Check the length with:
-//     len(mockedRCHTTPClient.GetMaxRetriesCalls())
-func (mock *RCHTTPClientMock) GetMaxRetriesCalls() []struct {
+//     len(mockedRCHTTPClienter.GetMaxRetriesCalls())
+func (mock *RCHTTPClienterMock) GetMaxRetriesCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockRCHTTPClientMockGetMaxRetries.RLock()
+	lockRCHTTPClienterMockGetMaxRetries.RLock()
 	calls = mock.calls.GetMaxRetries
-	lockRCHTTPClientMockGetMaxRetries.RUnlock()
+	lockRCHTTPClienterMockGetMaxRetries.RUnlock()
 	return calls
 }
 
 // Head calls HeadFunc.
-func (mock *RCHTTPClientMock) Head(ctx context.Context, url string) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) Head(ctx context.Context, url string) (*http.Response, error) {
 	if mock.HeadFunc == nil {
-		panic("moq: RCHTTPClientMock.HeadFunc is nil but RCHTTPClient.Head was just called")
+		panic("moq: RCHTTPClienterMock.HeadFunc is nil but RCHTTPClienter.Head was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -281,16 +305,16 @@ func (mock *RCHTTPClientMock) Head(ctx context.Context, url string) (*http.Respo
 		Ctx: ctx,
 		URL: url,
 	}
-	lockRCHTTPClientMockHead.Lock()
+	lockRCHTTPClienterMockHead.Lock()
 	mock.calls.Head = append(mock.calls.Head, callInfo)
-	lockRCHTTPClientMockHead.Unlock()
+	lockRCHTTPClienterMockHead.Unlock()
 	return mock.HeadFunc(ctx, url)
 }
 
 // HeadCalls gets all the calls that were made to Head.
 // Check the length with:
-//     len(mockedRCHTTPClient.HeadCalls())
-func (mock *RCHTTPClientMock) HeadCalls() []struct {
+//     len(mockedRCHTTPClienter.HeadCalls())
+func (mock *RCHTTPClienterMock) HeadCalls() []struct {
 	Ctx context.Context
 	URL string
 } {
@@ -298,16 +322,16 @@ func (mock *RCHTTPClientMock) HeadCalls() []struct {
 		Ctx context.Context
 		URL string
 	}
-	lockRCHTTPClientMockHead.RLock()
+	lockRCHTTPClienterMockHead.RLock()
 	calls = mock.calls.Head
-	lockRCHTTPClientMockHead.RUnlock()
+	lockRCHTTPClienterMockHead.RUnlock()
 	return calls
 }
 
 // Post calls PostFunc.
-func (mock *RCHTTPClientMock) Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) Post(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 	if mock.PostFunc == nil {
-		panic("moq: RCHTTPClientMock.PostFunc is nil but RCHTTPClient.Post was just called")
+		panic("moq: RCHTTPClienterMock.PostFunc is nil but RCHTTPClienter.Post was just called")
 	}
 	callInfo := struct {
 		Ctx         context.Context
@@ -320,16 +344,16 @@ func (mock *RCHTTPClientMock) Post(ctx context.Context, url string, contentType 
 		ContentType: contentType,
 		Body:        body,
 	}
-	lockRCHTTPClientMockPost.Lock()
+	lockRCHTTPClienterMockPost.Lock()
 	mock.calls.Post = append(mock.calls.Post, callInfo)
-	lockRCHTTPClientMockPost.Unlock()
+	lockRCHTTPClienterMockPost.Unlock()
 	return mock.PostFunc(ctx, url, contentType, body)
 }
 
 // PostCalls gets all the calls that were made to Post.
 // Check the length with:
-//     len(mockedRCHTTPClient.PostCalls())
-func (mock *RCHTTPClientMock) PostCalls() []struct {
+//     len(mockedRCHTTPClienter.PostCalls())
+func (mock *RCHTTPClienterMock) PostCalls() []struct {
 	Ctx         context.Context
 	URL         string
 	ContentType string
@@ -341,16 +365,16 @@ func (mock *RCHTTPClientMock) PostCalls() []struct {
 		ContentType string
 		Body        io.Reader
 	}
-	lockRCHTTPClientMockPost.RLock()
+	lockRCHTTPClienterMockPost.RLock()
 	calls = mock.calls.Post
-	lockRCHTTPClientMockPost.RUnlock()
+	lockRCHTTPClienterMockPost.RUnlock()
 	return calls
 }
 
 // PostForm calls PostFormFunc.
-func (mock *RCHTTPClientMock) PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) PostForm(ctx context.Context, uri string, data url.Values) (*http.Response, error) {
 	if mock.PostFormFunc == nil {
-		panic("moq: RCHTTPClientMock.PostFormFunc is nil but RCHTTPClient.PostForm was just called")
+		panic("moq: RCHTTPClienterMock.PostFormFunc is nil but RCHTTPClienter.PostForm was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
@@ -361,16 +385,16 @@ func (mock *RCHTTPClientMock) PostForm(ctx context.Context, uri string, data url
 		URI:  uri,
 		Data: data,
 	}
-	lockRCHTTPClientMockPostForm.Lock()
+	lockRCHTTPClienterMockPostForm.Lock()
 	mock.calls.PostForm = append(mock.calls.PostForm, callInfo)
-	lockRCHTTPClientMockPostForm.Unlock()
+	lockRCHTTPClienterMockPostForm.Unlock()
 	return mock.PostFormFunc(ctx, uri, data)
 }
 
 // PostFormCalls gets all the calls that were made to PostForm.
 // Check the length with:
-//     len(mockedRCHTTPClient.PostFormCalls())
-func (mock *RCHTTPClientMock) PostFormCalls() []struct {
+//     len(mockedRCHTTPClienter.PostFormCalls())
+func (mock *RCHTTPClienterMock) PostFormCalls() []struct {
 	Ctx  context.Context
 	URI  string
 	Data url.Values
@@ -380,16 +404,16 @@ func (mock *RCHTTPClientMock) PostFormCalls() []struct {
 		URI  string
 		Data url.Values
 	}
-	lockRCHTTPClientMockPostForm.RLock()
+	lockRCHTTPClienterMockPostForm.RLock()
 	calls = mock.calls.PostForm
-	lockRCHTTPClientMockPostForm.RUnlock()
+	lockRCHTTPClienterMockPostForm.RUnlock()
 	return calls
 }
 
 // Put calls PutFunc.
-func (mock *RCHTTPClientMock) Put(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+func (mock *RCHTTPClienterMock) Put(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 	if mock.PutFunc == nil {
-		panic("moq: RCHTTPClientMock.PutFunc is nil but RCHTTPClient.Put was just called")
+		panic("moq: RCHTTPClienterMock.PutFunc is nil but RCHTTPClienter.Put was just called")
 	}
 	callInfo := struct {
 		Ctx         context.Context
@@ -402,16 +426,16 @@ func (mock *RCHTTPClientMock) Put(ctx context.Context, url string, contentType s
 		ContentType: contentType,
 		Body:        body,
 	}
-	lockRCHTTPClientMockPut.Lock()
+	lockRCHTTPClienterMockPut.Lock()
 	mock.calls.Put = append(mock.calls.Put, callInfo)
-	lockRCHTTPClientMockPut.Unlock()
+	lockRCHTTPClienterMockPut.Unlock()
 	return mock.PutFunc(ctx, url, contentType, body)
 }
 
 // PutCalls gets all the calls that were made to Put.
 // Check the length with:
-//     len(mockedRCHTTPClient.PutCalls())
-func (mock *RCHTTPClientMock) PutCalls() []struct {
+//     len(mockedRCHTTPClienter.PutCalls())
+func (mock *RCHTTPClienterMock) PutCalls() []struct {
 	Ctx         context.Context
 	URL         string
 	ContentType string
@@ -423,101 +447,163 @@ func (mock *RCHTTPClientMock) PutCalls() []struct {
 		ContentType string
 		Body        io.Reader
 	}
-	lockRCHTTPClientMockPut.RLock()
+	lockRCHTTPClienterMockPut.RLock()
 	calls = mock.calls.Put
-	lockRCHTTPClientMockPut.RUnlock()
+	lockRCHTTPClienterMockPut.RUnlock()
 	return calls
 }
 
 // SetAuthToken calls SetAuthTokenFunc.
-func (mock *RCHTTPClientMock) SetAuthToken(authToken string) {
+func (mock *RCHTTPClienterMock) SetAuthToken(token string) {
 	if mock.SetAuthTokenFunc == nil {
-		panic("moq: RCHTTPClientMock.SetAuthTokenFunc is nil but RCHTTPClient.SetAuthToken was just called")
+		panic("moq: RCHTTPClienterMock.SetAuthTokenFunc is nil but RCHTTPClienter.SetAuthToken was just called")
 	}
 	callInfo := struct {
-		AuthToken string
+		Token string
 	}{
-		AuthToken: authToken,
+		Token: token,
 	}
-	lockRCHTTPClientMockSetAuthToken.Lock()
+	lockRCHTTPClienterMockSetAuthToken.Lock()
 	mock.calls.SetAuthToken = append(mock.calls.SetAuthToken, callInfo)
-	lockRCHTTPClientMockSetAuthToken.Unlock()
-	mock.SetAuthTokenFunc(authToken)
+	lockRCHTTPClienterMockSetAuthToken.Unlock()
+	mock.SetAuthTokenFunc(token)
 }
 
 // SetAuthTokenCalls gets all the calls that were made to SetAuthToken.
 // Check the length with:
-//     len(mockedRCHTTPClient.SetAuthTokenCalls())
-func (mock *RCHTTPClientMock) SetAuthTokenCalls() []struct {
-	AuthToken string
+//     len(mockedRCHTTPClienter.SetAuthTokenCalls())
+func (mock *RCHTTPClienterMock) SetAuthTokenCalls() []struct {
+	Token string
 } {
 	var calls []struct {
-		AuthToken string
+		Token string
 	}
-	lockRCHTTPClientMockSetAuthToken.RLock()
+	lockRCHTTPClienterMockSetAuthToken.RLock()
 	calls = mock.calls.SetAuthToken
-	lockRCHTTPClientMockSetAuthToken.RUnlock()
+	lockRCHTTPClienterMockSetAuthToken.RUnlock()
+	return calls
+}
+
+// SetDownloadServiceToken calls SetDownloadServiceTokenFunc.
+func (mock *RCHTTPClienterMock) SetDownloadServiceToken(token string) {
+	if mock.SetDownloadServiceTokenFunc == nil {
+		panic("moq: RCHTTPClienterMock.SetDownloadServiceTokenFunc is nil but RCHTTPClienter.SetDownloadServiceToken was just called")
+	}
+	callInfo := struct {
+		Token string
+	}{
+		Token: token,
+	}
+	lockRCHTTPClienterMockSetDownloadServiceToken.Lock()
+	mock.calls.SetDownloadServiceToken = append(mock.calls.SetDownloadServiceToken, callInfo)
+	lockRCHTTPClienterMockSetDownloadServiceToken.Unlock()
+	mock.SetDownloadServiceTokenFunc(token)
+}
+
+// SetDownloadServiceTokenCalls gets all the calls that were made to SetDownloadServiceToken.
+// Check the length with:
+//     len(mockedRCHTTPClienter.SetDownloadServiceTokenCalls())
+func (mock *RCHTTPClienterMock) SetDownloadServiceTokenCalls() []struct {
+	Token string
+} {
+	var calls []struct {
+		Token string
+	}
+	lockRCHTTPClienterMockSetDownloadServiceToken.RLock()
+	calls = mock.calls.SetDownloadServiceToken
+	lockRCHTTPClienterMockSetDownloadServiceToken.RUnlock()
+	return calls
+}
+
+// SetFlorenceToken calls SetFlorenceTokenFunc.
+func (mock *RCHTTPClienterMock) SetFlorenceToken(token string) {
+	if mock.SetFlorenceTokenFunc == nil {
+		panic("moq: RCHTTPClienterMock.SetFlorenceTokenFunc is nil but RCHTTPClienter.SetFlorenceToken was just called")
+	}
+	callInfo := struct {
+		Token string
+	}{
+		Token: token,
+	}
+	lockRCHTTPClienterMockSetFlorenceToken.Lock()
+	mock.calls.SetFlorenceToken = append(mock.calls.SetFlorenceToken, callInfo)
+	lockRCHTTPClienterMockSetFlorenceToken.Unlock()
+	mock.SetFlorenceTokenFunc(token)
+}
+
+// SetFlorenceTokenCalls gets all the calls that were made to SetFlorenceToken.
+// Check the length with:
+//     len(mockedRCHTTPClienter.SetFlorenceTokenCalls())
+func (mock *RCHTTPClienterMock) SetFlorenceTokenCalls() []struct {
+	Token string
+} {
+	var calls []struct {
+		Token string
+	}
+	lockRCHTTPClienterMockSetFlorenceToken.RLock()
+	calls = mock.calls.SetFlorenceToken
+	lockRCHTTPClienterMockSetFlorenceToken.RUnlock()
 	return calls
 }
 
 // SetMaxRetries calls SetMaxRetriesFunc.
-func (mock *RCHTTPClientMock) SetMaxRetries(in1 int) {
+func (mock *RCHTTPClienterMock) SetMaxRetries(in1 int) {
 	if mock.SetMaxRetriesFunc == nil {
-		panic("moq: RCHTTPClientMock.SetMaxRetriesFunc is nil but RCHTTPClient.SetMaxRetries was just called")
+		panic("moq: RCHTTPClienterMock.SetMaxRetriesFunc is nil but RCHTTPClienter.SetMaxRetries was just called")
 	}
 	callInfo := struct {
 		In1 int
 	}{
 		In1: in1,
 	}
-	lockRCHTTPClientMockSetMaxRetries.Lock()
+	lockRCHTTPClienterMockSetMaxRetries.Lock()
 	mock.calls.SetMaxRetries = append(mock.calls.SetMaxRetries, callInfo)
-	lockRCHTTPClientMockSetMaxRetries.Unlock()
+	lockRCHTTPClienterMockSetMaxRetries.Unlock()
 	mock.SetMaxRetriesFunc(in1)
 }
 
 // SetMaxRetriesCalls gets all the calls that were made to SetMaxRetries.
 // Check the length with:
-//     len(mockedRCHTTPClient.SetMaxRetriesCalls())
-func (mock *RCHTTPClientMock) SetMaxRetriesCalls() []struct {
+//     len(mockedRCHTTPClienter.SetMaxRetriesCalls())
+func (mock *RCHTTPClienterMock) SetMaxRetriesCalls() []struct {
 	In1 int
 } {
 	var calls []struct {
 		In1 int
 	}
-	lockRCHTTPClientMockSetMaxRetries.RLock()
+	lockRCHTTPClienterMockSetMaxRetries.RLock()
 	calls = mock.calls.SetMaxRetries
-	lockRCHTTPClientMockSetMaxRetries.RUnlock()
+	lockRCHTTPClienterMockSetMaxRetries.RUnlock()
 	return calls
 }
 
 // SetTimeout calls SetTimeoutFunc.
-func (mock *RCHTTPClientMock) SetTimeout(timeout time.Duration) {
+func (mock *RCHTTPClienterMock) SetTimeout(timeout time.Duration) {
 	if mock.SetTimeoutFunc == nil {
-		panic("moq: RCHTTPClientMock.SetTimeoutFunc is nil but RCHTTPClient.SetTimeout was just called")
+		panic("moq: RCHTTPClienterMock.SetTimeoutFunc is nil but RCHTTPClienter.SetTimeout was just called")
 	}
 	callInfo := struct {
 		Timeout time.Duration
 	}{
 		Timeout: timeout,
 	}
-	lockRCHTTPClientMockSetTimeout.Lock()
+	lockRCHTTPClienterMockSetTimeout.Lock()
 	mock.calls.SetTimeout = append(mock.calls.SetTimeout, callInfo)
-	lockRCHTTPClientMockSetTimeout.Unlock()
+	lockRCHTTPClienterMockSetTimeout.Unlock()
 	mock.SetTimeoutFunc(timeout)
 }
 
 // SetTimeoutCalls gets all the calls that were made to SetTimeout.
 // Check the length with:
-//     len(mockedRCHTTPClient.SetTimeoutCalls())
-func (mock *RCHTTPClientMock) SetTimeoutCalls() []struct {
+//     len(mockedRCHTTPClienter.SetTimeoutCalls())
+func (mock *RCHTTPClienterMock) SetTimeoutCalls() []struct {
 	Timeout time.Duration
 } {
 	var calls []struct {
 		Timeout time.Duration
 	}
-	lockRCHTTPClientMockSetTimeout.RLock()
+	lockRCHTTPClienterMockSetTimeout.RLock()
 	calls = mock.calls.SetTimeout
-	lockRCHTTPClientMockSetTimeout.RUnlock()
+	lockRCHTTPClienterMockSetTimeout.RUnlock()
 	return calls
 }

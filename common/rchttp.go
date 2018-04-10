@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
-//go:generate mockgen -destination mock_common/rchttp_client.go github.com/ONSdigital/go-ns/common RCHTTPClient
-//go:generate moq -out commontest/rchttp_client.go -pkg commontest . RCHTTPClient
+//go:generate mockgen -destination mock_common/rchttp_client.go github.com/ONSdigital/go-ns/common RCHTTPClienter
+//go:generate moq -out commontest/rchttp_client.go -pkg commontest . RCHTTPClienter
 
-// RCHTTPClient provides an interface for methods on an HTTP Client
+// RCHTTPClienter provides an interface for methods on an HTTP Client
 type RCHTTPClienter interface {
-	SetAuthToken(authToken string)
+	SetAuthToken(token string)
+	SetDownloadServiceToken(token string)
+	SetFlorenceToken(token string)
 	SetTimeout(timeout time.Duration)
 	SetMaxRetries(int)
 	GetMaxRetries() int

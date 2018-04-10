@@ -19,11 +19,13 @@ import (
 // Client is an extension of the net/http client with ability to add
 // timeouts, exponential backoff and context-based cancellation
 type Client struct {
-	MaxRetries         int
-	ExponentialBackoff bool
-	RetryTime          time.Duration
-	HTTPClient         *http.Client
-	AuthToken          string
+	MaxRetries           int
+	ExponentialBackoff   bool
+	RetryTime            time.Duration
+	HTTPClient           *http.Client
+	AuthToken            string
+	DownloadServiceToken string
+	FlorenceToken        string
 }
 
 // DefaultClient is a go-ns specific http client with sensible timeouts,
@@ -67,9 +69,32 @@ func ClientWithServiceToken(c common.RCHTTPClienter, authToken string) common.RC
 	c.SetAuthToken(authToken)
 	return c
 }
-
 func (c *Client) SetAuthToken(authToken string) {
 	c.AuthToken = authToken
+}
+
+// ClientWithDownloadServiceToken facilitates creating a client and setting service auth
+func ClientWithDownloadServiceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
+	if c == nil {
+		c = DefaultClient
+	}
+	c.SetDownloadServiceToken(token)
+	return c
+}
+func (c *Client) SetDownloadServiceToken(token string) {
+	c.DownloadServiceToken = token
+}
+
+// ClientWithFlorenceToken facilitates creating a client and setting service auth
+func ClientWithFlorenceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
+	if c == nil {
+		c = DefaultClient
+	}
+	c.SetFlorenceToken(token)
+	return c
+}
+func (c *Client) SetFlorenceToken(token string) {
+	c.FlorenceToken = token
 }
 
 func (c *Client) GetMaxRetries() int {

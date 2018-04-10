@@ -17,7 +17,7 @@ var ctx = context.Background()
 
 func TestClient_PutVersion(t *testing.T) {
 
-	checkResponse := func(mockRCHTTPCli *commontest.RCHTTPClientMock, expectedVersion Version) {
+	checkResponse := func(mockRCHTTPCli *commontest.RCHTTPClienterMock, expectedVersion Version) {
 		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
@@ -27,7 +27,7 @@ func TestClient_PutVersion(t *testing.T) {
 	}
 
 	Convey("Given a valid version", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -56,7 +56,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("Given no auth token has been configured", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -87,7 +87,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("spectacular explosion")
-		mockRCHTTPCli := &commontest.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -110,7 +110,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClientMock{
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
