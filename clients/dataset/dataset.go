@@ -17,14 +17,6 @@ import (
 
 const service = "dataset-api"
 
-// Config contains any configuration required to send requests to the dataset api
-type Config struct {
-	InternalToken         string
-	AuthToken             string
-	XDownloadServiceToken string
-	FlorenceToken         string
-}
-
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
 type ErrInvalidDatasetAPIResponse struct {

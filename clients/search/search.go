@@ -60,7 +60,7 @@ type Client struct {
 // New creates a new instance of Client with a given search api url
 func New(searchAPIURL string) *Client {
 	return &Client{
-		cli: rchttp.DefaultClient,
+		cli: rchttp.NewClient(),
 		url: searchAPIURL,
 	}
 }
