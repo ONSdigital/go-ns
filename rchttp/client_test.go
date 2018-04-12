@@ -21,7 +21,7 @@ func TestHappyPaths(t *testing.T) {
 	expectedCallCount := 0
 
 	Convey("Given a default rchttp client and happy paths", t, func() {
-		httpClient := DefaultClient
+		httpClient := NewClient()
 
 		Convey("When Get() is called on a URL", func() {
 			expectedCallCount++

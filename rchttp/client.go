@@ -48,10 +48,16 @@ var DefaultClient = &Client{
 	},
 }
 
+// NewClient returns a copy of DefaultClient
+func NewClient() common.RCHTTPClienter {
+	newClient := *DefaultClient
+	return &newClient
+}
+
 // ClientWithTimeout facilitates creating a client and setting request timeout
 func ClientWithTimeout(c common.RCHTTPClienter, timeout time.Duration) common.RCHTTPClienter {
 	if c == nil {
-		c = DefaultClient
+		c = NewClient()
 	}
 	c.SetTimeout(timeout)
 	return c
@@ -64,7 +70,7 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 // ClientWithServiceToken facilitates creating a client and setting service auth
 func ClientWithServiceToken(c common.RCHTTPClienter, authToken string) common.RCHTTPClienter {
 	if c == nil {
-		c = DefaultClient
+		c = NewClient()
 	}
 	c.SetAuthToken(authToken)
 	return c
@@ -76,7 +82,7 @@ func (c *Client) SetAuthToken(authToken string) {
 // ClientWithDownloadServiceToken facilitates creating a client and setting service auth
 func ClientWithDownloadServiceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
 	if c == nil {
-		c = DefaultClient
+		c = NewClient()
 	}
 	c.SetDownloadServiceToken(token)
 	return c
@@ -88,7 +94,7 @@ func (c *Client) SetDownloadServiceToken(token string) {
 // ClientWithFlorenceToken facilitates creating a client and setting service auth
 func ClientWithFlorenceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
 	if c == nil {
-		c = DefaultClient
+		c = NewClient()
 	}
 	c.SetFlorenceToken(token)
 	return c
