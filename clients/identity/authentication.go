@@ -17,12 +17,11 @@ type IdentityClienter interface {
 	CheckRequest(req *http.Request) (context.Context, int, error)
 }
 
-// NewAPIClient returns an IdentityClient - TODO AuthToken is legacy, to be removed
-func NewAPIClient(cli common.RCHTTPClienter, url, authToken string) (api *IdentityClient) {
+// NewAPIClient returns an IdentityClient
+func NewAPIClient(cli common.RCHTTPClienter, url string) (api *IdentityClient) {
 	return &IdentityClient{
 		HTTPClient: cli,
 		BaseURL:    url,
-		AuthToken:  authToken,
 	}
 }
 
@@ -41,17 +40,6 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
-
-		// TODO remove this legacy code below - and argument from NewAPIClient
-		// test DeprecatedAuthHeader for token, set generic caller
-		deprecatedToken := req.Header.Get(common.DeprecatedAuthHeader)
-		if len(deprecatedToken) > 0 {
-			if deprecatedToken != api.AuthToken {
-				return ctx, http.StatusUnauthorized, nil
-			}
-			ctx = context.WithValue(ctx, common.CallerIdentityKey, common.LegacyUser)
-		}
-
 		return ctx, http.StatusOK, nil
 	}
 
@@ -73,7 +61,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 
 	if api.HTTPClient == nil {
 		api.Lock.Lock()
-		api.HTTPClient = &rchttp.Client{}
+		api.HTTPClient = rchttp.NewClient()
 		api.Lock.Unlock()
 	}
 

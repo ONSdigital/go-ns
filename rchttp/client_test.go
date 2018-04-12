@@ -148,7 +148,7 @@ func TestClientNoRetries(t *testing.T) {
 	})
 }
 
-func TestClientWithDeprecatedAuth(t *testing.T) {
+func TestClientWithServiceTokenHasAuthHeader(t *testing.T) {
 	ts := rchttptest.NewTestServer()
 	defer ts.Close()
 	expectedCallCount := 0
@@ -172,7 +172,7 @@ func TestClientWithDeprecatedAuth(t *testing.T) {
 				So(call.Method, ShouldEqual, "POST")
 				So(call.Body, ShouldEqual, `{"hello":"there"}`)
 				So(call.Error, ShouldEqual, "")
-				So(call.Headers[common.DeprecatedAuthHeader], ShouldResemble, []string{expectedAuthToken})
+				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{expectedAuthToken})
 			})
 		})
 	})

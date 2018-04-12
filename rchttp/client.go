@@ -114,9 +114,6 @@ func (c *Client) SetMaxRetries(maxRetries int) {
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 	if len(c.AuthToken) > 0 {
-		// TODO remove this deprecated header when all services stop needing it
-		common.AddDeprecatedHeader(req, c.AuthToken)
-
 		// only add this header if not already set (e.g. for authClient)
 		if len(req.Header.Get(common.AuthHeaderKey)) == 0 {
 			common.AddServiceTokenHeader(req, c.AuthToken)

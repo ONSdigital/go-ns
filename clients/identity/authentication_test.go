@@ -19,7 +19,6 @@ const (
 	url                = "/whatever"
 	florenceToken      = "roundabout"
 	callerAuthToken    = "YourClaimToBeWhoYouAre"
-	serviceToken       = "IAmWhoIAm"
 	callerIdentifier   = "externalCaller"
 	userIdentifier     = "fred@ons.gov.uk"
 	zebedeeURL         = "http://localhost:8082"
@@ -28,58 +27,11 @@ const (
 
 func TestHandler_NoAuth(t *testing.T) {
 
-	Convey("Given a request with no auth info - not even serviceToken in idClient", t, func() {
+	Convey("Given a request with no auth info", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
 		httpClient := &commontest.RCHTTPClienterMock{}
-		idClient := NewAPIClient(httpClient, zebedeeURL, "")
-
-		Convey("When CheckRequest is called", func() {
-			ctx, _, err := idClient.CheckRequest(req)
-			Convey("Then the downstream HTTP handler should not be called and no auth returned", func() {
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-				So(err, ShouldBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsPresent(ctx), ShouldBeFalse)
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-			})
-		})
-	})
-}
-
-func TestHandler_LegacyAuth(t *testing.T) {
-
-	Convey("Given a request with only legacy auth info", t, func() {
-
-		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.DeprecatedAuthHeader: {serviceToken},
-		}
-
-		httpClient := &commontest.RCHTTPClienterMock{}
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
-
-		Convey("When CheckRequest is called", func() {
-			ctx, _, err := idClient.CheckRequest(req)
-			Convey("Then the downstream HTTP handler should not be called and legacy auth returned", func() {
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-				So(err, ShouldBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsPresent(ctx), ShouldBeTrue)
-				So(common.Caller(ctx), ShouldEqual, common.LegacyUser)
-			})
-		})
-	})
-
-	Convey("Given a request with incorrect legacy auth info", t, func() {
-
-		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.DeprecatedAuthHeader: {"WrongServiceToken"},
-		}
-
-		httpClient := &commontest.RCHTTPClienterMock{}
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 			ctx, _, err := idClient.CheckRequest(req)
@@ -105,7 +57,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 		expectedError := errors.New("broken")
 		httpClient := getClientReturningError(expectedError)
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
@@ -142,7 +94,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
@@ -172,7 +124,7 @@ func TestHandler_florenceToken(t *testing.T) {
 		}
 
 		httpClient := getClientReturningIdentifier(userIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
@@ -213,7 +165,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
@@ -245,7 +197,7 @@ func TestHandler_authToken(t *testing.T) {
 		}
 
 		httpClient := getClientReturningIdentifier(callerIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
@@ -284,7 +236,7 @@ func TestHandler_bothTokens(t *testing.T) {
 		}
 
 		httpClient := getClientReturningIdentifier(userIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 

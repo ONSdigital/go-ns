@@ -40,7 +40,7 @@ func TestHandler_NoAuth(t *testing.T) {
 				return nil, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -73,7 +73,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 				return nil, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -110,7 +110,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 				return nil, errors.New("broken")
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -158,7 +158,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -213,7 +213,7 @@ func TestHandler_florenceToken(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		var handlerReq *http.Request
@@ -270,7 +270,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -327,7 +327,7 @@ func TestHandler_authToken(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		var handlerReq *http.Request
@@ -364,50 +364,6 @@ func TestHandler_authToken(t *testing.T) {
 	})
 }
 
-func TestHandler_legacyAuthToken(t *testing.T) {
-
-	Convey("Given a request with a legacy auth token, and mock client that returns 200", t, func() {
-
-		doAuth := true
-		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.DeprecatedAuthHeader: {serviceToken},
-			common.UserHeaderKey:        {userIdentifier},
-		}
-		responseRecorder := httptest.NewRecorder()
-
-		httpClient := &commontest.RCHTTPClienterMock{}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
-
-		handlerCalled := false
-		var handlerReq *http.Request
-		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			handlerReq = req
-			handlerCalled = true
-		})
-
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
-
-		Convey("When ServeHTTP is called", func() {
-
-			identityHandler.ServeHTTP(responseRecorder, req)
-
-			Convey("Then the identity service is not called", func() {
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-			})
-
-			Convey("Then the HTTP handler is called", func() {
-				So(handlerCalled, ShouldBeTrue)
-			})
-
-			Convey("Then the HTTP handler request returns the expected context values", func() {
-				So(common.Caller(handlerReq.Context()), ShouldEqual, common.LegacyUser)
-				So(common.User(handlerReq.Context()), ShouldEqual, "")
-			})
-		})
-	})
-}
-
 func TestHandler_bothTokens(t *testing.T) {
 
 	Convey("Given a request with both a florence token and service token", t, func() {
@@ -435,7 +391,7 @@ func TestHandler_bothTokens(t *testing.T) {
 				}, nil
 			},
 		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL, serviceToken)
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
 		var handlerReq *http.Request

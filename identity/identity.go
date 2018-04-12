@@ -9,8 +9,8 @@ import (
 )
 
 // Handler controls the authenticating of a request
-func Handler(doAuth bool, zebedeeURL, authToken string) func(http.Handler) http.Handler {
-	authClient := clientsidentity.NewAPIClient(nil, zebedeeURL, authToken)
+func Handler(doAuth bool, zebedeeURL string) func(http.Handler) http.Handler {
+	authClient := clientsidentity.NewAPIClient(nil, zebedeeURL)
 	return HandlerForHTTPClient(doAuth, authClient)
 }
 
