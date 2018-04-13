@@ -15,12 +15,15 @@ const (
 	service       = "search-api"
 	defaultLimit  = 20
 	defaultOffset = 0
+	florenceToken = "X-Florence-Token"
 )
 
 // Config represents configuration required to conduct a search request
 type Config struct {
-	Limit  *int
-	Offset *int
+	Limit         *int
+	Offset        *int
+	InternalToken string
+	FlorenceToken string
 }
 
 // HTTPClient provides an interface for methods on an HTTP Client
@@ -131,6 +134,15 @@ func (c *Client) Dimension(datasetID, edition, version, name, query string, para
 		return
 	}
 	c.setInternalTokenHeader(req)
+
+	if len(params) > 0 {
+		if len(params[0].InternalToken) > 0 {
+			req.Header.Set("Internal-Token", params[0].InternalToken)
+		}
+		if len(params[0].FlorenceToken) > 0 {
+			req.Header.Set(florenceToken, params[0].FlorenceToken)
+		}
+	}
 
 	resp, err := c.cli.Do(req)
 	if err != nil {

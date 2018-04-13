@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/log"
@@ -14,7 +15,10 @@ import (
 	"github.com/ONSdigital/go-ns/rhttp"
 )
 
-const service = "filter-api"
+const (
+	service       = "filter-api"
+	florenceToken = "X-Florence-Token"
+)
 
 // ErrInvalidFilterAPIResponse is returned when the filter api does not respond
 // with a valid status
@@ -27,6 +31,7 @@ type ErrInvalidFilterAPIResponse struct {
 // Config contains any configuration required to send requests to the filter api
 type Config struct {
 	InternalToken string
+	FlorenceToken string
 }
 
 // Error should be called by the user to print out the stringified version of the error
@@ -51,9 +56,10 @@ type Client struct {
 	url string
 }
 
-func (c *Client) setInternalTokenHeader(req *http.Request, cfg ...Config) {
+func (c *Client) setRequestHeaders(req *http.Request, cfg ...Config) {
 	if len(cfg) > 0 {
 		req.Header.Set("Internal-token", cfg[0].InternalToken)
+		req.Header.Set(florenceToken, cfg[0].FlorenceToken)
 	}
 }
 
@@ -89,7 +95,7 @@ func (c *Client) GetOutput(filterOutputID string, cfg ...Config) (m Model, err e
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -121,7 +127,7 @@ func (c *Client) GetDimension(filterID, name string, cfg ...Config) (dim Dimensi
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -158,7 +164,7 @@ func (c *Client) GetDimensions(filterID string, cfg ...Config) (dims []Dimension
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -190,7 +196,7 @@ func (c *Client) GetDimensionOptions(filterID, name string, cfg ...Config) (opts
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -215,32 +221,39 @@ func (c *Client) GetDimensionOptions(filterID, name string, cfg ...Config) (opts
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
-func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Config) (string, error) {
-	fj := Model{InstanceID: instanceID}
+func (c *Client) CreateBlueprint(datasetID, edition, version string, names []string, cfg ...Config) (string, error) {
+	ver, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+
+	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
 
 	var dimensions []ModelDimension
 	for _, name := range names {
 		dimensions = append(dimensions, ModelDimension{Name: name})
 	}
 
-	fj.Dimensions = dimensions
+	cb.Dimensions = dimensions
 
-	b, err := json.Marshal(fj)
+	b, err := json.Marshal(cb)
 	if err != nil {
 		return "", err
 	}
 
 	uri := c.url + "/filters"
 	clientlog.Do("attemping to create filter blueprint", service, uri, log.Data{
-		"method":     "POST",
-		"instanceID": instanceID,
+		"method":    "POST",
+		"datasetID": datasetID,
+		"edition":   edition,
+		"version":   version,
 	})
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
 	if err != nil {
 		return "", err
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -248,7 +261,7 @@ func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Confi
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", errors.New("invalid status from filter api")
+		return "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
 	defer resp.Body.Close()
 
@@ -257,11 +270,11 @@ func (c *Client) CreateBlueprint(instanceID string, names []string, cfg ...Confi
 		return "", err
 	}
 
-	if err = json.Unmarshal(b, &fj); err != nil {
+	if err = json.Unmarshal(b, &cb); err != nil {
 		return "", err
 	}
 
-	return fj.FilterID, nil
+	return cb.FilterID, nil
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model
@@ -286,7 +299,7 @@ func (c *Client) UpdateBlueprint(m Model, doSubmit bool, cfg ...Config) (mdl Mod
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -323,7 +336,7 @@ func (c *Client) AddDimensionValue(filterID, name, value string, cfg ...Config) 
 	if err != nil {
 		return err
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -344,7 +357,7 @@ func (c *Client) RemoveDimensionValue(filterID, name, value string, cfg ...Confi
 	if err != nil {
 		return err
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	clientlog.Do("removing dimension option from filter job", service, uri, log.Data{
 		"method": "DELETE",
@@ -375,7 +388,7 @@ func (c *Client) RemoveDimension(filterID, name string, cfg ...Config) (err erro
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -402,7 +415,7 @@ func (c *Client) AddDimension(id, name string, cfg ...Config) error {
 	if err != nil {
 		return err
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -426,7 +439,7 @@ func (c *Client) GetJobState(filterID string, cfg ...Config) (m Model, err error
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -472,7 +485,7 @@ func (c *Client) AddDimensionValues(filterID, name string, options []string, cfg
 	if err != nil {
 		return err
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
@@ -499,7 +512,7 @@ func (c *Client) GetPreview(filterOutputID string, cfg ...Config) (p Preview, er
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req, cfg...)
+	c.setRequestHeaders(req, cfg...)
 
 	resp, err := c.cli.Do(req)
 	if err != nil {
