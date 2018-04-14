@@ -108,7 +108,7 @@ func TestAddServiceTokenHeader(t *testing.T) {
 			AddServiceTokenHeader(r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, serviceToken)
+				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
 			})
 		})
 	})
@@ -138,7 +138,7 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, serviceToken)
+				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
 				So(r.Header.Get(UserHeaderKey), ShouldBeBlank)
 			})
 		})
@@ -153,7 +153,7 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, serviceToken)
+				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
 				So(r.Header.Get(UserHeaderKey), ShouldEqual, userID)
 			})
 		})

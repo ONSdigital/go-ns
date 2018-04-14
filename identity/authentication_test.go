@@ -318,7 +318,7 @@ func TestAddServiceTokenHeader(t *testing.T) {
 			common.AddServiceTokenHeader(r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(common.AuthHeaderKey), ShouldEqual, serviceToken)
+				So(r.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+serviceToken)
 			})
 		})
 	})

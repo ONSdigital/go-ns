@@ -16,6 +16,7 @@ const (
 
 	DeprecatedAuthHeader = "Internal-Token"
 	LegacyUser           = "legacyUser"
+	BearerPrefix         = "Bearer "
 
 	UserIdentityKey   = ContextKey("User-Identity")
 	CallerIdentityKey = ContextKey("Caller-Identity")
@@ -44,7 +45,9 @@ func AddUserHeader(r *http.Request, user string) {
 
 // AddServiceTokenHeader sets the given service token on the given request
 func AddServiceTokenHeader(r *http.Request, serviceToken string) {
-	r.Header.Add(AuthHeaderKey, serviceToken)
+	if len(serviceToken) > 0 {
+		r.Header.Add(AuthHeaderKey, BearerPrefix+serviceToken)
+	}
 }
 
 // User gets the user identity from the context
@@ -62,9 +65,7 @@ func AddAuthHeaders(ctx context.Context, r *http.Request, serviceToken string) {
 	if IsUserPresent(ctx) {
 		AddUserHeader(r, User(ctx))
 	}
-	if serviceToken != "" {
-		AddServiceTokenHeader(r, serviceToken)
-	}
+	AddServiceTokenHeader(r, serviceToken)
 }
 
 // AddDeprecatedHeader sets the deprecated header on the given request

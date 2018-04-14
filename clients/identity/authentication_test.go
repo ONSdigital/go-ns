@@ -244,11 +244,12 @@ func TestHandler_bothTokens(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
 
-			Convey("Then the identity service is called as expected", func() {
+			Convey("Then the identity service is called as expected - verifying florence, but ignoring auth header", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
 				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 0)
 			})
 
 			Convey("Then the context returns with expected values", func() {

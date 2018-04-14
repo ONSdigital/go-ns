@@ -172,7 +172,7 @@ func TestClientWithServiceTokenHasAuthHeader(t *testing.T) {
 				So(call.Method, ShouldEqual, "POST")
 				So(call.Body, ShouldEqual, `{"hello":"there"}`)
 				So(call.Error, ShouldEqual, "")
-				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{expectedAuthToken})
+				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
 			})
 		})
 	})
