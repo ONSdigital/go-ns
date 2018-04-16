@@ -20,17 +20,17 @@ const service = "dataset-api"
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
 type ErrInvalidDatasetAPIResponse struct {
-	expectedCode int
-	actualCode   int
-	uri          string
+	actualCode int
+	uri        string
+	body       string
 }
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from dataset api - should be: %d, got: %d, path: %s",
-		e.expectedCode,
+	return fmt.Sprintf("invalid response: %d from dataset api: %s, body: %s",
 		e.actualCode,
 		e.uri,
+		e.body,
 	)
 }
 
@@ -71,7 +71,7 @@ func (c *Client) Healthcheck() (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, NewDatasetAPIResponse(resp, "/healthcheck")
 	}
 
 	return service, nil
@@ -94,7 +94,7 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string) (m E
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (c *Client) GetEditions(ctx context.Context, id string) (m []Edition, err e
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition string) (m []Versi
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -272,7 +272,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version string) (m
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -303,7 +303,7 @@ func (c *Client) GetInstance(ctx context.Context, instanceID string) (m Instance
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -362,7 +362,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version st
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -393,7 +393,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version string)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -429,7 +429,7 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidDatasetAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		err = NewDatasetAPIResponse(resp, uri)
 		return
 	}
 
@@ -440,5 +440,23 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
+	return
+}
+
+// NewDatasetAPIResponse creates an error response, optionally adding body to e when status is 404
+func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatasetAPIResponse) {
+	e = &ErrInvalidDatasetAPIResponse{
+		actualCode: resp.StatusCode,
+		uri:        uri,
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			e.body = "Client failed to read DatasetAPI body"
+			return
+		}
+		defer resp.Body.Close()
+		e.body = string(b)
+	}
 	return
 }
