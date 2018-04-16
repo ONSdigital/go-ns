@@ -9,6 +9,37 @@ import (
 )
 
 func TestUnitMarshal(t *testing.T) {
+	Convey("Nested Objects", t, func() {
+		schema := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		data := &NestedTestData{
+			Team: "Tottenham",
+			Footballer: FootballerName{
+				Surname:  "Kane",
+				Forename: "Harry",
+			},
+			Stats: int32(10),
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
+
+		var footballMessage NestedTestData
+		exampleEvent := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		err = exampleEvent.Unmarshal(bufferBytes, &footballMessage)
+		So(err, ShouldBeNil)
+		So(footballMessage.Team, ShouldEqual, "Tottenham")
+		So(footballMessage.Footballer.Surname, ShouldEqual, "Kane")
+		So(footballMessage.Footballer.Forename, ShouldEqual, "Harry")
+		So(footballMessage.Stats, ShouldEqual, int32(10))
+	})
+
 	Convey("Successfully marshal data", t, func() {
 		schema := &Schema{
 			Definition: testSchema,
@@ -154,6 +185,16 @@ func TestUnitGetRecord(t *testing.T) {
 			So(record, ShouldNotBeNil)
 			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
 			So(record.Get("winning_years"), ShouldResemble, []interface{}{"1934", "1972", "1999"})
+		})
+
+		Convey("record generated with missing array of strings", func() {
+			avroSchema, v, typ := setUp(testArraySchema, 5)
+
+			record, err := getRecord(avroSchema, v, typ)
+			So(err, ShouldBeNil)
+			So(record, ShouldNotBeNil)
+			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
+			So(record.Get("winning_years"), ShouldResemble, []interface{}(nil))
 		})
 
 		Convey("record generated with nested array", func() {
@@ -332,6 +373,14 @@ func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.
 					Name:  "paul doherty",
 				},
 			},
+		}
+
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	case 5:
+		var winningYears []string
+		testData := &testData5{
+			WinningYears: winningYears,
 		}
 
 		v = reflect.ValueOf(testData)
