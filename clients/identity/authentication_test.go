@@ -39,7 +39,7 @@ func TestHandler_NoAuth(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 				So(err, ShouldBeNil)
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsPresent(ctx), ShouldBeFalse)
+				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
@@ -216,7 +216,7 @@ func TestHandler_authToken(t *testing.T) {
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
-				So(common.IsPresent(ctx), ShouldBeTrue)
+				So(common.IsCallerPresent(ctx), ShouldBeTrue)
 				So(common.IsUserPresent(ctx), ShouldBeTrue)
 				So(common.Caller(ctx), ShouldEqual, callerIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)

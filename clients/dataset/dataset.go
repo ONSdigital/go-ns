@@ -109,7 +109,7 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
+	if next, ok := body["next"]; ok && common.IsCallerPresent(ctx) {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -152,7 +152,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition string) (m E
 		return
 	}
 
-	if next, ok := body["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
+	if next, ok := body["next"]; ok && common.IsCallerPresent(ctx) {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -195,7 +195,7 @@ func (c *Client) GetEditions(ctx context.Context, id string) (m []Edition, err e
 		return nil, nil
 	}
 
-	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && len(req.Header.Get(common.DeprecatedAuthHeader)) > 0 {
+	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && common.IsCallerPresent(ctx) {
 		var items []map[string]interface{}
 		for _, item := range body["items"].([]interface{}) {
 			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))

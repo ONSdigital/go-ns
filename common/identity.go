@@ -82,8 +82,8 @@ func AddDeprecatedHeader(r *http.Request, token string) {
 	}
 }
 
-// IsPresent determines if an identity is present on the given context.
-func IsPresent(ctx context.Context) bool {
+// IsCallerPresent determines if an identity is present on the given context.
+func IsCallerPresent(ctx context.Context) bool {
 
 	callerIdentity := ctx.Value(CallerIdentityKey)
 	isPresent := callerIdentity != nil && callerIdentity != ""

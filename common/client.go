@@ -8,7 +8,3 @@ type APIClient struct {
 	HTTPClient RCHTTPClienter
 	Lock       sync.RWMutex
 }
-
-type APIClienter interface {
-	NewAPIClient(cli RCHTTPClienter, url, authToken string)
-}

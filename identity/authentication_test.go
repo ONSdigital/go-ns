@@ -106,9 +106,9 @@ func TestIsPresent_withIdentity(t *testing.T) {
 
 		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "user@ons.gov.uk")
 
-		Convey("When IsPresent is called with the context", func() {
+		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsPresent(ctx)
+			identityIsPresent := common.IsCallerPresent(ctx)
 
 			Convey("Then the response is true", func() {
 				So(identityIsPresent, ShouldBeTrue)
@@ -123,9 +123,9 @@ func TestIsPresent_withNoIdentity(t *testing.T) {
 
 		ctx := context.Background()
 
-		Convey("When IsPresent is called with the context", func() {
+		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsPresent(ctx)
+			identityIsPresent := common.IsCallerPresent(ctx)
 
 			Convey("Then the response is false", func() {
 				So(identityIsPresent, ShouldBeFalse)
@@ -139,9 +139,9 @@ func TestIsPresent_withEmptyIdentity(t *testing.T) {
 
 		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "")
 
-		Convey("When IsPresent is called with the context", func() {
+		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsPresent(ctx)
+			identityIsPresent := common.IsCallerPresent(ctx)
 
 			Convey("Then the response is false", func() {
 				So(identityIsPresent, ShouldBeFalse)
