@@ -9,7 +9,7 @@ import (
 )
 
 func TestUnitMarshal(t *testing.T) {
-	Convey("Nested Objects", t, func() {
+	Convey("Nested objects", t, func() {
 		schema := &Schema{
 			Definition: nestedObjectSchema,
 		}
@@ -38,6 +38,32 @@ func TestUnitMarshal(t *testing.T) {
 		So(footballMessage.Footballer.Surname, ShouldEqual, "Kane")
 		So(footballMessage.Footballer.Forename, ShouldEqual, "Harry")
 		So(footballMessage.Stats, ShouldEqual, int32(10))
+	})
+
+	Convey("Nested object empty", t, func() {
+		schema := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		data := &NestedTestData{
+			Team:       "Tottenham",
+			Footballer: FootballerName{},
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
+
+		var footballMessage NestedTestData
+		exampleEvent := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		err = exampleEvent.Unmarshal(bufferBytes, &footballMessage)
+		So(err, ShouldBeNil)
+		So(footballMessage.Team, ShouldEqual, "Tottenham")
+		So(footballMessage.Footballer, ShouldResemble, FootballerName{})
+		So(footballMessage.Stats, ShouldEqual, 0)
 	})
 
 	Convey("Successfully marshal data", t, func() {

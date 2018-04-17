@@ -69,7 +69,8 @@ var nestedObjectSchema = `{
 				"fields": [
 					{
 			  		"name": "surname",
-						"type": "string"
+						"type": "string",
+            "default": ""
 			 		},
 					{
 					  "name": "middle-name",
@@ -78,7 +79,8 @@ var nestedObjectSchema = `{
 				  },
 					{
 						"name": "forename",
-						"type": "string"
+						"type": "string",
+            "default": ""
 				  }
 				]
 			}
