@@ -106,6 +106,12 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 			common.AddServiceTokenHeader(req, c.AuthToken)
 		}
 	}
+	if len(c.DownloadServiceToken) > 0 {
+		// only add this header if not already set
+		if len(req.Header.Get(common.DownloadServiceHeaderKey)) == 0 {
+			common.AddDownloadServiceTokenHeader(req, c.DownloadServiceToken)
+		}
+	}
 
 	doer := func(args ...interface{}) (*http.Response, error) {
 		req := args[2].(*http.Request)
