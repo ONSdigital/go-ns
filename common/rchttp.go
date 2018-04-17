@@ -15,7 +15,6 @@ import (
 type RCHTTPClienter interface {
 	SetAuthToken(token string)
 	SetDownloadServiceToken(token string)
-	SetFlorenceToken(token string)
 	SetTimeout(timeout time.Duration)
 	SetMaxRetries(int)
 	GetMaxRetries() int

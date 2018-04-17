@@ -147,16 +147,6 @@ func (mr *MockRCHTTPClienterMockRecorder) SetDownloadServiceToken(arg0 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDownloadServiceToken", reflect.TypeOf((*MockRCHTTPClienter)(nil).SetDownloadServiceToken), arg0)
 }
 
-// SetFlorenceToken mocks base method
-func (m *MockRCHTTPClienter) SetFlorenceToken(arg0 string) {
-	m.ctrl.Call(m, "SetFlorenceToken", arg0)
-}
-
-// SetFlorenceToken indicates an expected call of SetFlorenceToken
-func (mr *MockRCHTTPClienterMockRecorder) SetFlorenceToken(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFlorenceToken", reflect.TypeOf((*MockRCHTTPClienter)(nil).SetFlorenceToken), arg0)
-}
-
 // SetMaxRetries mocks base method
 func (m *MockRCHTTPClienter) SetMaxRetries(arg0 int) {
 	m.ctrl.Call(m, "SetMaxRetries", arg0)

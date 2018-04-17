@@ -48,13 +48,10 @@ type Client struct {
 }
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
-func NewAPIClient(datasetAPIURL, serviceToken, xDownloadServiceToken, florenceToken string) *Client {
+func NewAPIClient(datasetAPIURL, serviceToken, xDownloadServiceToken string) *Client {
 	return &Client{
 		cli: rchttp.ClientWithDownloadServiceToken(
-			rchttp.ClientWithFlorenceToken(
-				rchttp.ClientWithServiceToken(nil, serviceToken),
-				florenceToken,
-			),
+			rchttp.ClientWithServiceToken(nil, serviceToken),
 			xDownloadServiceToken,
 		),
 		url: datasetAPIURL,

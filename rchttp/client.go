@@ -25,7 +25,6 @@ type Client struct {
 	HTTPClient           *http.Client
 	AuthToken            string
 	DownloadServiceToken string
-	FlorenceToken        string
 }
 
 // DefaultClient is a go-ns specific http client with sensible timeouts,
@@ -89,18 +88,6 @@ func ClientWithDownloadServiceToken(c common.RCHTTPClienter, token string) commo
 }
 func (c *Client) SetDownloadServiceToken(token string) {
 	c.DownloadServiceToken = token
-}
-
-// ClientWithFlorenceToken facilitates creating a client and setting service auth
-func ClientWithFlorenceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
-	if c == nil {
-		c = NewClient()
-	}
-	c.SetFlorenceToken(token)
-	return c
-}
-func (c *Client) SetFlorenceToken(token string) {
-	c.FlorenceToken = token
 }
 
 func (c *Client) GetMaxRetries() int {

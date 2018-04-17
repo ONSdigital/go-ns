@@ -22,7 +22,6 @@ var (
 	lockRCHTTPClienterMockPut                     sync.RWMutex
 	lockRCHTTPClienterMockSetAuthToken            sync.RWMutex
 	lockRCHTTPClienterMockSetDownloadServiceToken sync.RWMutex
-	lockRCHTTPClienterMockSetFlorenceToken        sync.RWMutex
 	lockRCHTTPClienterMockSetMaxRetries           sync.RWMutex
 	lockRCHTTPClienterMockSetTimeout              sync.RWMutex
 )
@@ -59,9 +58,6 @@ var (
 //             },
 //             SetDownloadServiceTokenFunc: func(token string)  {
 // 	               panic("TODO: mock out the SetDownloadServiceToken method")
-//             },
-//             SetFlorenceTokenFunc: func(token string)  {
-// 	               panic("TODO: mock out the SetFlorenceToken method")
 //             },
 //             SetMaxRetriesFunc: func(in1 int)  {
 // 	               panic("TODO: mock out the SetMaxRetries method")
@@ -102,9 +98,6 @@ type RCHTTPClienterMock struct {
 
 	// SetDownloadServiceTokenFunc mocks the SetDownloadServiceToken method.
 	SetDownloadServiceTokenFunc func(token string)
-
-	// SetFlorenceTokenFunc mocks the SetFlorenceToken method.
-	SetFlorenceTokenFunc func(token string)
 
 	// SetMaxRetriesFunc mocks the SetMaxRetries method.
 	SetMaxRetriesFunc func(in1 int)
@@ -176,11 +169,6 @@ type RCHTTPClienterMock struct {
 		}
 		// SetDownloadServiceToken holds details about calls to the SetDownloadServiceToken method.
 		SetDownloadServiceToken []struct {
-			// Token is the token argument value.
-			Token string
-		}
-		// SetFlorenceToken holds details about calls to the SetFlorenceToken method.
-		SetFlorenceToken []struct {
 			// Token is the token argument value.
 			Token string
 		}
@@ -512,37 +500,6 @@ func (mock *RCHTTPClienterMock) SetDownloadServiceTokenCalls() []struct {
 	lockRCHTTPClienterMockSetDownloadServiceToken.RLock()
 	calls = mock.calls.SetDownloadServiceToken
 	lockRCHTTPClienterMockSetDownloadServiceToken.RUnlock()
-	return calls
-}
-
-// SetFlorenceToken calls SetFlorenceTokenFunc.
-func (mock *RCHTTPClienterMock) SetFlorenceToken(token string) {
-	if mock.SetFlorenceTokenFunc == nil {
-		panic("moq: RCHTTPClienterMock.SetFlorenceTokenFunc is nil but RCHTTPClienter.SetFlorenceToken was just called")
-	}
-	callInfo := struct {
-		Token string
-	}{
-		Token: token,
-	}
-	lockRCHTTPClienterMockSetFlorenceToken.Lock()
-	mock.calls.SetFlorenceToken = append(mock.calls.SetFlorenceToken, callInfo)
-	lockRCHTTPClienterMockSetFlorenceToken.Unlock()
-	mock.SetFlorenceTokenFunc(token)
-}
-
-// SetFlorenceTokenCalls gets all the calls that were made to SetFlorenceToken.
-// Check the length with:
-//     len(mockedRCHTTPClienter.SetFlorenceTokenCalls())
-func (mock *RCHTTPClienterMock) SetFlorenceTokenCalls() []struct {
-	Token string
-} {
-	var calls []struct {
-		Token string
-	}
-	lockRCHTTPClienterMockSetFlorenceToken.RLock()
-	calls = mock.calls.SetFlorenceToken
-	lockRCHTTPClienterMockSetFlorenceToken.RUnlock()
 	return calls
 }
 
