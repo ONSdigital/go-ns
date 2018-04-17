@@ -35,39 +35,17 @@ type keyValuePair struct {
 	Value string `avro:"value"`
 }
 
-type KafkaProducer interface {
+type OutboundProducer interface {
 	Output() chan []byte
 }
 
 type Auditor struct {
 	Namespace string
 	TokenName string
-	Producer  KafkaProducer
+	Producer  OutboundProducer
 }
 
-type DummyProducer struct {
-	OutputChan chan []byte
-	ErrorsChan chan error
-}
-
-func (d *DummyProducer) Output() chan []byte {
-	return d.OutputChan
-}
-
-func (e *Event) SetAction(action string) *Event {
-	e.AttemptedAction = action
-	return e
-}
-
-func (e *Event) AddParam(key string, value string) *Event {
-	if e.Params == nil {
-		e.Params = make([]keyValuePair, 0)
-	}
-	e.Params = append(e.Params, keyValuePair{Key: key, Value: value})
-	return e
-}
-
-func New(namespace string, producer KafkaProducer, token string) *Auditor {
+func New(namespace string, producer OutboundProducer, token string) *Auditor {
 	return &Auditor{
 		Namespace: namespace,
 		Producer:  producer,
@@ -148,16 +126,5 @@ func GetEvent(input context.Context) *Event {
 			log.ErrorC("error while attempting to unmarshal audit event from context", err, nil)
 		}
 	}
-	return a
-}
-
-func UnmarshalAudit(input context.Context) *Event {
-	a := &Event{}
-	if s, ok := input.Value(eventContextKey).(string); ok {
-		if err := json.Unmarshal([]byte(s), a); err != nil {
-			//log the error, but continue, and we'll just return an empty audit event
-		}
-	}
-
 	return a
 }
