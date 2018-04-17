@@ -10,39 +10,61 @@ var event = `
   "fields": [
     {
       "type": "string",
-      "name": "service"
+      "name": "created",
+      "default": ""
+    },
+    {
+      "type": "string",
+      "name": "service",
+      "default": ""
     },
     {
       "name": "name_space",
-      "type": "string"
+      "type": "string",
+      "default": ""
     },
     {
       "name": "request_id",
-      "type": "string"
+      "type": "string",
+      "default": ""
     },
     {
       "name": "user",
-      "type": "string"
+      "type": "string",
+      "default": ""
     },
     {
       "name": "attempted_action",
-      "type": "string"
+      "type": "string",
+      "default": ""
     },
     {
-      "name": "outcome",
-      "type": "string"
+      "name": "result",
+      "type": "string",
+      "default": ""
     },
     {
-      "name": "response_status",
-      "type": "string"
-    },
-    {
-      "name": "request_uri",
-      "type": "string"
-    },
-    {
-      "name": "request_method",
-      "type": "string"
+      "name": "params",
+      "default": [],
+      "type": {
+        "type": "array",
+        "items": {
+          "name": "Params",
+          "type": "record",
+          "fields": [
+            {
+              "name": "key",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "name": "value",
+              "type": "string",
+              "default": ""
+            }
+          ]
+        }
+      }
     }
   ]
 }`

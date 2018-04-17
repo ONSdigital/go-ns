@@ -9,7 +9,6 @@ import (
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -21,32 +20,29 @@ const requestIDHeader = "X-Request-Id"
 const fromHeader = "from"
 
 type Event struct {
-	Created         time.Time `avro:"-"`
-	Service         string    `avro:"service"`
-	Namespace       string    `avro:"name_space"`
-	RequestID       string    `avro:"request_id"`
-	User            string    `avro:"user"`
-	AttemptedAction string    `avro:"attempted_action"`
-	Outcome         string    `avro:"outcome"`
-	RequestURI      string    `avro:"request_uri"`
-	RequestMethod   string    `avro:"request_method"`
-	ResponseStatus  string    `avro:"response_status"`
+	Created         string         `avro:"created"`
+	Service         string         `avro:"service"`
+	Namespace       string         `avro:"name_space"`
+	RequestID       string         `avro:"request_id"`
+	User            string         `avro:"user"`
+	AttemptedAction string         `avro:"attempted_action"`
+	Result          string         `avro:"result"`
+	Params          []keyValuePair `avro:"params"`
+}
+
+type keyValuePair struct {
+	Key   string `avro:"key"`
+	Value string `avro:"value"`
+}
+
+type KafkaProducer interface {
+	Output() chan []byte
 }
 
 type Auditor struct {
 	Namespace string
 	TokenName string
 	Producer  KafkaProducer
-}
-
-type Request struct {
-	Method string   `avro:"method"`
-	URL    *url.URL `avro:"url"`
-	Params map[string]interface{}
-}
-
-type KafkaProducer interface {
-	Output() chan []byte
 }
 
 type DummyProducer struct {
@@ -56,6 +52,19 @@ type DummyProducer struct {
 
 func (d *DummyProducer) Output() chan []byte {
 	return d.OutputChan
+}
+
+func (e *Event) SetAction(action string) *Event {
+	e.AttemptedAction = action
+	return e
+}
+
+func (e *Event) AddParam(key string, value string) *Event {
+	if e.Params == nil {
+		e.Params = make([]keyValuePair, 0)
+	}
+	e.Params = append(e.Params, keyValuePair{Key: key, Value: value})
+	return e
 }
 
 func New(namespace string, producer KafkaProducer, token string) *Auditor {
@@ -70,10 +79,8 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-
 			event := &Event{
-				RequestMethod: r.Method,
-				RequestURI:    r.URL.RequestURI(),
+				Params: make([]keyValuePair, 0),
 			}
 
 			if serviceToken := r.Header.Get(a.TokenName); len(serviceToken) > 0 {
@@ -103,18 +110,23 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 	}
 }
 
-func (a *Auditor) Record(ctx context.Context, outcome *Event) {
-	e := getEvent(ctx)
+func (a *Auditor) Record(ctx context.Context, action string, result string, params map[string]string) {
+	e := GetEvent(ctx)
 
 	//these things are coming from context in different ways - must be set
 	//check that setting these would happen as part of the auth stuff we've designed
-	e.AttemptedAction = outcome.AttemptedAction //probably set per handler - might even be the permission name that allows a thing to happen
-	e.ResponseStatus = outcome.ResponseStatus
-	e.Outcome = outcome.Outcome
+	e.AttemptedAction = action
+	e.Result = result
+
+	if params != nil {
+		for k, v := range params {
+			e.Params = append(e.Params, keyValuePair{Key: k, Value: v})
+		}
+	}
 
 	//do this here - worst case we didn't unmarshal the prepared event
 	//so the fields in the message are the only ones we have - best to have time to be safe
-	e.Created = time.Now()
+	e.Created = time.Now().String()
 	e.Service = identity.Caller(ctx)
 	e.User = identity.User(ctx)
 
@@ -129,7 +141,7 @@ func (a *Auditor) Record(ctx context.Context, outcome *Event) {
 	out <- eventBytes
 }
 
-func getEvent(input context.Context) *Event {
+func GetEvent(input context.Context) *Event {
 	a := &Event{}
 	if s, ok := input.Value(eventContextKey).(string); ok {
 		if err := json.Unmarshal([]byte(s), a); err != nil {
