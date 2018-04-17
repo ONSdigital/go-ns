@@ -54,45 +54,45 @@ var testNestedArraySchema = `{
 `
 
 var nestedObjectSchema = `{
-  "type": "record",
-	"name": "nested-object-example",
-	"fields": [
-	  {
-		  "name": "team",
-			"type": "string"
-	  },
-		{
-		  "name": "footballer",
-			"type": {
-			  "name": "footballer-name",
-			  "type": "record",
-				"fields": [
-					{
-			  		"name": "surname",
-						"type": "string",
-            "default": ""
-			 		},
-					{
-					  "name": "middle-name",
-						"type": "string",
-						"default": ""
-				  },
-					{
-						"name": "forename",
-						"type": "string",
-            "default": ""
-				  }
-				]
-			}
-		},
-		{
-			"name": "stats",
-			"type": [
-				"int",
-				"null"
-			]
-		}
-	]
+    "type": "record",
+    "name": "nested-object-example",
+    "fields": [
+        {
+            "name": "team",
+            "type": "string"
+        },
+        {
+            "name": "footballer",
+            "type": {
+                "name": "footballer-name",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "surname",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "middle-name",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "forename",
+                        "type": "string",
+                        "default": ""
+                    }
+                ]
+            }
+        },
+        {
+            "name": "stats",
+            "type": [
+                "int",
+                "null"
+            ]
+        }
+    ]
 }`
 
 // NestedTestData represents an object nested within an object
