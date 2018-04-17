@@ -59,7 +59,6 @@ func HandlerForHTTPClient(doAuth bool, cli HTTPClient, zebedeeURL string) func(h
 				log.DebugR(req, "authentication enabled, checking for expected tokens", logData)
 
 				if isUserReq || isServiceReq {
-
 					url := zebedeeURL + "/identity"
 
 					logData["url"] = url
