@@ -53,7 +53,7 @@ func AddServiceTokenHeader(r *http.Request, serviceToken string) {
 // AddDownloadServiceTokenHeader sets the given download service token on the given request
 func AddDownloadServiceTokenHeader(r *http.Request, serviceToken string) {
 	if len(serviceToken) > 0 {
-		r.Header.Add(DownloadServiceHeaderKey, BearerPrefix+serviceToken)
+		r.Header.Add(DownloadServiceHeaderKey, serviceToken)
 	}
 }
 
