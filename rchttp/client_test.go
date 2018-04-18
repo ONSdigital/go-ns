@@ -199,7 +199,7 @@ func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 			call, err := unmarshallResp(resp)
 			So(err, ShouldBeNil)
 
-			Convey("Then the server sees the auth header", func() {
+			Convey("Then the server sees the auth and user headers", func() {
 				So(call.CallCount, ShouldEqual, expectedCallCount)
 				So(call.Method, ShouldEqual, "GET")
 				So(call.Error, ShouldEqual, "")
