@@ -1,6 +1,7 @@
 package rchttp
 
 import (
+	"errors"
 	"io"
 	"math"
 	"math/rand"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -17,10 +19,12 @@ import (
 // Client is an extension of the net/http client with ability to add
 // timeouts, exponential backoff and context-based cancellation
 type Client struct {
-	MaxRetries         int
-	ExponentialBackoff bool
-	RetryTime          time.Duration
-	HTTPClient         *http.Client
+	MaxRetries           int
+	ExponentialBackoff   bool
+	RetryTime            time.Duration
+	HTTPClient           *http.Client
+	AuthToken            string
+	DownloadServiceToken string
 }
 
 // DefaultClient is a go-ns specific http client with sensible timeouts,
@@ -43,15 +47,78 @@ var DefaultClient = &Client{
 	},
 }
 
+// NewClient returns a copy of DefaultClient
+func NewClient() common.RCHTTPClienter {
+	newClient := *DefaultClient
+	return &newClient
+}
+
 // ClientWithTimeout facilitates creating a client and setting request timeout
-func ClientWithTimeout(timeout time.Duration) (c *Client) {
-	c = DefaultClient
-	c.HTTPClient.Timeout = timeout
+func ClientWithTimeout(c common.RCHTTPClienter, timeout time.Duration) common.RCHTTPClienter {
+	if c == nil {
+		c = NewClient()
+	}
+	c.SetTimeout(timeout)
 	return c
+} // ClientWithTimeout facilitates creating a client and setting request timeout
+
+func (c *Client) SetTimeout(timeout time.Duration) {
+	c.HTTPClient.Timeout = timeout
+}
+
+// ClientWithServiceToken facilitates creating a client and setting service auth
+func ClientWithServiceToken(c common.RCHTTPClienter, authToken string) common.RCHTTPClienter {
+	if c == nil {
+		c = NewClient()
+	}
+	c.SetAuthToken(authToken)
+	return c
+}
+func (c *Client) SetAuthToken(authToken string) {
+	c.AuthToken = authToken
+}
+
+// ClientWithDownloadServiceToken facilitates creating a client and setting service auth
+func ClientWithDownloadServiceToken(c common.RCHTTPClienter, token string) common.RCHTTPClienter {
+	if c == nil {
+		c = NewClient()
+	}
+	c.SetDownloadServiceToken(token)
+	return c
+}
+func (c *Client) SetDownloadServiceToken(token string) {
+	c.DownloadServiceToken = token
+}
+
+func (c *Client) GetMaxRetries() int {
+	return c.MaxRetries
+}
+func (c *Client) SetMaxRetries(maxRetries int) {
+	c.MaxRetries = maxRetries
 }
 
 // Do calls ctxhttp.Do with the addition of exponential backoff
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+
+	if len(c.AuthToken) > 0 {
+		// only add this header if not already set (e.g. for authClient)
+		if len(req.Header.Get(common.AuthHeaderKey)) == 0 {
+			common.AddServiceTokenHeader(req, c.AuthToken)
+		}
+	}
+	if len(c.DownloadServiceToken) > 0 {
+		// only add this header if not already set
+		if len(req.Header.Get(common.DownloadServiceHeaderKey)) == 0 {
+			common.AddDownloadServiceTokenHeader(req, c.DownloadServiceToken)
+		}
+	}
+	if common.IsUserPresent(ctx) {
+		// only add this header if not already set
+		if len(req.Header.Get(common.UserHeaderKey)) == 0 {
+			common.AddUserHeader(req, common.User(ctx))
+		}
+	}
+
 	doer := func(args ...interface{}) (*http.Response, error) {
 		req := args[2].(*http.Request)
 		if req.ContentLength > 0 {
@@ -67,13 +134,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	resp, err := doer(ctx, c.HTTPClient, req)
 	if err != nil {
 		if c.ExponentialBackoff {
-			return c.backoff(doer, ctx, c.HTTPClient, req)
+			return c.backoff(doer, err, ctx, c.HTTPClient, req)
 		}
 		return nil, err
 	}
 
 	if c.ExponentialBackoff && resp.StatusCode >= http.StatusInternalServerError {
-		return c.backoff(doer, ctx, c.HTTPClient, req)
+		return c.backoff(doer, err, ctx, c.HTTPClient, req, errors.New("Bad server status"))
 	}
 
 	return resp, err
@@ -126,8 +193,11 @@ func (c *Client) PostForm(ctx context.Context, uri string, data url.Values) (*ht
 	return c.Post(ctx, uri, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
-func (c *Client) backoff(f func(...interface{}) (*http.Response, error), args ...interface{}) (resp *http.Response, err error) {
-	for attempt := 1; attempt <= c.MaxRetries; attempt++ {
+func (c *Client) backoff(f func(...interface{}) (*http.Response, error), retryErr error, args ...interface{}) (resp *http.Response, err error) {
+	if c.GetMaxRetries() < 1 {
+		return nil, retryErr
+	}
+	for attempt := 1; attempt <= c.GetMaxRetries(); attempt++ {
 		// ensure that the context is not cancelled before iterating
 		if args[0].(context.Context).Err() != nil {
 			err = args[0].(context.Context).Err()

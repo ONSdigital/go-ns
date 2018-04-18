@@ -1,6 +1,7 @@
 package search
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,14 +9,14 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
-	"github.com/ONSdigital/go-ns/rhttp"
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/rchttp"
 )
 
 const (
 	service       = "search-api"
 	defaultLimit  = 20
 	defaultOffset = 0
-	florenceToken = "X-Florence-Token"
 )
 
 // Config represents configuration required to conduct a search request
@@ -24,12 +25,6 @@ type Config struct {
 	Offset        *int
 	InternalToken string
 	FlorenceToken string
-}
-
-// HTTPClient provides an interface for methods on an HTTP Client
-type HTTPClient interface {
-	Get(url string) (*http.Response, error)
-	Do(req *http.Request) (*http.Response, error)
 }
 
 // ErrInvalidSearchAPIResponse is returned when the search api does not respond
@@ -58,33 +53,21 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	cli           HTTPClient
-	url           string
-	internalToken string
+	cli common.RCHTTPClienter
+	url string
 }
 
 // New creates a new instance of Client with a given search api url
 func New(searchAPIURL string) *Client {
 	return &Client{
-		cli: rhttp.DefaultClient,
+		cli: rchttp.NewClient(),
 		url: searchAPIURL,
-	}
-}
-
-// SetInternalToken will set an internal token to use for the search api
-func (c *Client) SetInternalToken(token string) {
-	c.internalToken = token
-}
-
-func (c *Client) setInternalTokenHeader(req *http.Request) {
-	if len(c.internalToken) > 0 {
-		req.Header.Set("Internal-token", c.internalToken)
 	}
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(c.url + "/healthcheck")
+	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
 	if err != nil {
 		return service, err
 	}
@@ -99,7 +82,7 @@ func (c *Client) Healthcheck() (string, error) {
 // Dimension allows the searching of a dimension for a specific dimension option, optionally
 // pass in configuration parameters as an additional field. This can include a request specific
 // internal token
-func (c *Client) Dimension(datasetID, edition, version, name, query string, params ...Config) (m *Model, err error) {
+func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, name, query string, params ...Config) (m *Model, err error) {
 	offset := defaultOffset
 	limit := defaultLimit
 
@@ -133,18 +116,17 @@ func (c *Client) Dimension(datasetID, edition, version, name, query string, para
 	if err != nil {
 		return
 	}
-	c.setInternalTokenHeader(req)
 
 	if len(params) > 0 {
 		if len(params[0].InternalToken) > 0 {
-			req.Header.Set("Internal-Token", params[0].InternalToken)
+			req.Header.Set(common.DeprecatedAuthHeader, params[0].InternalToken)
 		}
 		if len(params[0].FlorenceToken) > 0 {
-			req.Header.Set(florenceToken, params[0].FlorenceToken)
+			req.Header.Set(common.FlorenceHeaderKey, params[0].FlorenceToken)
 		}
 	}
 
-	resp, err := c.cli.Do(req)
+	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}

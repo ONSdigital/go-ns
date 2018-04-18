@@ -50,7 +50,7 @@ There are also `healthcheck.Client` implementations for other services in go-ns 
 
 #### Creating new health check clients
 
-A default healthcheck client (that uses rhttp.DefaultClient to call the service endpoint) can be obtained by calling
+A default healthcheck client (that uses rchttp.DefaultClient to call the service endpoint) can be obtained by calling
 ```
 healthcheck.NewDefaultClient(service, url)
 ```

@@ -25,9 +25,9 @@ func main() {
 	flag.Parse()
 	*method = strings.ToUpper(*method)
 
-	rcClient := rchttp.DefaultClient
-	rcClient.MaxRetries = 4
-	rcClient.HTTPClient.Timeout = 3 * time.Second
+	rcClient := rchttp.NewClient()
+	rcClient.SetMaxRetries(4)
+	rcClient.SetTimeout(3 * time.Second)
 
 	clientCompleteChan := make(chan *gettit)
 	ctx, cancel := context.WithCancel(context.Background())

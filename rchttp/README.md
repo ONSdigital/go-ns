@@ -14,7 +14,7 @@ below:
 import "github.com/ONSdigital/go-ns/rchttp"
 
 func httpHandlerFunc(w http.ResponseWriter, req *http.Request) {
-    client := rchttp.DefaultClient
+    client := rchttp.NewClient()
 
     resp, err := rcClient.Get(req.Context(), "https://www.google.com")
     if err != nil {
