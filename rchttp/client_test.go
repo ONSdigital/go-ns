@@ -173,6 +173,38 @@ func TestClientWithServiceTokenHasAuthHeader(t *testing.T) {
 				So(call.Body, ShouldEqual, `{"hello":"there"}`)
 				So(call.Error, ShouldEqual, "")
 				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
+				So(len(call.Headers[common.UserHeaderKey]), ShouldEqual, 0)
+			})
+		})
+	})
+}
+
+func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
+	ts := rchttptest.NewTestServer()
+	defer ts.Close()
+	expectedCallCount := 0
+
+	Convey("Given an rchttp client with an auth token and context with userId", t, func() {
+		expectedAuthToken := "IAmWhoIAm"
+		testUser := "hello@test"
+		httpClient := ClientWithServiceToken(ClientWithTimeout(nil, 5*time.Second), expectedAuthToken)
+		ctx := common.SetUser(context.Background(), testUser)
+
+		Convey("When Get() is called on a URL", func() {
+			expectedCallCount++
+			resp, err := httpClient.Get(ctx, ts.URL)
+			So(resp, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+
+			call, err := unmarshallResp(resp)
+			So(err, ShouldBeNil)
+
+			Convey("Then the server sees the auth header", func() {
+				So(call.CallCount, ShouldEqual, expectedCallCount)
+				So(call.Method, ShouldEqual, "GET")
+				So(call.Error, ShouldEqual, "")
+				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
+				So(call.Headers[common.UserHeaderKey], ShouldResemble, []string{testUser})
 			})
 		})
 	})
