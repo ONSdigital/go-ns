@@ -53,6 +53,61 @@ var testNestedArraySchema = `{
 }
 `
 
+var nestedObjectSchema = `{
+    "type": "record",
+    "name": "nested-object-example",
+    "fields": [
+        {
+            "name": "team",
+            "type": "string"
+        },
+        {
+            "name": "footballer",
+            "type": {
+                "name": "footballer-name",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "surname",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "middle-name",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "forename",
+                        "type": "string",
+                        "default": ""
+                    }
+                ]
+            }
+        },
+        {
+            "name": "stats",
+            "type": [
+                "int",
+                "null"
+            ]
+        }
+    ]
+}`
+
+// NestedTestData represents an object nested within an object
+type NestedTestData struct {
+	Team       string         `avro:"team"`
+	Footballer FootballerName `avro:"footballer"`
+	Stats      int32          `avro:"stats"`
+}
+
+// FootballerName represents an object containing the footballers name
+type FootballerName struct {
+	Surname  string `avro:"surname"`
+	Forename string `avro:"forename"`
+}
+
 type testData struct {
 	Manager         string `avro:"manager"`
 	TeamName        string `avro:"team_name"`
@@ -92,6 +147,11 @@ type testData4 struct {
 	Footballers []Footballer `avro:"footballers"`
 }
 
+type testData5 struct {
+	WinningYears []string `avro:"winning_years"`
+}
+
+// Footballer represents the details of a footballer
 type Footballer struct {
 	Email string `avro:"email"`
 	Name  string `avro:"name"`
