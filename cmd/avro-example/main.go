@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"time"
@@ -152,5 +153,5 @@ func main() {
 
 	producer.Output() <- producerMessage
 	time.Sleep(time.Duration(1000 * time.Millisecond))
-	producer.Closer() <- true
+	producer.Close(context.Background())
 }
