@@ -49,6 +49,7 @@ type OutboundProducer interface {
 	Output() chan []byte
 }
 
+//AuditorService defines the behaviour of an audior
 type AuditorService interface {
 	GetEvent(input context.Context) (*Event, error)
 	Record(ctx context.Context, action string, result string, params Params) error
@@ -64,10 +65,10 @@ type Auditor struct {
 }
 
 //New creates a new Auditor with the namespace, producer and token provided.
-func New(namespace string, producer OutboundProducer, token string) *Auditor {
+func New(producer OutboundProducer, namespace string, token string) *Auditor {
 	return &Auditor{
-		namespace:     namespace,
 		producer:      producer,
+		namespace:     namespace,
 		tokenName:     token,
 		marshalToAvro: EventSchema.Marshal,
 	}
@@ -101,6 +102,9 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 	}
 }
 
+//Record captures the provided action, result and parameters and an audit event. Common fields - time, user, service
+// are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
+// decide what do with the error in these cases.
 func (a *Auditor) Record(ctx context.Context, action string, result string, params Params) error {
 	if action == "" {
 		return auditError("attempted action is required field", "nil", params)
@@ -138,6 +142,8 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	return nil
 }
 
+//GetEvent convenience method for getting the audit event struct from the provided context, returns an error if there is
+// no event in the provided context or if the value in the context is not of the correct type.
 func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
 	event := input.Value(eventContextKey)
 	if event == nil {
