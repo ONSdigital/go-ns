@@ -19,7 +19,7 @@ var event = `
       "default": ""
     },
     {
-      "name": "name_space",
+      "name": "namespace",
       "type": "string",
       "default": ""
     },
