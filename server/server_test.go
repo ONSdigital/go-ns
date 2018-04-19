@@ -26,11 +26,10 @@ func TestNew(t *testing.T) {
 			So(s.KeyFile, ShouldBeEmpty)
 		})
 
-		Convey("Default middleware should include Timeout, RequestID and Log", func() {
-			So(s.Middleware, ShouldContainKey, "Timeout")
-			So(s.Middleware, ShouldContainKey, "RequestID")
-			So(s.Middleware, ShouldContainKey, "Log")
-			So(s.MiddlewareOrder, ShouldResemble, []string{"RequestID", "Log", "Timeout"})
+		Convey("Default middleware should include RequestID and Log", func() {
+			So(s.Middleware, ShouldContainKey, RequestIDHandlerKey)
+			So(s.Middleware, ShouldContainKey, LogHandlerKey)
+			So(s.MiddlewareOrder, ShouldResemble, []string{RequestIDHandlerKey, LogHandlerKey})
 		})
 
 		Convey("Default timeouts should be sensible", func() {
@@ -38,6 +37,14 @@ func TestNew(t *testing.T) {
 			So(s.WriteTimeout, ShouldEqual, time.Second*10)
 			So(s.ReadHeaderTimeout, ShouldEqual, 0)
 			So(s.IdleTimeout, ShouldEqual, 0)
+		})
+
+		Convey("Handle OS signals by default", func() {
+			So(s.HandleOSSignals, ShouldEqual, true)
+		})
+
+		Convey("A default shutdown context is initialised", func() {
+			So(s.DefaultShutdownTimeout, ShouldEqual, 10*time.Second)
 		})
 	})
 
@@ -79,7 +86,7 @@ func TestNew(t *testing.T) {
 			s.MiddlewareOrder = []string{"foo"}
 
 			So(func() {
-				s.ListenAndServeTLS("", "")
+				s.ListenAndServeTLS("testdata/certFile", "testdata/keyFile")
 			}, ShouldPanicWith, "middleware not found: foo")
 		})
 	})
@@ -137,5 +144,4 @@ func TestNew(t *testing.T) {
 		res.Body.Close()
 		So(res.StatusCode, ShouldEqual, 200)
 	})
-
 }

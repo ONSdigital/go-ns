@@ -206,6 +206,9 @@ func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro
 		case reflect.Int32:
 			value := v.FieldByName(fieldName).Interface().(int32)
 			record.Set(fieldTag, value)
+		case reflect.Int64:
+			value := v.FieldByName(fieldName).Interface().(int64)
+			record.Set(fieldTag, value)
 		case reflect.Slice:
 			if err := marshalSlice(record, v, i, fieldTag, avroSchema); err != nil {
 				return nil, err
@@ -232,6 +235,7 @@ func isValidType(kind reflect.Kind) bool {
 	supportedTypes := []reflect.Kind{
 		reflect.Bool,
 		reflect.Int32,
+		reflect.Int64,
 		reflect.Slice,
 		reflect.String,
 		reflect.Struct,
@@ -323,7 +327,7 @@ func getArraySchema(avroSchema avro.Schema, fieldTag string) (avro.Schema, error
 	return nil, ErrMissingNestedScema
 }
 
-func populateNestedArrayItem(nestedMap map[string]interface{}, typ reflect.Type) reflect.Value {
+func populateItem(nestedMap map[string]interface{}, typ reflect.Type) reflect.Value {
 	// Create a new instance of required struct type
 	v := reflect.Indirect(reflect.New(typ))
 	for i := 0; i < v.NumField(); i++ {
@@ -380,6 +384,14 @@ func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v
 					return ErrUnsupportedType(v.Field(i).Type().Elem().Kind())
 				}
 			}
+
+			if v.Field(i).Type().Kind() == reflect.Struct {
+				value, err = unmarshalStruct(value, v, i)
+				if err != nil {
+					return err
+				}
+			}
+
 			fieldName.Set(reflect.ValueOf(value))
 		}
 	}
@@ -430,9 +442,22 @@ func unmarshalStructSlice(value interface{}, v reflect.Value, i int) (reflect.Va
 		if err := json.Unmarshal([]byte(record.String()), &dataMap); err != nil {
 			return v, err
 		}
-		item := populateNestedArrayItem(dataMap, v.Field(i).Type().Elem())
+		item := populateItem(dataMap, v.Field(i).Type().Elem())
 		emptySlice = reflect.Append(emptySlice, item)
 		v.Field(i).Set(emptySlice)
 	}
 	return v, nil
+}
+
+func unmarshalStruct(val interface{}, v reflect.Value, i int) (interface{}, error) {
+	record := val.(*avro.GenericRecord)
+
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(record.String()), &dataMap); err != nil {
+		return v, err
+	}
+
+	item := populateItem(dataMap, v.Field(i).Type())
+
+	return item.Interface(), nil
 }

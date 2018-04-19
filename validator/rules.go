@@ -29,10 +29,11 @@ type rule struct {
 // RulesList is an extendable map containing rule functions which return an error if the
 // condition is not met
 var RulesList = map[string]func(...interface{}) error{
-	"min_length": minLength,
-	"max_length": maxLength,
-	"email":      email,
-	"not_empty":  notEmpty,
+	"min_length":     minLength,
+	"max_length":     maxLength,
+	"email":          email,
+	"not_empty":      notEmpty,
+	"must_not_equal": mustNotEqual,
 }
 
 func minLength(vars ...interface{}) error {
@@ -97,5 +98,24 @@ func notEmpty(vars ...interface{}) error {
 	if v.Len() == 0 {
 		return FieldValidationErr{errors.New("slice must not be empty")}
 	}
+	return nil
+}
+
+func mustNotEqual(vars ...interface{}) error {
+	var expected, input string
+	var ok bool
+
+	if expected, ok = vars[0].(string); !ok {
+		return errors.New("first param must be a string")
+	}
+
+	if input, ok = vars[1].(string); !ok {
+		return errors.New("second param must be a string")
+	}
+
+	if expected == input {
+		return FieldValidationErr{fmt.Errorf("input value must not equal: %s", expected)}
+	}
+
 	return nil
 }

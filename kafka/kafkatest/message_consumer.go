@@ -3,6 +3,7 @@ package kafkatest
 import (
 	"github.com/ONSdigital/go-ns/kafka"
 )
+
 // NewMessageConsumer creates a consumer using the given channel.
 func NewMessageConsumer(messages chan kafka.Message) *MessageConsumer {
 	return &MessageConsumer{
@@ -20,6 +21,12 @@ type MessageConsumer struct {
 // Incoming returns the stored schema channel.
 func (consumer *MessageConsumer) Incoming() chan kafka.Message {
 	return consumer.messages
+}
+
+// CommitAndRelease commits the message, releases the listener to consume next
+func (consumer *MessageConsumer) CommitAndRelease(m kafka.Message) {
+	m.Commit()
+	return
 }
 
 // Closer returns the stored closer channel.

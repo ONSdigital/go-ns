@@ -11,13 +11,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 )
 
 // ZebedeeClient represents a zebedee client
 type ZebedeeClient struct {
 	zebedeeURL  string
-	client      *http.Client
+	client      *rhttp.Client
 	accessToken string
 }
 
@@ -28,6 +30,7 @@ type ErrInvalidZebedeeResponse struct {
 	uri        string
 }
 
+// Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
 	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
 		e.actualCode,
@@ -38,21 +41,24 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 var _ error = ErrInvalidZebedeeResponse{}
 
 // NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
-// environment variable to modify default 5 second timeout
-func NewZebedeeClient(url string) ZebedeeClient {
+// environment variable to modify default client timeout as zebedee can often be slow
+// to respond
+func NewZebedeeClient(url string) *ZebedeeClient {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
+	cli := rhttp.DefaultClient
+	cli.HTTPClient.Timeout = time.Duration(timeout) * time.Second
 
-	return ZebedeeClient{
+	return &ZebedeeClient{
 		zebedeeURL: url,
-		client:     &http.Client{Timeout: time.Duration(timeout) * time.Second},
+		client:     cli,
 	}
 }
 
 // Get returns a response for the requested uri in zebedee
-func (c ZebedeeClient) Get(path string) ([]byte, error) {
+func (c *ZebedeeClient) Get(path string) ([]byte, error) {
 	return c.get(path)
 }
 
@@ -72,7 +78,7 @@ func (c *ZebedeeClient) Healthcheck() (string, error) {
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
-func (c ZebedeeClient) GetDatasetLandingPage(path string) (data.DatasetLandingPage, error) {
+func (c *ZebedeeClient) GetDatasetLandingPage(path string) (data.DatasetLandingPage, error) {
 	b, err := c.get(path)
 	if err != nil {
 		return data.DatasetLandingPage{}, err
@@ -114,18 +120,18 @@ func (c ZebedeeClient) GetDatasetLandingPage(path string) (data.DatasetLandingPa
 }
 
 // SetAccessToken adds an access token to the client to authenticate with zebedee
-func (c ZebedeeClient) SetAccessToken(token string) {
+func (c *ZebedeeClient) SetAccessToken(token string) {
 	c.accessToken = token
 }
 
-func (c ZebedeeClient) get(path string) ([]byte, error) {
+func (c *ZebedeeClient) get(path string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(c.accessToken) > 0 {
-		req.Header.Set("X-Florence-Token", c.accessToken)
+		req.Header.Set(common.FlorenceHeaderKey, c.accessToken)
 	}
 
 	resp, err := c.client.Do(req)
@@ -143,7 +149,7 @@ func (c ZebedeeClient) get(path string) ([]byte, error) {
 }
 
 // GetBreadcrumb returns a Breadcrumb
-func (c ZebedeeClient) GetBreadcrumb(uri string) ([]data.Breadcrumb, error) {
+func (c *ZebedeeClient) GetBreadcrumb(uri string) ([]data.Breadcrumb, error) {
 	b, err := c.get("/parents?uri=" + uri)
 	if err != nil {
 		return nil, err
@@ -158,7 +164,7 @@ func (c ZebedeeClient) GetBreadcrumb(uri string) ([]data.Breadcrumb, error) {
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
+func (c *ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
 	b, err := c.get("/data?uri=" + uri)
 	if err != nil {
 		return data.Dataset{}, err
@@ -191,7 +197,7 @@ func (c ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
+func (c *ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
 	b, err := c.get("/filesize?uri=" + uri)
 	if err != nil {
 		return data.FileSize{}, err
@@ -206,7 +212,7 @@ func (c ZebedeeClient) GetFileSize(uri string) (data.FileSize, error) {
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
+func (c *ZebedeeClient) GetPageTitle(uri string) (data.PageTitle, error) {
 	b, err := c.get("/data?uri=" + uri + "&title")
 	if err != nil {
 		return data.PageTitle{}, err

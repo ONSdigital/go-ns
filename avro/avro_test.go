@@ -9,6 +9,63 @@ import (
 )
 
 func TestUnitMarshal(t *testing.T) {
+	Convey("Nested objects", t, func() {
+		schema := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		data := &NestedTestData{
+			Team: "Tottenham",
+			Footballer: FootballerName{
+				Surname:  "Kane",
+				Forename: "Harry",
+			},
+			Stats: int32(10),
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
+
+		var footballMessage NestedTestData
+		exampleEvent := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		err = exampleEvent.Unmarshal(bufferBytes, &footballMessage)
+		So(err, ShouldBeNil)
+		So(footballMessage.Team, ShouldEqual, "Tottenham")
+		So(footballMessage.Footballer.Surname, ShouldEqual, "Kane")
+		So(footballMessage.Footballer.Forename, ShouldEqual, "Harry")
+		So(footballMessage.Stats, ShouldEqual, int32(10))
+	})
+
+	Convey("Nested object empty", t, func() {
+		schema := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		data := &NestedTestData{
+			Team:       "Tottenham",
+			Footballer: FootballerName{},
+		}
+
+		bufferBytes, err := schema.Marshal(data)
+		So(err, ShouldBeNil)
+		So(bufferBytes, ShouldNotBeNil)
+
+		var footballMessage NestedTestData
+		exampleEvent := &Schema{
+			Definition: nestedObjectSchema,
+		}
+
+		err = exampleEvent.Unmarshal(bufferBytes, &footballMessage)
+		So(err, ShouldBeNil)
+		So(footballMessage.Team, ShouldEqual, "Tottenham")
+		So(footballMessage.Footballer, ShouldResemble, FootballerName{})
+		So(footballMessage.Stats, ShouldEqual, 0)
+	})
+
 	Convey("Successfully marshal data", t, func() {
 		schema := &Schema{
 			Definition: testSchema,
@@ -22,6 +79,7 @@ func TestUnitMarshal(t *testing.T) {
 			URI:             "http://8080/cpfc.com",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
+			PayPerWeek:      int64(539457394875390485),
 		}
 
 		bufferBytes, err := schema.Marshal(data)
@@ -106,6 +164,11 @@ func TestUnitIsValidType(t *testing.T) {
 			So(isValid, ShouldEqual, true)
 		})
 
+		Convey("returned true for int64 type", func() {
+			isValid := isValidType(reflect.Int64)
+			So(isValid, ShouldEqual, true)
+		})
+
 		Convey("returned true for slice type", func() {
 			isValid := isValidType(reflect.Slice)
 			So(isValid, ShouldEqual, true)
@@ -148,6 +211,16 @@ func TestUnitGetRecord(t *testing.T) {
 			So(record, ShouldNotBeNil)
 			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
 			So(record.Get("winning_years"), ShouldResemble, []interface{}{"1934", "1972", "1999"})
+		})
+
+		Convey("record generated with missing array of strings", func() {
+			avroSchema, v, typ := setUp(testArraySchema, 5)
+
+			record, err := getRecord(avroSchema, v, typ)
+			So(err, ShouldBeNil)
+			So(record, ShouldNotBeNil)
+			So(record, ShouldHaveSameTypeAs, avro.NewGenericRecord(avroSchema))
+			So(record.Get("winning_years"), ShouldResemble, []interface{}(nil))
 		})
 
 		Convey("record generated with nested array", func() {
@@ -289,6 +362,7 @@ func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.
 			Manager:         "Pardew, Alan",
 			HasChangedName:  false,
 			NumberOfPlayers: int32(24),
+			PayPerWeek:      int64(539457394875390485),
 		}
 
 		v = reflect.ValueOf(testData)
@@ -316,15 +390,23 @@ func setUp(testSchema string, dataSet int) (avro.Schema, reflect.Value, reflect.
 		testData := &testData4{
 			Team: "Doncaster",
 			Footballers: []Footballer{
-				Footballer{
+				{
 					Email: "jgregory@gmail.com",
 					Name:  "jack gregory",
 				},
-				Footballer{
+				{
 					Email: "pdoherty@gmail.com",
 					Name:  "paul doherty",
 				},
 			},
+		}
+
+		v = reflect.ValueOf(testData)
+		typ = reflect.TypeOf(testData)
+	case 5:
+		var winningYears []string
+		testData := &testData5{
+			WinningYears: winningYears,
 		}
 
 		v = reflect.ValueOf(testData)

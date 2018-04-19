@@ -3,7 +3,10 @@ package requestID
 import (
 	"math/rand"
 	"net/http"
+	"time"
 )
+
+var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Handler is a wrapper which adds an X-Request-Id header if one does not yet exist
 func Handler(size int) func(http.Handler) http.Handler {
@@ -16,7 +19,7 @@ func Handler(size int) func(http.Handler) http.Handler {
 			if len(requestID) == 0 {
 				b := make([]rune, size)
 				for i := range b {
-					b[i] = letters[rand.Intn(len(letters))]
+					b[i] = letters[requestIDRandom.Intn(len(letters))]
 				}
 				req.Header.Set("X-Request-Id", string(b))
 			}

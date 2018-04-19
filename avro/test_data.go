@@ -9,7 +9,8 @@ var testSchema = `{ "type": "record",
     {"name": "kind-of-sport", "type": "string"},
     {"name": "uri", "type": "string", "default": ""},
     {"name": "has_changed_name", "type": "boolean"},
-    {"name": "number_of_players", "type": "int"}
+    {"name": "number_of_players", "type": "int"},
+    {"name": "pay_per_week", "type": "long"}
  ]
 }`
 
@@ -52,6 +53,61 @@ var testNestedArraySchema = `{
 }
 `
 
+var nestedObjectSchema = `{
+    "type": "record",
+    "name": "nested-object-example",
+    "fields": [
+        {
+            "name": "team",
+            "type": "string"
+        },
+        {
+            "name": "footballer",
+            "type": {
+                "name": "footballer-name",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "surname",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "middle-name",
+                        "type": "string",
+                        "default": ""
+                    },
+                    {
+                        "name": "forename",
+                        "type": "string",
+                        "default": ""
+                    }
+                ]
+            }
+        },
+        {
+            "name": "stats",
+            "type": [
+                "int",
+                "null"
+            ]
+        }
+    ]
+}`
+
+// NestedTestData represents an object nested within an object
+type NestedTestData struct {
+	Team       string         `avro:"team"`
+	Footballer FootballerName `avro:"footballer"`
+	Stats      int32          `avro:"stats"`
+}
+
+// FootballerName represents an object containing the footballers name
+type FootballerName struct {
+	Surname  string `avro:"surname"`
+	Forename string `avro:"forename"`
+}
+
 type testData struct {
 	Manager         string `avro:"manager"`
 	TeamName        string `avro:"team_name"`
@@ -60,6 +116,7 @@ type testData struct {
 	URI             string `avro:"uri"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
+	PayPerWeek      int64  `avro:"pay_per_week"`
 }
 
 type testData1 struct {
@@ -70,6 +127,7 @@ type testData1 struct {
 	URI             string `avro:"-"`
 	HasChangedName  bool   `avro:"has_changed_name"`
 	NumberOfPlayers int32  `avro:"number_of_players"`
+	PayPerWeek      int64  `avro:"pay_per_week"`
 }
 
 type testData2 struct {
@@ -89,6 +147,11 @@ type testData4 struct {
 	Footballers []Footballer `avro:"footballers"`
 }
 
+type testData5 struct {
+	WinningYears []string `avro:"winning_years"`
+}
+
+// Footballer represents the details of a footballer
 type Footballer struct {
 	Email string `avro:"email"`
 	Name  string `avro:"name"`
