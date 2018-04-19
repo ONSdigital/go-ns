@@ -2,7 +2,6 @@ package audit
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
@@ -10,16 +9,16 @@ import (
 	"time"
 )
 
-//go:generate moq -out ./audit_test/audit_generated_mocks.go -pkg audit_test . OutboundProducer
+//go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
 
 type contextKey string
 
-const eventContextKey = contextKey("audit")
-const fromContextKey = contextKey("from")
-const requestIDHeader = "X-Request-Id"
-const fromHeader = "from"
-
-var noEventInContextError = errors.New("unable to audit no event found in context")
+const (
+	eventContextKey = contextKey("audit")
+	fromContextKey  = contextKey("from")
+	requestIDHeader = "X-Request-Id"
+	fromHeader      = "from"
+)
 
 //Event holds data about the action being attempted
 type Event struct {
@@ -37,7 +36,7 @@ type avroMarshaller func(s interface{}) ([]byte, error)
 
 type jsonUnmarshaller func(data []byte, v interface{}) error
 
-//Params key value pair for additional audit data not included in the event mode.
+//Params key value pair for additional audit data not included in the event model.
 type Params map[string]string
 
 type keyValuePair struct {
@@ -50,13 +49,17 @@ type OutboundProducer interface {
 	Output() chan []byte
 }
 
+type AuditorService interface {
+	GetEvent(input context.Context) (*Event, error)
+	Record(ctx context.Context, action string, result string, params Params) error
+}
+
 //Auditor provides functions for interception HTTP requests and populating the context with a base audit event and
 // recording audit events
 type Auditor struct {
 	namespace     string
 	tokenName     string
 	marshalToAvro avroMarshaller
-	unmarshalJSON jsonUnmarshaller
 	producer      OutboundProducer
 }
 
@@ -67,7 +70,6 @@ func New(namespace string, producer OutboundProducer, token string) *Auditor {
 		producer:      producer,
 		tokenName:     token,
 		marshalToAvro: EventSchema.Marshal,
-		unmarshalJSON: json.Unmarshal,
 	}
 }
 
@@ -77,8 +79,10 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			event := &Event{
-				Params: make([]keyValuePair, 0),
+			event := Event{
+				RequestID: r.Header.Get(requestIDHeader),
+				Namespace: a.namespace,
+				Params:    make([]keyValuePair, 0),
 			}
 
 			if serviceToken := r.Header.Get(a.tokenName); len(serviceToken) > 0 {
@@ -91,36 +95,23 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 				event.User = from
 			}
 
-			event.RequestID = r.Header.Get(requestIDHeader)
-			event.Namespace = a.namespace
-
-			b, err := json.Marshal(event)
-			if err != nil {
-				log.ErrorC("cannot audit, failing request ", err, log.Data{
-					"requestedURI": r.URL.RequestURI(),
-					"queryString":  r.URL.RawQuery,
-				})
-				//we couldn't create the audit event. some input must be invalid
-				//probably bomb out of the whole handler at this point.
-				//Cancel the context? - dont want to allow an action we can't track
-			}
-
-			ctx = context.WithValue(ctx, eventContextKey, string(b))
+			ctx = context.WithValue(ctx, eventContextKey, event)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 func (a *Auditor) Record(ctx context.Context, action string, result string, params Params) error {
-	logData := log.Data{
-		"action": action,
-		"result": result,
-		"params": params,
+	if action == "" {
+		return auditError("attempted action is required field", "nil", params)
+	}
+	if result == "" {
+		return auditError("result is required field", action, params)
 	}
 
-	e, err := a.getEvent(ctx)
+	e, err := a.GetEvent(ctx)
 	if err != nil {
-		return err
+		return auditError(err.Error(), action, params)
 	}
 
 	e.AttemptedAction = action
@@ -136,29 +127,34 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	e.Service = identity.Caller(ctx)
 	e.User = identity.User(ctx)
 
-	eventBytes, err := a.marshalToAvro(e)
+	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
-		log.ErrorC("unable to audit error marshalling event to arvo", err, logData)
-		return err
+		log.Error(err, nil)
+		return auditError("error marshalling event to arvo", action, params)
 	}
 
-	log.Info("logging audit message...", nil)
-	a.producer.Output() <- eventBytes
+	log.Info("logging audit message", log.Data{"auditEvent": e})
+	a.producer.Output() <- avroBytes
 	return nil
 }
 
-func (a *Auditor) getEvent(input context.Context) (*Event, error) {
-	eventBytes := input.Value(eventContextKey)
-	if eventBytes == nil {
-		return nil, noEventInContextError
+func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
+	event := input.Value(eventContextKey)
+	if event == nil {
+		return nil, errors.New("no event found in context.Context")
 	}
 
-	var event Event
-	if s, ok := eventBytes.(string); ok {
-		b := []byte(s)
-		if err := a.unmarshalJSON(b, &event); err != nil {
-			return nil, err
-		}
+	auditEvent, ok := event.(Event)
+	if !ok {
+		return nil, errors.New("context.Context audit event was not in the expected format")
 	}
-	return &event, nil
+
+	return &auditEvent, nil
+}
+
+func auditError(context string, action string, params Params) error {
+	if params == nil || len(params) == 0 {
+		return errors.Errorf("unable to audit action: %s, %s, enforcing failure response with status code 500", action, context)
+	}
+	return errors.Errorf("unable to audit action: %s, params: %+v, %s, enforcing failure response with status code 500", action, params, context)
 }

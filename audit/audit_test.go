@@ -2,8 +2,6 @@ package audit
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/ONSdigital/go-ns/audit/audit_test"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
@@ -12,21 +10,27 @@ import (
 	"time"
 )
 
+const (
+	auditAction = "test"
+	auditResult = "success"
+)
+
 func TestAuditor_Record(t *testing.T) {
 	Convey("given no audit event exists in the provided context", t, func() {
-		producer := &audit_test.OutboundProducerMock{}
+		producer := &OutboundProducerMock{}
 
 		auditor := New("test", producer, "test")
 
 		// record the audit event
-		err := auditor.Record(context.Background(), "test", "success", nil)
+		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
 
-		So(err.Error(), ShouldEqual, noEventInContextError.Error())
+		expectedErr := auditError("no event found in context.Context", auditAction, nil)
+		So(err.Error(), ShouldEqual, expectedErr.Error())
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
 	Convey("given there is an error converting the audit event to into avro", t, func() {
-		producer := &audit_test.OutboundProducerMock{}
+		producer := &OutboundProducerMock{}
 		auditor := New("test", producer, "test")
 
 		auditor.marshalToAvro = func(s interface{}) ([]byte, error) {
@@ -34,43 +38,41 @@ func TestAuditor_Record(t *testing.T) {
 		}
 
 		// record the audit event
-		err := auditor.Record(setUpContext(t), "test", "success", nil)
+		err := auditor.Record(setUpContext(t), auditAction, auditResult, nil)
 
-		So(err.Error(), ShouldEqual, "avro marshal error")
+		expectedErr := auditError("error marshalling event to arvo", auditAction, nil)
+		So(err.Error(), ShouldEqual, expectedErr.Error())
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
-	Convey("given there is an error unmarshalling the event from context", t, func() {
-		producer := &audit_test.OutboundProducerMock{}
+	Convey("given context event is not the expected format", t, func() {
+		producer := &OutboundProducerMock{}
 
 		auditor := New("test", producer, "test")
-		auditor.unmarshalJSON = func(data []byte, v interface{}) error {
-			return errors.New("cannot unmarshal audit event")
-		}
 
 		// record the audit event
-		err := auditor.Record(setUpContext(t), "test", "success", nil)
+		err := auditor.Record(context.WithValue(context.Background(), contextKey("audit"), "this is not an audit event"), auditAction, auditResult, nil)
 
-		So(err.Error(), ShouldEqual, "cannot unmarshal audit event")
+		expectedErr := auditError("context.Context audit event was not in the expected format", auditAction, nil)
+		So(err.Error(), ShouldEqual, expectedErr.Error())
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
 	Convey("given a valid audit event exists in context", t, func() {
 		output := make(chan []byte, 1)
 
-		producer := &audit_test.OutboundProducerMock{
+		producer := &OutboundProducerMock{
 			OutputFunc: func() chan []byte {
 				return output
 			},
 		}
 
 		auditor := New("test", producer, "test")
-		auditor.unmarshalJSON = json.Unmarshal
 
 		var results []byte
 
 		// record the audit event
-		err := auditor.Record(setUpContext(t), "test", "success", Params{"ID": "12345"})
+		err := auditor.Record(setUpContext(t), auditAction, auditResult, Params{"ID": "12345"})
 
 		select {
 		case results = <-output:
@@ -101,13 +103,7 @@ func TestAuditor_Record(t *testing.T) {
 }
 
 func setUpContext(t *testing.T) context.Context {
-	e := Event{Namespace: "audit-test"}
-	b, err := json.Marshal(e)
-	if err != nil {
-		log.ErrorC("failing test due to json marshal error", err, nil)
-		t.FailNow()
-	}
-	ctx := context.WithValue(context.Background(), contextKey("audit"), string(b))
+	ctx := context.WithValue(context.Background(), contextKey("audit"), Event{Namespace: "audit-test"})
 	ctx = identity.SetCaller(ctx, "some-service")
 	ctx = identity.SetUser(ctx, "some-user")
 	return ctx
