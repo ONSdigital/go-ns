@@ -132,7 +132,11 @@ func splitToken(token string) (tokenObj tokenObject) {
 	splitToken := strings.Split(token, " ")
 	tokenObj.numberOfParts = len(splitToken)
 	tokenObj.hasPrefix = strings.HasPrefix(token, prefix)
-	tokenObj.tokenPart = token[len(token)-6:]
+	if len(token) > 6 {
+		tokenObj.tokenPart = token[len(token)-6:]
+	} else {
+		tokenObj.tokenPart = token
+	}
 
 	return tokenObj
 }
