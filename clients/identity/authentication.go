@@ -5,11 +5,20 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rchttp"
 )
+
+const prefix = "Bearer "
+
+type tokenObject struct {
+	numberOfParts int
+	hasPrefix     bool
+	tokenPart     string
+}
 
 type IdentityClient common.APIClient
 
@@ -27,16 +36,19 @@ func NewAPIClient(cli common.RCHTTPClienter, url string) (api *IdentityClient) {
 
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
 func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int, error) {
-
+	var logData log.Data
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
 
 	florenceToken := req.Header.Get(common.FlorenceHeaderKey)
 	authToken := req.Header.Get(common.AuthHeaderKey)
+	logData = splitTokens(florenceToken, authToken)
 
 	isUserReq := len(florenceToken) > 0
 	isServiceReq := len(authToken) > 0
+	logData["is_user_request"] = isUserReq
+	logData["is_service_request"] = isServiceReq
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
@@ -44,7 +56,8 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	}
 
 	url := api.BaseURL + "/identity"
-	logData := log.Data{"is_user_request": isUserReq, "is_service_request": isServiceReq, "url": url}
+	logData["url"] = url
+
 	log.DebugR(req, "calling AuthAPI to authenticate", logData)
 
 	outboundAuthReq, err := http.NewRequest("GET", url, nil)
@@ -101,6 +114,29 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	return ctx, http.StatusOK, nil
 }
 
+func splitTokens(florenceToken, authToken string) (logData log.Data) {
+	var ft, at tokenObject
+	if len(florenceToken) > 0 {
+		ft = splitToken(florenceToken)
+	}
+
+	if len(authToken) > 0 {
+		at = splitToken(authToken)
+	}
+
+	return log.Data{"florence_token": ft, "auth_token": at}
+}
+
+func splitToken(token string) (tokenObj tokenObject) {
+
+	splitToken := strings.Split(token, " ")
+	tokenObj.numberOfParts = len(splitToken)
+	tokenObj.hasPrefix = strings.HasPrefix(token, prefix)
+	tokenObj.tokenPart = token[len(token)-6:]
+
+	return tokenObj
+}
+
 // unmarshalIdentityResponse converts a resp.Body (JSON) into an IdentityResponse
 func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.IdentityResponse, err error) {
 	b, err := ioutil.ReadAll(resp.Body)
@@ -109,8 +145,8 @@ func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.Identi
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.ErrorC("error closing response body", err, nil)
+		if errClose := resp.Body.Close(); errClose != nil {
+			log.ErrorC("error closing response body", errClose, nil)
 		}
 	}()
 

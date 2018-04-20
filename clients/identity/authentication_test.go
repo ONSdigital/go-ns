@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
-	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -256,6 +256,22 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(common.IsUserPresent(ctx), ShouldBeTrue)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
+			})
+		})
+	})
+}
+
+func TestSplitTokens(t *testing.T) {
+	Convey("Given a florence token and service token", t, func() {
+		florenceToken := "Bearer 987654321"
+		serviceToken := "123456789"
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := splitTokens(florenceToken, serviceToken)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "456789"})
 			})
 		})
 	})
