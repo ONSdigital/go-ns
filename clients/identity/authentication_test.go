@@ -262,16 +262,42 @@ func TestHandler_bothTokens(t *testing.T) {
 }
 
 func TestSplitTokens(t *testing.T) {
-	Convey("Given a florence token and service token", t, func() {
-		florenceToken := "Bearer 987654321"
-		serviceToken := "123456789"
+	Convey("Given a service token and an empty florence token", t, func() {
+		florenceToken := ""
+		serviceToken := "Bearer 123456789"
 
 		Convey("When we pass both tokens into splitTokens function", func() {
 			logData := splitTokens(florenceToken, serviceToken)
 
 			Convey("Then the token objects are returned with the expected values", func() {
-				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "654321"})
-				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "456789"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
+				So(logData["florence_token"], ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a florence token and an empty service token", t, func() {
+		florenceToken := "987654321"
+		serviceToken := ""
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := splitTokens(florenceToken, serviceToken)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldBeNil)
+			})
+		})
+	})
+	Convey("Given a florence token and service token", t, func() {
+		florenceToken := "987654321"
+		serviceToken := "Bearer 123456789"
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := splitTokens(florenceToken, serviceToken)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
 			})
 		})
 	})

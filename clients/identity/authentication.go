@@ -12,8 +12,6 @@ import (
 	"github.com/ONSdigital/go-ns/rchttp"
 )
 
-const prefix = "Bearer "
-
 type tokenObject struct {
 	numberOfParts int
 	hasPrefix     bool
@@ -114,24 +112,28 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	return ctx, http.StatusOK, nil
 }
 
-func splitTokens(florenceToken, authToken string) (logData log.Data) {
+func splitTokens(florenceToken, authToken string) log.Data {
 	var ft, at tokenObject
+	logData := log.Data{}
+
 	if len(florenceToken) > 0 {
 		ft = splitToken(florenceToken)
+		logData["florence_token"] = ft
 	}
 
 	if len(authToken) > 0 {
 		at = splitToken(authToken)
+		logData["auth_token"] = at
 	}
 
-	return log.Data{"florence_token": ft, "auth_token": at}
+	return logData
 }
 
 func splitToken(token string) (tokenObj tokenObject) {
 
 	splitToken := strings.Split(token, " ")
 	tokenObj.numberOfParts = len(splitToken)
-	tokenObj.hasPrefix = strings.HasPrefix(token, prefix)
+	tokenObj.hasPrefix = strings.HasPrefix(token, common.BearerPrefix)
 	if len(token) > 6 {
 		tokenObj.tokenPart = token[len(token)-6:]
 	} else {
