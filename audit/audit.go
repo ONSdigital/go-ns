@@ -2,11 +2,13 @@ package audit
 
 import (
 	"context"
+	"fmt"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -15,12 +17,16 @@ import (
 type contextKey string
 
 const (
-	eventContextKey = contextKey("audit")
-	fromContextKey  = contextKey("from")
+	auditContextKey = contextKey("audit")
 	requestIDHeader = "X-Request-Id"
-	authHeaderKey   = "Authorization"
-	userHeaderKey   = "User-Identity"
 )
+
+type Error struct {
+	Cause  string
+	Action string
+	Result string
+	Params []keyValuePair
+}
 
 //Event holds data about the action being attempted
 type Event struct {
@@ -56,23 +62,22 @@ type AuditorService interface {
 // recording audit events
 type Auditor struct {
 	namespace     string
-	tokenName     string
 	marshalToAvro avroMarshaller
 	producer      OutboundProducer
 }
 
 //New creates a new Auditor with the namespace, producer and token provided.
-func New(producer OutboundProducer, namespace string, token string) *Auditor {
+func New(producer OutboundProducer, namespace string) *Auditor {
 	return &Auditor{
 		producer:      producer,
 		namespace:     namespace,
-		tokenName:     token,
 		marshalToAvro: EventSchema.Marshal,
 	}
 }
 
 //Interceptor returns an http.Handler which populates a http.Request.Context with a base audit event - fields common
-// to all events regardless of context before passing it on to the handler in the chain.
+// to all events regardless of context before passing it to the next handler in the chain. It's recommended Interceptor
+// if the first middleware in handle chain.
 func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -83,17 +88,7 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 				Params:    make([]keyValuePair, 0),
 			}
 
-			if serviceToken := r.Header.Get(authHeaderKey); len(serviceToken) > 0 {
-				ctx = context.WithValue(ctx, a.tokenName, serviceToken)
-				event.Service = serviceToken
-			}
-
-			if from := r.Header.Get(userHeaderKey); len(from) > 0 {
-				ctx = context.WithValue(ctx, fromContextKey, from)
-				event.User = from
-			}
-
-			ctx = context.WithValue(ctx, eventContextKey, event)
+			ctx = context.WithValue(ctx, auditContextKey, event)
 			handler.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -104,15 +99,15 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 // decide what do with the error in these cases.
 func (a *Auditor) Record(ctx context.Context, action string, result string, params common.Params) error {
 	if action == "" {
-		return auditError("attempted action is required field", "nil", params)
+		return newAuditError("attempted action required but was empty", "", result, params)
 	}
 	if result == "" {
-		return auditError("result is required field", action, params)
+		return newAuditError("result required but was empty", action, "", params)
 	}
 
 	e, err := a.GetEvent(ctx)
 	if err != nil {
-		return auditError(err.Error(), action, params)
+		return newAuditError(err.Error(), action, result, params)
 	}
 
 	e.AttemptedAction = action
@@ -135,7 +130,7 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
 		log.Error(err, nil)
-		return auditError("error marshalling event to arvo", action, params)
+		return newAuditError("error marshalling event to arvo", action, result, params)
 	}
 
 	log.Info("logging audit message", log.Data{"auditEvent": e})
@@ -146,7 +141,7 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 //GetEvent convenience method for getting the audit event struct from the provided context, returns an error if there is
 // no event in the provided context or if the value in the context is not of the correct type.
 func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
-	event := input.Value(eventContextKey)
+	event := input.Value(auditContextKey)
 	if event == nil {
 		return nil, errors.New("no event found in context.Context")
 	}
@@ -159,9 +154,41 @@ func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
 	return &auditEvent, nil
 }
 
-func auditError(context string, action string, params common.Params) error {
-	if params == nil || len(params) == 0 {
-		return errors.Errorf("unable to audit action: %s, %s, enforcing failure response with status code 500", action, context)
+//newAuditError creates new audit.Error with default field values where necessary and
+func newAuditError(cause string, action string, result string, params common.Params) Error {
+	sortedParams := make([]keyValuePair, 0)
+
+	// params is map which does not guarantee a keyset order, to ensure the same error string is produced for a given
+	// error consistently we convert the order the params to keyvaluepairs and sort by key.
+	if params != nil {
+		for k, v := range params {
+			sortedParams = append(sortedParams, keyValuePair{k, v})
+		}
+		sort.Slice(sortedParams, func(i, j int) bool {
+			return sortedParams[i].Key < sortedParams[j].Key
+		})
 	}
-	return errors.Errorf("unable to audit action: %s, params: %+v, %s, enforcing failure response with status code 500", action, params, context)
+
+	if cause == "" {
+		cause = "nil"
+	}
+
+	if action == "" {
+		action = "nil"
+	}
+
+	if result == "" {
+		result = "nil"
+	}
+
+	return Error{
+		Cause:  cause,
+		Action: action,
+		Result: result,
+		Params: sortedParams,
+	}
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("unable to audit event, action: %s, result: %s, cause: %s, params: %+v", e.Action, e.Result, e.Cause, e.Params)
 }

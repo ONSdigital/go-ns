@@ -2,7 +2,8 @@ package audit
 
 import (
 	"context"
-	. "github.com/ONSdigital/go-ns/common"
+	"fmt"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
@@ -34,19 +35,19 @@ func TestAuditor_Record(t *testing.T) {
 	Convey("given no audit event exists in the provided context", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		// record the audit event
 		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
 
-		expectedErr := auditError("no event found in context.Context", auditAction, nil)
-		So(err.Error(), ShouldEqual, expectedErr.Error())
+		expectedErr := newAuditError("no event found in context.Context", auditAction, auditResult, nil)
+		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
 	Convey("given there is an error converting the audit event to into avro", t, func() {
 		producer := &OutboundProducerMock{}
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		auditor.marshalToAvro = func(s interface{}) ([]byte, error) {
 			return nil, errors.New("avro marshal error")
@@ -55,21 +56,21 @@ func TestAuditor_Record(t *testing.T) {
 		// record the audit event
 		err := auditor.Record(setUpContext(), auditAction, auditResult, nil)
 
-		expectedErr := auditError("error marshalling event to arvo", auditAction, nil)
-		So(err.Error(), ShouldEqual, expectedErr.Error())
+		expectedErr := newAuditError("error marshalling event to arvo", auditAction, auditResult, nil)
+		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
 	Convey("given context event is not the expected format", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		// record the audit event
 		err := auditor.Record(context.WithValue(context.Background(), contextKey("audit"), "this is not an audit event"), auditAction, auditResult, nil)
 
-		expectedErr := auditError("context.Context audit event was not in the expected format", auditAction, nil)
-		So(err.Error(), ShouldEqual, expectedErr.Error())
+		expectedErr := newAuditError("context.Context audit event was not in the expected format", auditAction, auditResult, nil)
+		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 
@@ -82,12 +83,12 @@ func TestAuditor_Record(t *testing.T) {
 			},
 		}
 
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		var results []byte
 
 		// record the audit event
-		err := auditor.Record(setUpContext(), auditAction, auditResult, Params{"ID": "12345"})
+		err := auditor.Record(setUpContext(), auditAction, auditResult, common.Params{"ID": "12345"})
 
 		select {
 		case results = <-output:
@@ -119,46 +120,46 @@ func TestAuditor_Record(t *testing.T) {
 	Convey("given Record is called with an empty action value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		err := auditor.Record(nil, "", "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
-		expectedErr := auditError("attempted action is required field", "nil", nil)
-		So(err.Error(), ShouldEqual, expectedErr.Error())
+		expectedErr := newAuditError("attempted action required but was empty", "nil", "", nil)
+		So(err, ShouldResemble, expectedErr)
 	})
 
 	Convey("given Record is called with an empty result value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(producer, namespace, "test")
+		auditor := New(producer, namespace)
 
 		err := auditor.Record(nil, auditAction, "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
-		expectedErr := auditError("result is required field", "test", nil)
-		So(err.Error(), ShouldEqual, expectedErr.Error())
+		expectedErr := newAuditError("result required but was empty", "test", "", nil)
+		So(err, ShouldResemble, expectedErr)
 	})
 }
 
 func TestAuditor_GetEvent(t *testing.T) {
-	Convey("given a no event exists in the provided context", t, func() {
-		auditor := New(nil, namespace, "test")
+	Convey("given no event exists in the provided context", t, func() {
+		auditor := New(nil, namespace)
 		event, err := auditor.GetEvent(context.Background())
 		So(event, ShouldBeNil)
 		So(err.Error(), ShouldEqual, "no event found in context.Context")
 	})
 
-	Convey("given a the context event is not the correct type", t, func() {
-		auditor := New(nil, namespace, "test")
+	Convey("given the context event is not the correct type", t, func() {
+		auditor := New(nil, namespace)
 
 		event, err := auditor.GetEvent(context.WithValue(context.Background(), contextKey("audit"), "I AM NOT AN EVENT"))
 		So(event, ShouldBeNil)
 		So(err.Error(), ShouldEqual, "context.Context audit event was not in the expected format")
 	})
 
-	Convey("given a the context contains a valid event", t, func() {
-		auditor := New(nil, namespace, "test")
+	Convey("given the context contains a valid event", t, func() {
+		auditor := New(nil, namespace)
 
 		event, err := auditor.GetEvent(setUpContext())
 		So(event, ShouldResemble,
@@ -172,14 +173,13 @@ func TestAuditor_GetEvent(t *testing.T) {
 }
 
 func TestAuditor_Interceptor(t *testing.T) {
-	auditor := New(nil, "test", "")
+	auditor := New(nil, namespace)
 
 	nextHandler := &HandlerMock{invocations: make([]*http.Request, 0)}
 
 	r := httptest.NewRequest(http.MethodGet, "/bob", nil)
 	r.WithContext(context.Background())
 	r.Header.Add(requestIDHeader, "666")
-	r.Header.Add(userHeaderKey, "me")
 
 	Convey("given a valid request the expected base audit event is added to the request context", t, func() {
 		interceptHandlerFunc := auditor.Interceptor()
@@ -197,8 +197,61 @@ func TestAuditor_Interceptor(t *testing.T) {
 		}
 
 		So(auditEvent.RequestID, ShouldEqual, "666")
-		So(auditEvent.Namespace, ShouldEqual, "test")
-		So(auditEvent.User, ShouldEqual, "me")
+		So(auditEvent.Namespace, ShouldEqual, namespace)
+		So(auditEvent.User, ShouldEqual, "")
+	})
+}
+
+func Test_newAuditError(t *testing.T) {
+	Convey("given no values are provided", t, func() {
+		actual := newAuditError("", "", "", nil)
+
+		Convey("then an error with default values is returned", func() {
+			expected := Error{
+				Cause:  "nil",
+				Action: "nil",
+				Result: "nil",
+				Params: []keyValuePair{},
+			}
+
+			So(actual, ShouldResemble, expected)
+		})
+
+		Convey("and Error() returns the expected value", func() {
+			fmt.Println(actual.Error())
+			So(actual.Error(), ShouldEqual, "unable to audit event, action: nil, result: nil, cause: nil, params: []")
+		})
+	})
+
+	Convey("given valid values for all fields", t, func() {
+		actual := newAuditError("_cause", "_action", "_result", common.Params{
+			"bbb": "bbb",
+			"aaa": "aaa",
+			"ccc": "ccc",
+		})
+
+		expected := Error{
+			Cause:  "_cause",
+			Action: "_action",
+			Result: "_result",
+			Params: []keyValuePair{
+				{"bbb", "bbb"},
+				{"aaa", "aaa"},
+				{"ccc", "ccc"},
+			},
+		}
+
+		So(actual.Cause, ShouldEqual, expected.Cause)
+		So(actual.Action, ShouldEqual, expected.Action)
+		So(actual.Result, ShouldEqual, expected.Result)
+
+		// verify that the parameters are in the expected order
+		So(actual.Params[0], ShouldResemble, keyValuePair{"aaa", "aaa"})
+		So(actual.Params[1], ShouldResemble, keyValuePair{"bbb", "bbb"})
+		So(actual.Params[2], ShouldResemble, keyValuePair{"ccc", "ccc"})
+
+		expectedStr := "unable to audit event, action: _action, result: _result, cause: _cause, params: [{Key:aaa Value:aaa} {Key:bbb Value:bbb} {Key:ccc Value:ccc}]"
+		So(actual.Error(), ShouldEqual, expectedStr)
 	})
 }
 
