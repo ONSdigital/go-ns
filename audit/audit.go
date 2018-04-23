@@ -154,12 +154,13 @@ func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
 	return &auditEvent, nil
 }
 
-//newAuditError creates new audit.Error with default field values where necessary and
+//newAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
 func newAuditError(cause string, action string, result string, params common.Params) Error {
 	sortedParams := make([]keyValuePair, 0)
 
-	// params is map which does not guarantee a keyset order, to ensure the same error string is produced for a given
-	// error consistently we convert the order the params to keyvaluepairs and sort by key.
+	// Params is a type alias for map and map does not guarantee the order in which the range iterates over the keyset.
+	// To ensure Error() returns the same string each time it is called we convert the params to a array of
+	// keyvaluepairs and sort by the key.
 	if params != nil {
 		for k, v := range params {
 			sortedParams = append(sortedParams, keyValuePair{k, v})
@@ -189,6 +190,8 @@ func newAuditError(cause string, action string, result string, params common.Par
 	}
 }
 
+// fulfill the error interface contract
 func (e Error) Error() string {
-	return fmt.Sprintf("unable to audit event, action: %s, result: %s, cause: %s, params: %+v", e.Action, e.Result, e.Cause, e.Params)
+	return fmt.Sprintf("unable to audit event, action: %s, result: %s, cause: %s, params: %+v",
+		e.Action, e.Result, e.Cause, e.Params)
 }
