@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	. "github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
@@ -16,6 +17,8 @@ const (
 	namespace   = "audit-test"
 	auditAction = "test"
 	auditResult = "success"
+	user        = "some-user"
+	service     = "some-service"
 )
 
 type HandlerMock struct {
@@ -104,12 +107,12 @@ func TestAuditor_Record(t *testing.T) {
 			t.FailNow()
 		}
 
-		So(actualEvent.Namespace, ShouldEqual, "audit-test")
-		So(actualEvent.AttemptedAction, ShouldEqual, "test")
-		So(actualEvent.Result, ShouldEqual, "success")
+		So(actualEvent.Namespace, ShouldEqual, namespace)
+		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
+		So(actualEvent.Result, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
-		So(actualEvent.Service, ShouldEqual, "some-service")
-		So(actualEvent.User, ShouldEqual, "some-user")
+		So(actualEvent.Service, ShouldEqual, service)
+		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
 	})
 
@@ -158,7 +161,12 @@ func TestAuditor_GetEvent(t *testing.T) {
 		auditor := New(nil, namespace, "test")
 
 		event, err := auditor.GetEvent(setUpContext())
-		So(event, ShouldResemble, &Event{Namespace: "audit-test"})
+		So(event, ShouldResemble,
+			&Event{
+				Namespace: "audit-test",
+				User:      user,
+				Service:   service,
+			})
 		So(err, ShouldBeNil)
 	})
 }
@@ -171,7 +179,7 @@ func TestAuditor_Interceptor(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/bob", nil)
 	r.WithContext(context.Background())
 	r.Header.Add(requestIDHeader, "666")
-	r.Header.Add(fromHeader, "me")
+	r.Header.Add(userHeaderKey, "me")
 
 	Convey("given a valid request the expected base audit event is added to the request context", t, func() {
 		interceptHandlerFunc := auditor.Interceptor()
@@ -195,8 +203,12 @@ func TestAuditor_Interceptor(t *testing.T) {
 }
 
 func setUpContext() context.Context {
-	ctx := context.WithValue(context.Background(), contextKey("audit"), Event{Namespace: "audit-test"})
-	ctx = identity.SetCaller(ctx, "some-service")
-	ctx = identity.SetUser(ctx, "some-user")
+	ctx := context.WithValue(context.Background(), contextKey("audit"), Event{
+		Namespace: namespace,
+		User:      user,
+		Service:   service,
+	})
+	ctx = identity.SetCaller(ctx, service)
+	ctx = identity.SetUser(ctx, user)
 	return ctx
 }

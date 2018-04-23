@@ -6,11 +6,12 @@ import (
 
 	"context"
 	"encoding/json"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"io/ioutil"
 )
 
-//go:generate moq -out identitytest/http_client.go -pkg identitytest . HTTPClient
+//go:generate moq -out identitytest/generated_identity_mocks.go -pkg identitytest . HTTPClient Auditor
 
 type contextKey string
 
@@ -21,6 +22,8 @@ const userHeaderKey = "User-Identity"
 const userIdentityKey = contextKey("User-Identity")
 const callerIdentityKey = contextKey("Caller-Identity")
 
+const identifyAction = "identify"
+
 // HTTPClient represents the HTTP client used internally to the identity handler.
 type HTTPClient interface {
 	Do(ctx context.Context, req *http.Request) (*http.Response, error)
@@ -30,28 +33,43 @@ type identityResponse struct {
 	Identifier string `json:"identifier"`
 }
 
+type Auditor interface {
+	Record(ctx context.Context, action string, result string, params common.Params) error
+}
+
 // Handler controls the authenticating of a request
-func Handler(doAuth bool, zebedeeURL string) func(http.Handler) http.Handler {
-	return HandlerForHTTPClient(doAuth, rchttp.DefaultClient, zebedeeURL)
+func Handler(auditor Auditor, doAuth bool, zebedeeURL string) func(http.Handler) http.Handler {
+	return HandlerForHTTPClient(auditor, doAuth, rchttp.DefaultClient, zebedeeURL)
 }
 
 // HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
-func HandlerForHTTPClient(doAuth bool, cli HTTPClient, zebedeeURL string) func(http.Handler) http.Handler {
+func HandlerForHTTPClient(auditor Auditor, doAuth bool, cli HTTPClient, zebedeeURL string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
 			logData := log.Data{}
 			log.DebugR(req, "identity middleware called", logData)
+			auditParams := common.Params{}
 
 			ctx := req.Context()
 
 			if doAuth {
 
+				isUserReq := false
+				isServiceReq := false
+
 				florenceToken := req.Header.Get(florenceHeaderKey)
 				authToken := req.Header.Get(authHeaderKey)
 
-				isUserReq := len(florenceToken) > 0
-				isServiceReq := len(authToken) > 0
+				if len(florenceToken) > 0 {
+					isUserReq = true
+					auditParams[florenceHeaderKey] = florenceToken
+				}
+
+				if len(authToken) > 0 {
+					isServiceReq = true
+					auditParams[authHeaderKey] = authToken
+				}
 
 				logData["is_user_request"] = isUserReq
 				logData["is_service_request"] = isServiceReq
@@ -86,6 +104,9 @@ func HandlerForHTTPClient(doAuth bool, cli HTTPClient, zebedeeURL string) func(h
 
 					// Check to see if the user is authorised
 					if resp.StatusCode != http.StatusOK {
+						if err := auditor.Record(ctx, identifyAction, "notAuthorized", auditParams); err != nil {
+							log.Error(err, logData)
+						}
 						logData["status"] = resp.StatusCode
 						log.DebugR(req, "unexpected status code returned from zebedee identity endpoint", logData)
 						w.WriteHeader(resp.StatusCode)
@@ -110,6 +131,12 @@ func HandlerForHTTPClient(doAuth bool, cli HTTPClient, zebedeeURL string) func(h
 
 					ctx = context.WithValue(ctx, userIdentityKey, userIdentity)
 					ctx = context.WithValue(ctx, callerIdentityKey, identityResp.Identifier)
+
+					if err := auditor.Record(ctx, identifyAction, "success", nil); err != nil {
+						log.Error(err, logData)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 				}
 			} else {
 				log.DebugR(req, "skipping authentication against zebedee, auth is not enabled", nil)

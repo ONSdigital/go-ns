@@ -5,6 +5,7 @@ package audit
 
 import (
 	"context"
+	"github.com/ONSdigital/go-ns/common"
 	"sync"
 )
 
@@ -22,7 +23,7 @@ var (
 //             GetEventFunc: func(input context.Context) (*Event, error) {
 // 	               panic("TODO: mock out the GetEvent method")
 //             },
-//             RecordFunc: func(ctx context.Context, action string, result string, params Params) error {
+//             RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
 // 	               panic("TODO: mock out the Record method")
 //             },
 //         }
@@ -36,7 +37,7 @@ type AuditorServiceMock struct {
 	GetEventFunc func(input context.Context) (*Event, error)
 
 	// RecordFunc mocks the Record method.
-	RecordFunc func(ctx context.Context, action string, result string, params Params) error
+	RecordFunc func(ctx context.Context, action string, result string, params common.Params) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -54,7 +55,7 @@ type AuditorServiceMock struct {
 			// Result is the result argument value.
 			Result string
 			// Params is the params argument value.
-			Params Params
+			Params common.Params
 		}
 	}
 }
@@ -91,7 +92,7 @@ func (mock *AuditorServiceMock) GetEventCalls() []struct {
 }
 
 // Record calls RecordFunc.
-func (mock *AuditorServiceMock) Record(ctx context.Context, action string, result string, params Params) error {
+func (mock *AuditorServiceMock) Record(ctx context.Context, action string, result string, params common.Params) error {
 	if mock.RecordFunc == nil {
 		panic("moq: AuditorServiceMock.RecordFunc is nil but AuditorService.Record was just called")
 	}
@@ -99,7 +100,7 @@ func (mock *AuditorServiceMock) Record(ctx context.Context, action string, resul
 		Ctx    context.Context
 		Action string
 		Result string
-		Params Params
+		Params common.Params
 	}{
 		Ctx:    ctx,
 		Action: action,
@@ -119,13 +120,13 @@ func (mock *AuditorServiceMock) RecordCalls() []struct {
 	Ctx    context.Context
 	Action string
 	Result string
-	Params Params
+	Params common.Params
 } {
 	var calls []struct {
 		Ctx    context.Context
 		Action string
 		Result string
-		Params Params
+		Params common.Params
 	}
 	lockAuditorServiceMockRecord.RLock()
 	calls = mock.calls.Record

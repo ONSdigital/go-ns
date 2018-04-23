@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
@@ -17,7 +18,8 @@ const (
 	eventContextKey = contextKey("audit")
 	fromContextKey  = contextKey("from")
 	requestIDHeader = "X-Request-Id"
-	fromHeader      = "from"
+	authHeaderKey   = "Authorization"
+	userHeaderKey   = "User-Identity"
 )
 
 //Event holds data about the action being attempted
@@ -34,9 +36,6 @@ type Event struct {
 
 type avroMarshaller func(s interface{}) ([]byte, error)
 
-//Params key value pair for additional audit data not included in the event model.
-type Params map[string]string
-
 type keyValuePair struct {
 	Key   string `avro:"key" json:"key,omitempty"`
 	Value string `avro:"value" json:"value,omitempty"`
@@ -47,10 +46,10 @@ type OutboundProducer interface {
 	Output() chan []byte
 }
 
-//AuditorService defines the behaviour of an audior
+//AuditorService defines the behaviour of an auditor
 type AuditorService interface {
 	GetEvent(input context.Context) (*Event, error)
-	Record(ctx context.Context, action string, result string, params Params) error
+	Record(ctx context.Context, action string, result string, params common.Params) error
 }
 
 //Auditor provides functions for interception HTTP requests and populating the context with a base audit event and
@@ -84,12 +83,12 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 				Params:    make([]keyValuePair, 0),
 			}
 
-			if serviceToken := r.Header.Get(a.tokenName); len(serviceToken) > 0 {
+			if serviceToken := r.Header.Get(authHeaderKey); len(serviceToken) > 0 {
 				ctx = context.WithValue(ctx, a.tokenName, serviceToken)
 				event.Service = serviceToken
 			}
 
-			if from := r.Header.Get(fromHeader); len(from) > 0 {
+			if from := r.Header.Get(userHeaderKey); len(from) > 0 {
 				ctx = context.WithValue(ctx, fromContextKey, from)
 				event.User = from
 			}
@@ -103,7 +102,7 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 //Record captures the provided action, result and parameters and an audit event. Common fields - time, user, service
 // are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
 // decide what do with the error in these cases.
-func (a *Auditor) Record(ctx context.Context, action string, result string, params Params) error {
+func (a *Auditor) Record(ctx context.Context, action string, result string, params common.Params) error {
 	if action == "" {
 		return auditError("attempted action is required field", "nil", params)
 	}
@@ -118,16 +117,20 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 
 	e.AttemptedAction = action
 	e.Result = result
+	e.Created = time.Now().String()
+
+	if e.Service == "" {
+		e.Service = identity.Caller(ctx)
+	}
+	if e.User == "" {
+		e.User = identity.User(ctx)
+	}
 
 	if params != nil {
 		for k, v := range params {
 			e.Params = append(e.Params, keyValuePair{Key: k, Value: v})
 		}
 	}
-
-	e.Created = time.Now().String()
-	e.Service = identity.Caller(ctx)
-	e.User = identity.User(ctx)
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
@@ -156,7 +159,7 @@ func (a *Auditor) GetEvent(input context.Context) (*Event, error) {
 	return &auditEvent, nil
 }
 
-func auditError(context string, action string, params Params) error {
+func auditError(context string, action string, params common.Params) error {
 	if params == nil || len(params) == 0 {
 		return errors.Errorf("unable to audit action: %s, %s, enforcing failure response with status code 500", action, context)
 	}
