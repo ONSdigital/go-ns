@@ -31,8 +31,8 @@ func (h *HandlerMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.invocations = append(h.invocations, r)
 }
 
-func TestAuditor_Record(t *testing.T) {
-	Convey("given no audit event exists in the provided context", t, func() {
+func TestAuditor_RecordNoUser(t *testing.T) {
+	Convey("given no user identity exists in the provided context", t, func() {
 		producer := &OutboundProducerMock{}
 
 		auditor := New(producer, namespace)
@@ -40,11 +40,45 @@ func TestAuditor_Record(t *testing.T) {
 		// record the audit event
 		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
 
+		So(err, ShouldBeNil)
+		So(len(producer.OutputCalls()), ShouldEqual, 0)
+	})
+}
+
+func TestAuditor_RecordNoEventInContext(t *testing.T) {
+	Convey("given no audit event exists in the provided context", t, func() {
+		producer := &OutboundProducerMock{}
+
+		auditor := New(producer, namespace)
+
+		// record the audit event
+		err := auditor.Record(identity.SetUser(context.Background(), "Egon Spengler"), auditAction, auditResult, nil)
+
 		expectedErr := newAuditError("no event found in context.Context", auditAction, auditResult, nil)
 		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
+}
 
+func TestAuditor_RecordIncorrectEventFormat(t *testing.T) {
+	Convey("given context event is not the expected format", t, func() {
+		producer := &OutboundProducerMock{}
+
+		auditor := New(producer, namespace)
+
+		ctx := context.WithValue(context.Background(), contextKey("audit"), "this is not an audit event")
+		ctx = identity.SetUser(ctx, "Scrooge McDuck")
+
+		// record the audit event
+		err := auditor.Record(ctx, auditAction, auditResult, nil)
+
+		expectedErr := newAuditError("context.Context audit event was not in the expected format", auditAction, auditResult, nil)
+		So(err, ShouldResemble, expectedErr)
+		So(len(producer.OutputCalls()), ShouldEqual, 0)
+	})
+}
+
+func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 	Convey("given there is an error converting the audit event to into avro", t, func() {
 		producer := &OutboundProducerMock{}
 		auditor := New(producer, namespace)
@@ -60,20 +94,9 @@ func TestAuditor_Record(t *testing.T) {
 		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
+}
 
-	Convey("given context event is not the expected format", t, func() {
-		producer := &OutboundProducerMock{}
-
-		auditor := New(producer, namespace)
-
-		// record the audit event
-		err := auditor.Record(context.WithValue(context.Background(), contextKey("audit"), "this is not an audit event"), auditAction, auditResult, nil)
-
-		expectedErr := newAuditError("context.Context audit event was not in the expected format", auditAction, auditResult, nil)
-		So(err, ShouldResemble, expectedErr)
-		So(len(producer.OutputCalls()), ShouldEqual, 0)
-	})
-
+func TestAuditor_RecordSuccess(t *testing.T) {
 	Convey("given a valid audit event exists in context", t, func() {
 		output := make(chan []byte, 1)
 
@@ -112,29 +135,33 @@ func TestAuditor_Record(t *testing.T) {
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
 		So(actualEvent.Result, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
-		So(actualEvent.Service, ShouldEqual, service)
+		So(actualEvent.Service, ShouldBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
 	})
+}
 
+func TestAuditor_RecordEmptyAction(t *testing.T) {
 	Convey("given Record is called with an empty action value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
 		auditor := New(producer, namespace)
 
-		err := auditor.Record(nil, "", "", nil)
+		err := auditor.Record(setUpContext(), "", "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 		expectedErr := newAuditError("attempted action required but was empty", "nil", "", nil)
 		So(err, ShouldResemble, expectedErr)
 	})
+}
 
+func TestAuditor_RecordEmptyResult(t *testing.T) {
 	Convey("given Record is called with an empty result value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
 		auditor := New(producer, namespace)
 
-		err := auditor.Record(nil, auditAction, "", nil)
+		err := auditor.Record(setUpContext(), auditAction, "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 		expectedErr := newAuditError("result required but was empty", "test", "", nil)
@@ -166,7 +193,7 @@ func TestAuditor_GetEvent(t *testing.T) {
 			&Event{
 				Namespace: "audit-test",
 				User:      user,
-				Service:   service,
+				//				Service:   service,
 			})
 		So(err, ShouldBeNil)
 	})
@@ -259,7 +286,6 @@ func setUpContext() context.Context {
 	ctx := context.WithValue(context.Background(), contextKey("audit"), Event{
 		Namespace: namespace,
 		User:      user,
-		Service:   service,
 	})
 	ctx = identity.SetCaller(ctx, service)
 	ctx = identity.SetUser(ctx, user)

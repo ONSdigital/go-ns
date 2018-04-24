@@ -98,6 +98,12 @@ func (a *Auditor) Interceptor() func(handler http.Handler) http.Handler {
 // are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
 // decide what do with the error in these cases.
 func (a *Auditor) Record(ctx context.Context, action string, result string, params common.Params) error {
+	user := identity.User(ctx)
+	if user == "" {
+		log.Info("not user action: skipping audit event", nil)
+		return nil
+	}
+
 	if action == "" {
 		return newAuditError("attempted action required but was empty", "", result, params)
 	}
@@ -110,16 +116,10 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 		return newAuditError(err.Error(), action, result, params)
 	}
 
+	e.User = user
 	e.AttemptedAction = action
 	e.Result = result
 	e.Created = time.Now().String()
-
-	if e.Service == "" {
-		e.Service = identity.Caller(ctx)
-	}
-	if e.User == "" {
-		e.User = identity.User(ctx)
-	}
 
 	if params != nil {
 		for k, v := range params {
