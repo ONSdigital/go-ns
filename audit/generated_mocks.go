@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	lockAuditorServiceMockGetEvent sync.RWMutex
-	lockAuditorServiceMockRecord   sync.RWMutex
+	lockAuditorServiceMockRecord sync.RWMutex
 )
 
 // AuditorServiceMock is a mock implementation of AuditorService.
@@ -20,9 +19,6 @@ var (
 //
 //         // make and configure a mocked AuditorService
 //         mockedAuditorService := &AuditorServiceMock{
-//             GetEventFunc: func(input context.Context) (*Event, error) {
-// 	               panic("TODO: mock out the GetEvent method")
-//             },
 //             RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
 // 	               panic("TODO: mock out the Record method")
 //             },
@@ -33,19 +29,11 @@ var (
 //
 //     }
 type AuditorServiceMock struct {
-	// GetEventFunc mocks the GetEvent method.
-	GetEventFunc func(input context.Context) (*Event, error)
-
 	// RecordFunc mocks the Record method.
 	RecordFunc func(ctx context.Context, action string, result string, params common.Params) error
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetEvent holds details about calls to the GetEvent method.
-		GetEvent []struct {
-			// Input is the input argument value.
-			Input context.Context
-		}
 		// Record holds details about calls to the Record method.
 		Record []struct {
 			// Ctx is the ctx argument value.
@@ -58,37 +46,6 @@ type AuditorServiceMock struct {
 			Params common.Params
 		}
 	}
-}
-
-// GetEvent calls GetEventFunc.
-func (mock *AuditorServiceMock) GetEvent(input context.Context) (*Event, error) {
-	if mock.GetEventFunc == nil {
-		panic("moq: AuditorServiceMock.GetEventFunc is nil but AuditorService.GetEvent was just called")
-	}
-	callInfo := struct {
-		Input context.Context
-	}{
-		Input: input,
-	}
-	lockAuditorServiceMockGetEvent.Lock()
-	mock.calls.GetEvent = append(mock.calls.GetEvent, callInfo)
-	lockAuditorServiceMockGetEvent.Unlock()
-	return mock.GetEventFunc(input)
-}
-
-// GetEventCalls gets all the calls that were made to GetEvent.
-// Check the length with:
-//     len(mockedAuditorService.GetEventCalls())
-func (mock *AuditorServiceMock) GetEventCalls() []struct {
-	Input context.Context
-} {
-	var calls []struct {
-		Input context.Context
-	}
-	lockAuditorServiceMockGetEvent.RLock()
-	calls = mock.calls.GetEvent
-	lockAuditorServiceMockGetEvent.RUnlock()
-	return calls
 }
 
 // Record calls RecordFunc.

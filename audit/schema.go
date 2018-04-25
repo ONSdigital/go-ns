@@ -14,11 +14,6 @@ var event = `
       "default": ""
     },
     {
-      "type": "string",
-      "name": "service",
-      "default": ""
-    },
-    {
       "name": "namespace",
       "type": "string",
       "default": ""

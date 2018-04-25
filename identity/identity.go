@@ -22,7 +22,7 @@ const userHeaderKey = "User-Identity"
 const userIdentityKey = contextKey("User-Identity")
 const callerIdentityKey = contextKey("Caller-Identity")
 
-const identifyAction = "identify"
+const identifyAction = "identity"
 
 // HTTPClient represents the HTTP client used internally to the identity handler.
 type HTTPClient interface {
@@ -133,7 +133,7 @@ func HandlerForHTTPClient(auditor Auditor, doAuth bool, cli HTTPClient, zebedeeU
 					ctx = context.WithValue(ctx, userIdentityKey, userIdentity)
 					ctx = context.WithValue(ctx, callerIdentityKey, identityResp.Identifier)
 
-					if err := auditor.Record(ctx, identifyAction, "success", nil); err != nil {
+					if err := auditor.Record(ctx, identifyAction, "verified", nil); err != nil {
 						log.Error(err, logData)
 						w.WriteHeader(http.StatusInternalServerError)
 						return

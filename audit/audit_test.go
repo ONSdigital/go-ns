@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -22,15 +21,6 @@ const (
 	service     = "some-service"
 )
 
-type HandlerMock struct {
-	invocations []*http.Request
-	handleFunc  func(http.ResponseWriter, *http.Request)
-}
-
-func (h *HandlerMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.invocations = append(h.invocations, r)
-}
-
 func TestAuditor_RecordNoUser(t *testing.T) {
 	Convey("given no user identity exists in the provided context", t, func() {
 		producer := &OutboundProducerMock{}
@@ -41,39 +31,6 @@ func TestAuditor_RecordNoUser(t *testing.T) {
 		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
 
 		So(err, ShouldBeNil)
-		So(len(producer.OutputCalls()), ShouldEqual, 0)
-	})
-}
-
-func TestAuditor_RecordNoEventInContext(t *testing.T) {
-	Convey("given no audit event exists in the provided context", t, func() {
-		producer := &OutboundProducerMock{}
-
-		auditor := New(producer, namespace)
-
-		// record the audit event
-		err := auditor.Record(identity.SetUser(context.Background(), "Egon Spengler"), auditAction, auditResult, nil)
-
-		expectedErr := newAuditError("no event found in context.Context", auditAction, auditResult, nil)
-		So(err, ShouldResemble, expectedErr)
-		So(len(producer.OutputCalls()), ShouldEqual, 0)
-	})
-}
-
-func TestAuditor_RecordIncorrectEventFormat(t *testing.T) {
-	Convey("given context event is not the expected format", t, func() {
-		producer := &OutboundProducerMock{}
-
-		auditor := New(producer, namespace)
-
-		ctx := context.WithValue(context.Background(), contextKey("audit"), "this is not an audit event")
-		ctx = identity.SetUser(ctx, "Scrooge McDuck")
-
-		// record the audit event
-		err := auditor.Record(ctx, auditAction, auditResult, nil)
-
-		expectedErr := newAuditError("context.Context audit event was not in the expected format", auditAction, auditResult, nil)
-		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 }
@@ -97,7 +54,7 @@ func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 }
 
 func TestAuditor_RecordSuccess(t *testing.T) {
-	Convey("given a valid audit event exists in context", t, func() {
+	Convey("given valid parameters are provided", t, func() {
 		output := make(chan []byte, 1)
 
 		producer := &OutboundProducerMock{
@@ -131,11 +88,57 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 			t.FailNow()
 		}
 
+		So(actualEvent.RequestID, ShouldBeEmpty)
 		So(actualEvent.Namespace, ShouldEqual, namespace)
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
 		So(actualEvent.Result, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
-		So(actualEvent.Service, ShouldBeEmpty)
+		So(actualEvent.User, ShouldEqual, user)
+		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
+	})
+}
+
+func TestAuditor_RecordRequestIDInContext(t *testing.T) {
+	Convey("given the context contain a requestID", t, func() {
+		output := make(chan []byte, 1)
+
+		producer := &OutboundProducerMock{
+			OutputFunc: func() chan []byte {
+				return output
+			},
+		}
+
+		auditor := New(producer, namespace)
+
+		var results []byte
+
+		// record the audit event
+		ctx := context.WithValue(setUpContext(), requestID.ContextKey, "666")
+		err := auditor.Record(ctx, auditAction, auditResult, common.Params{"ID": "12345"})
+
+		select {
+		case results = <-output:
+			log.Info("output received", nil)
+		case <-time.After(time.Second * 5):
+			log.Debug("failing test due to timeout, expected output channel to receive event but none", nil)
+			t.FailNow()
+		}
+
+		So(err, ShouldBeNil)
+		So(len(producer.OutputCalls()), ShouldEqual, 1)
+
+		var actualEvent Event
+		err = EventSchema.Unmarshal(results, &actualEvent)
+		if err != nil {
+			log.ErrorC("avro unmarshal error", err, nil)
+			t.FailNow()
+		}
+
+		So(actualEvent.RequestID, ShouldEqual, "666")
+		So(actualEvent.Namespace, ShouldEqual, namespace)
+		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
+		So(actualEvent.Result, ShouldEqual, auditResult)
+		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
 	})
@@ -166,66 +169,6 @@ func TestAuditor_RecordEmptyResult(t *testing.T) {
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 		expectedErr := newAuditError("result required but was empty", "test", "", nil)
 		So(err, ShouldResemble, expectedErr)
-	})
-}
-
-func TestAuditor_GetEvent(t *testing.T) {
-	Convey("given no event exists in the provided context", t, func() {
-		auditor := New(nil, namespace)
-		event, err := auditor.GetEvent(context.Background())
-		So(event, ShouldBeNil)
-		So(err.Error(), ShouldEqual, "no event found in context.Context")
-	})
-
-	Convey("given the context event is not the correct type", t, func() {
-		auditor := New(nil, namespace)
-
-		event, err := auditor.GetEvent(context.WithValue(context.Background(), contextKey("audit"), "I AM NOT AN EVENT"))
-		So(event, ShouldBeNil)
-		So(err.Error(), ShouldEqual, "context.Context audit event was not in the expected format")
-	})
-
-	Convey("given the context contains a valid event", t, func() {
-		auditor := New(nil, namespace)
-
-		event, err := auditor.GetEvent(setUpContext())
-		So(event, ShouldResemble,
-			&Event{
-				Namespace: "audit-test",
-				User:      user,
-				//				Service:   service,
-			})
-		So(err, ShouldBeNil)
-	})
-}
-
-func TestAuditor_Interceptor(t *testing.T) {
-	auditor := New(nil, namespace)
-
-	nextHandler := &HandlerMock{invocations: make([]*http.Request, 0)}
-
-	r := httptest.NewRequest(http.MethodGet, "/bob", nil)
-	r.WithContext(context.Background())
-	r.Header.Add(requestIDHeader, "666")
-
-	Convey("given a valid request the expected base audit event is added to the request context", t, func() {
-		interceptHandlerFunc := auditor.Interceptor()
-		interceptHandlerFunc(nextHandler).ServeHTTP(nil, r)
-
-		So(len(nextHandler.invocations), ShouldEqual, 1)
-
-		ctxObj := nextHandler.invocations[0].Context().Value(contextKey("audit"))
-		So(ctxObj, ShouldNotBeNil)
-
-		auditEvent, ok := ctxObj.(Event)
-		if !ok {
-			log.Debug("failing test, expected audit.Event but was not", nil)
-			t.FailNow()
-		}
-
-		So(auditEvent.RequestID, ShouldEqual, "666")
-		So(auditEvent.Namespace, ShouldEqual, namespace)
-		So(auditEvent.User, ShouldEqual, "")
 	})
 }
 

@@ -232,7 +232,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			Convey("The the auditor is called as expected", func() {
 				So(len(auditor.RecordCalls()), ShouldEqual, 1)
 				call := auditor.RecordCalls()[0]
-				So(call.Action, ShouldEqual, "identify")
+				So(call.Action, ShouldEqual, identifyAction)
 				So(call.Result, ShouldEqual, "notAuthorized")
 				So(call.Params, ShouldResemble, common.Params{florenceHeaderKey: florenceToken})
 			})
@@ -433,7 +433,7 @@ func TestHandler_authToken(t *testing.T) {
 				So(len(auditor.RecordCalls()), ShouldEqual, 1)
 				call := auditor.RecordCalls()[0]
 				So(call.Action, ShouldEqual, identifyAction)
-				So(call.Result, ShouldEqual, "success")
+				So(call.Result, ShouldEqual, "verified")
 				So(call.Params, ShouldBeNil)
 			})
 
@@ -501,7 +501,7 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(len(auditor.RecordCalls()), ShouldEqual, 1)
 				call := auditor.RecordCalls()[0]
 				So(call.Action, ShouldEqual, identifyAction)
-				So(call.Result, ShouldEqual, "success")
+				So(call.Result, ShouldEqual, "verified")
 				So(call.Params, ShouldBeNil)
 			})
 
@@ -583,7 +583,7 @@ func TestHandler_identitySuccessAuditError(t *testing.T) {
 				So(len(auditor.RecordCalls()), ShouldEqual, 1)
 				call := auditor.RecordCalls()[0]
 				So(call.Action, ShouldEqual, identifyAction)
-				So(call.Result, ShouldEqual, "success")
+				So(call.Result, ShouldEqual, "verified")
 				So(call.Params, ShouldBeNil)
 			})
 
