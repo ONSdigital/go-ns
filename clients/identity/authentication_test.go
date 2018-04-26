@@ -42,7 +42,6 @@ func TestHandler_NoAuth(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 
 			Convey("Then the returned code should be 401", func() {
