@@ -40,25 +40,9 @@ var event = `
     },
     {
       "name": "params",
-      "default": [],
       "type": {
-        "type": "array",
-        "items": {
-          "name": "Params",
-          "type": "record",
-          "fields": [
-            {
-              "name": "key",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "name": "value",
-              "type": "string",
-              "default": ""
-            }
-          ]
-        }
+              "type": "map",
+              "values": "string"
       }
     }
   ]

@@ -3,12 +3,12 @@ package audit
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
-	"sort"
-	"time"
 )
 
 //go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
@@ -19,26 +19,21 @@ type Error struct {
 	Cause  string
 	Action string
 	Result string
-	Params []keyValuePair
+	Params common.Params
 }
 
 //Event holds data about the action being attempted
 type Event struct {
-	Created         string         `avro:"created" json:"created,omitempty"`
-	Namespace       string         `avro:"namespace" json:"namespace,omitempty"`
-	RequestID       string         `avro:"request_id" json:"request_id,omitempty"`
-	User            string         `avro:"user" json:"user,omitempty"`
-	AttemptedAction string         `avro:"attempted_action" json:"attempted_action,omitempty"`
-	Result          string         `avro:"result" json:"result,omitempty"`
-	Params          []keyValuePair `avro:"params" json:"params,omitempty"`
+	Created         string        `avro:"created"          json:"created,omitempty"`
+	Namespace       string        `avro:"namespace"        json:"namespace,omitempty"`
+	RequestID       string        `avro:"request_id"       json:"request_id,omitempty"`
+	User            string        `avro:"user"             json:"user,omitempty"`
+	AttemptedAction string        `avro:"attempted_action" json:"attempted_action,omitempty"`
+	Result          string        `avro:"result"           json:"result,omitempty"`
+	Params          common.Params `avro:"params"           json:"params,omitempty"`
 }
 
 type avroMarshaller func(s interface{}) ([]byte, error)
-
-type keyValuePair struct {
-	Key   string `avro:"key" json:"key,omitempty"`
-	Value string `avro:"value" json:"value,omitempty"`
-}
 
 // OutboundProducer defines a producer for sending outbound audit events to a kafka topic
 type OutboundProducer interface {
@@ -99,9 +94,7 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	}
 
 	if params != nil {
-		for k, v := range params {
-			e.Params = append(e.Params, keyValuePair{Key: k, Value: v})
-		}
+		e.Params = params
 	}
 
 	avroBytes, err := a.marshalToAvro(e)
@@ -115,20 +108,10 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	return nil
 }
 
-//newAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
+//newAuditError creates new audit.Error with default field values where necessary
 func newAuditError(cause string, action string, result string, params common.Params) Error {
-	sortedParams := make([]keyValuePair, 0)
-
-	// Params is a type alias for map and map does not guarantee the order in which the range iterates over the keyset.
-	// To ensure Error() returns the same string each time it is called we convert the params to a array of
-	// keyvaluepairs and sort by the key.
-	if params != nil {
-		for k, v := range params {
-			sortedParams = append(sortedParams, keyValuePair{k, v})
-		}
-		sort.Slice(sortedParams, func(i, j int) bool {
-			return sortedParams[i].Key < sortedParams[j].Key
-		})
+	if params == nil {
+		params = make(common.Params, 0)
 	}
 
 	if cause == "" {
@@ -147,7 +130,7 @@ func newAuditError(cause string, action string, result string, params common.Par
 		Cause:  cause,
 		Action: action,
 		Result: result,
-		Params: sortedParams,
+		Params: params,
 	}
 }
 
