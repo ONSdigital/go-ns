@@ -40,7 +40,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
-		return ctx, http.StatusOK, nil
+		return ctx, http.StatusUnauthorized, nil
 	}
 
 	url := api.BaseURL + "/identity"
