@@ -34,13 +34,18 @@ func TestHandler_NoAuth(t *testing.T) {
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
-			ctx, _, err := idClient.CheckRequest(req)
-			Convey("Then the downstream HTTP handler should not be called and no auth returned", func() {
+
+			ctx, responseCode, err := idClient.CheckRequest(req)
+
+			Convey("Then the downstream HTTP handler should not be called", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 				So(err, ShouldBeNil)
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+
+			Convey("Then the returned code should be 401", func() {
+				So(responseCode, ShouldEqual, http.StatusUnauthorized)
 			})
 		})
 	})

@@ -19,7 +19,7 @@ func Check(handle func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 
 		// just checking if an identity exists until permissions are being provided.
 		if !common.IsCallerPresent(r.Context()) {
-			http.Error(w, "requested resource not found", http.StatusNotFound)
+			http.Error(w, "unauthenticated request", http.StatusUnauthorized)
 			log.ErrorR(r, errors.New("no identity was found in the context of this request"), logData)
 			return
 		}
