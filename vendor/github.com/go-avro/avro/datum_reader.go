@@ -13,10 +13,10 @@ import (
 // terms of the Apache license, see LICENSE for details.
 // ***********************
 
-// Reader is an interface that may be implemented to avoid using runtime reflection during deserialization.
+// Unmarshaler is an interface that may be implemented to avoid using runtime reflection during deserialization.
 // Implementing it is optional and may be used as an optimization. Falls back to using reflection if not implemented.
-type Reader interface {
-	Read(dec Decoder) error
+type Unmarshaler interface {
+	UnmarshalAvro(dec Decoder) error
 }
 
 // DatumReader is an interface that is responsible for reading structured data according to schema from a decoder
@@ -24,11 +24,7 @@ type DatumReader interface {
 	// Reads a single structured entry using this DatumReader according to provided Schema.
 	// Accepts a value to fill with data and a Decoder to read from. Given value MUST be of pointer type.
 	// May return an error indicating a read failure.
-	Read(interface{}, Decoder) error
-
-	// Sets the schema for this DatumReader to know the data structure.
-	// Note that it must be called before calling Read.
-	SetSchema(Schema)
+	Read(v interface{}, dec Decoder) error
 }
 
 var enumSymbolsToIndexCache = make(map[string]map[string]int32)
@@ -80,6 +76,43 @@ func (enum *GenericEnum) Set(symbol string) {
 	}
 }
 
+// NewDatumReader creates a DatumReader that can handle both GenericRecord and
+// also aribtrary structs.
+//
+// This is the preferred implementation at this point in time.
+func NewDatumReader(schema Schema) DatumReader {
+	if schema == nil {
+		panic("NewDatumReader: Must provide a non-nil schema.")
+	}
+
+	return &anyDatumReader{
+		sdr: SpecificDatumReader{schema: schema},
+		gdr: GenericDatumReader{schema: schema},
+	}
+}
+
+// Decides between generic/specific datum writer
+type anyDatumReader struct {
+	sdr SpecificDatumReader
+	gdr GenericDatumReader
+}
+
+func (w *anyDatumReader) Read(v interface{}, dec Decoder) error {
+	switch vv := v.(type) {
+	case *GenericRecord:
+		return w.gdr.Read(v, dec)
+	case **GenericRecord:
+		if vv == nil {
+			return errNilWrite
+		} else if *vv == nil {
+			*vv = NewGenericRecord(w.sdr.schema)
+		}
+		return w.gdr.Read(*vv, dec)
+	default:
+		return w.sdr.Read(v, dec)
+	}
+}
+
 // SpecificDatumReader implements DatumReader and is used for filling Go structs with data.
 // Each value passed to Read is expected to be a pointer.
 type SpecificDatumReader struct {
@@ -94,8 +127,9 @@ func NewSpecificDatumReader() *SpecificDatumReader {
 
 // SetSchema sets the schema for this SpecificDatumReader to know the data structure.
 // Note that it must be called before calling Read.
-func (reader *SpecificDatumReader) SetSchema(schema Schema) {
+func (reader *SpecificDatumReader) SetSchema(schema Schema) DatumReader {
 	reader.schema = schema
+	return reader
 }
 
 // Read reads a single structured entry using this SpecificDatumReader.
@@ -106,8 +140,8 @@ func (reader *SpecificDatumReader) SetSchema(schema Schema) {
 // your struct field as follows: SomeValue int32 `avro:"some_field"`).
 // May return an error indicating a read failure.
 func (reader *SpecificDatumReader) Read(v interface{}, dec Decoder) error {
-	if reader, ok := v.(Reader); ok {
-		return reader.Read(dec)
+	if reader, ok := v.(Unmarshaler); ok {
+		return reader.UnmarshalAvro(dec)
 	}
 
 	rv := reflect.ValueOf(v)
@@ -115,7 +149,7 @@ func (reader *SpecificDatumReader) Read(v interface{}, dec Decoder) error {
 		return errors.New("Not applicable for non-pointer types or nil")
 	}
 	if reader.schema == nil {
-		return SchemaNotSet
+		return ErrSchemaNotSet
 	}
 	return reader.fillRecord(reader.schema, rv, dec)
 }
@@ -290,6 +324,8 @@ func (reader sDatumReader) mapEnum(field Schema, dec Decoder) (reflect.Value, er
 	enumIndex, err := dec.ReadEnum()
 	if err != nil {
 		return reflect.ValueOf(enumIndex), err
+	} else if enumIndex < 0 {
+		return reflect.ValueOf(enumIndex), fmt.Errorf("Enum index %d < 0 in enum %s", enumIndex, field.GetName())
 	}
 
 	schema := field.(*EnumSchema)
@@ -303,6 +339,10 @@ func (reader sDatumReader) mapEnum(field Schema, dec Decoder) (reflect.Value, er
 	}
 	enumSymbolsToIndexCacheLock.Unlock()
 
+	if int(enumIndex) >= len(schema.Symbols) {
+		return reflect.Value{}, fmt.Errorf("Enum index %d too high for enum %s", enumIndex, field.GetName())
+	}
+
 	enum := &GenericEnum{
 		Symbols:        schema.Symbols,
 		symbolsToIndex: symbolsToIndex,
@@ -312,13 +352,15 @@ func (reader sDatumReader) mapEnum(field Schema, dec Decoder) (reflect.Value, er
 }
 
 func (reader sDatumReader) mapUnion(field Schema, reflectField reflect.Value, dec Decoder) (reflect.Value, error) {
-	unionType, err := dec.ReadInt()
+	unionIndex, err := dec.ReadInt()
 	if err != nil {
-		return reflect.ValueOf(unionType), err
+		return reflect.ValueOf(unionIndex), err
 	}
-
-	union := field.(*UnionSchema).Types[unionType]
-	return reader.readValue(union, reflectField, dec)
+	types := field.(*UnionSchema).Types
+	if unionIndex < 0 || int(unionIndex) >= len(types) {
+		return reflect.Value{}, fmt.Errorf("Invalid union index %d", unionIndex)
+	}
+	return reader.readValue(types[unionIndex], reflectField, dec)
 }
 
 func (reader sDatumReader) mapFixed(field Schema, dec Decoder) (reflect.Value, error) {
@@ -366,7 +408,9 @@ func (this sDatumReader) fillRecord(field Schema, record reflect.Value, dec Deco
 		recordSchema := field.(*RecordSchema)
 		//ri := record.Interface()
 		for i := 0; i < len(recordSchema.Fields); i++ {
-			this.findAndSet(record, recordSchema.Fields[i], dec)
+			if err := this.findAndSet(record, recordSchema.Fields[i], dec); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -387,8 +431,9 @@ func NewGenericDatumReader() *GenericDatumReader {
 
 // SetSchema sets the schema for this GenericDatumReader to know the data structure.
 // Note that it must be called before calling Read.
-func (reader *GenericDatumReader) SetSchema(schema Schema) {
+func (reader *GenericDatumReader) SetSchema(schema Schema) DatumReader {
 	reader.schema = schema
+	return reader
 }
 
 // Read reads a single entry using this GenericDatumReader.
@@ -401,7 +446,7 @@ func (reader *GenericDatumReader) Read(v interface{}, dec Decoder) error {
 	}
 	rv = rv.Elem()
 	if reader.schema == nil {
-		return SchemaNotSet
+		return ErrSchemaNotSet
 	}
 
 	//read the value
@@ -516,6 +561,8 @@ func (reader *GenericDatumReader) mapEnum(field Schema, dec Decoder) (*GenericEn
 	enumIndex, err := dec.ReadEnum()
 	if err != nil {
 		return nil, err
+	} else if enumIndex < 0 {
+		return nil, fmt.Errorf("Enum index %d < 0 in schema %s", enumIndex, field.GetName())
 	}
 
 	schema := field.(*EnumSchema)
@@ -579,7 +626,7 @@ func (reader *GenericDatumReader) mapUnion(field Schema, dec Decoder) (interface
 		return reader.readValue(union, dec)
 	}
 
-	return nil, UnionTypeOverflow
+	return nil, ErrUnionTypeOverflow
 }
 
 func (reader *GenericDatumReader) mapFixed(field Schema, dec Decoder) ([]byte, error) {
