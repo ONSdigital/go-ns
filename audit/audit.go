@@ -19,26 +19,21 @@ type Error struct {
 	Cause  string
 	Action string
 	Result string
-	Params []keyValuePair
+	Params common.Params
 }
 
 //Event holds data about the action being attempted
 type Event struct {
-	Created         string         `avro:"created" json:"created,omitempty"`
-	Namespace       string         `avro:"namespace" json:"namespace,omitempty"`
-	RequestID       string         `avro:"request_id" json:"request_id,omitempty"`
-	User            string         `avro:"user" json:"user,omitempty"`
-	AttemptedAction string         `avro:"attempted_action" json:"attempted_action,omitempty"`
-	ActionResult    string         `avro:"action_result" json:"action_result,omitempty"`
-	Params          []keyValuePair `avro:"params" json:"params,omitempty"`
+	Created         string        `avro:"created" json:"created,omitempty"`
+	Namespace       string        `avro:"namespace" json:"namespace,omitempty"`
+	RequestID       string        `avro:"request_id" json:"request_id,omitempty"`
+	User            string        `avro:"user" json:"user,omitempty"`
+	AttemptedAction string        `avro:"attempted_action" json:"attempted_action,omitempty"`
+	ActionResult    string        `avro:"action_result" json:"action_result,omitempty"`
+	Params          common.Params `avro:"params" json:"params,omitempty"`
 }
 
 type avroMarshaller func(s interface{}) ([]byte, error)
-
-type keyValuePair struct {
-	Key   string `avro:"key" json:"key,omitempty"`
-	Value string `avro:"value" json:"value,omitempty"`
-}
 
 // OutboundProducer defines a producer for sending outbound audit events to a kafka topic
 type OutboundProducer interface {
@@ -91,17 +86,12 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		AttemptedAction: attemptedAction,
 		ActionResult:    actionResult,
 		Created:         time.Now().String(),
+		Params:          params,
 	}
 
 	reqID := requestID.Get(ctx)
 	if reqID != "" {
 		e.RequestID = reqID
-	}
-
-	if params != nil {
-		for k, v := range params {
-			e.Params = append(e.Params, keyValuePair{Key: k, Value: v})
-		}
 	}
 
 	avroBytes, err := a.marshalToAvro(e)
@@ -117,20 +107,6 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 
 //NewAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
 func NewAuditError(cause string, attemptedAction string, actionResult string, params common.Params) Error {
-	sortedParams := make([]keyValuePair, 0)
-
-	// Params is a type alias for map and map does not guarantee the order in which the range iterates over the keyset.
-	// To ensure Error() returns the same string each time it is called we convert the params to a array of
-	// keyvaluepairs and sort by the key.
-	if params != nil {
-		for k, v := range params {
-			sortedParams = append(sortedParams, keyValuePair{k, v})
-		}
-		sort.Slice(sortedParams, func(i, j int) bool {
-			return sortedParams[i].Key < sortedParams[j].Key
-		})
-	}
-
 	if cause == "" {
 		cause = "nil"
 	}
@@ -147,12 +123,48 @@ func NewAuditError(cause string, attemptedAction string, actionResult string, pa
 		Cause:  cause,
 		Action: attemptedAction,
 		Result: actionResult,
-		Params: sortedParams,
+		Params: params,
 	}
 }
 
 // fulfill the error interface contract
 func (e Error) Error() string {
-	return fmt.Sprintf("unable to audit event, attempted action: %s, action result: %s, cause: %s, params: %+v",
-		e.Action, e.Result, e.Cause, e.Params)
+	return fmt.Sprintf("unable to audit event, attempted action: %s, action result: %s, cause: %s, params: %s",
+		e.Action, e.Result, e.Cause, e.formatParams())
+}
+
+//formatParams returns the params as a string - ensure the param keys are returned in a consistent order (alphabetical)
+func (e Error) formatParams() string {
+	if e.Params == nil || len(e.Params) == 0 {
+		return "[]"
+	}
+
+	keyValuePairs := make([]struct {
+		key   string
+		value string
+	}, 0)
+
+	for k, v := range e.Params {
+		keyValuePairs = append(keyValuePairs, struct {
+			key   string
+			value string
+		}{
+			key:   k,
+			value: v,
+		})
+	}
+	sort.Slice(keyValuePairs, func(i, j int) bool {
+		return keyValuePairs[i].key < keyValuePairs[j].key
+	})
+
+	result := "["
+	l := len(keyValuePairs)
+	for i, kvp := range keyValuePairs {
+		result += kvp.key + ":" + kvp.value
+		if i < l-1 {
+			result += ", "
+		}
+	}
+	result += "]"
+	return result
 }

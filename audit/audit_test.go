@@ -69,6 +69,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 
 		// record the audit event
 		err := auditor.Record(setUpContext(), auditAction, auditResult, common.Params{"ID": "12345"})
+		So(err, ShouldBeNil)
 
 		select {
 		case results = <-output:
@@ -78,7 +79,6 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 			t.FailNow()
 		}
 
-		So(err, ShouldBeNil)
 		So(len(producer.OutputCalls()), ShouldEqual, 1)
 
 		var actualEvent Event
@@ -94,7 +94,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		So(actualEvent.ActionResult, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
-		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
+		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
 	})
 }
 
@@ -115,6 +115,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		// record the audit event
 		ctx := context.WithValue(setUpContext(), requestID.ContextKey, "666")
 		err := auditor.Record(ctx, auditAction, auditResult, common.Params{"ID": "12345"})
+		So(err, ShouldBeNil)
 
 		select {
 		case results = <-output:
@@ -124,7 +125,6 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 			t.FailNow()
 		}
 
-		So(err, ShouldBeNil)
 		So(len(producer.OutputCalls()), ShouldEqual, 1)
 
 		var actualEvent Event
@@ -140,7 +140,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		So(actualEvent.ActionResult, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
-		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
+		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
 	})
 }
 
@@ -181,7 +181,7 @@ func Test_newAuditError(t *testing.T) {
 				Cause:  "nil",
 				Action: "nil",
 				Result: "nil",
-				Params: []keyValuePair{},
+				Params: nil,
 			}
 
 			So(actual, ShouldResemble, expected)
@@ -204,10 +204,10 @@ func Test_newAuditError(t *testing.T) {
 			Cause:  "_cause",
 			Action: "_action",
 			Result: "_result",
-			Params: []keyValuePair{
-				{"bbb", "bbb"},
-				{"aaa", "aaa"},
-				{"ccc", "ccc"},
+			Params: common.Params{
+				"aaa": "aaa",
+				"bbb": "bbb",
+				"ccc": "ccc",
 			},
 		}
 
@@ -215,12 +215,7 @@ func Test_newAuditError(t *testing.T) {
 		So(actual.Action, ShouldEqual, expected.Action)
 		So(actual.Result, ShouldEqual, expected.Result)
 
-		// verify that the parameters are in the expected order
-		So(actual.Params[0], ShouldResemble, keyValuePair{"aaa", "aaa"})
-		So(actual.Params[1], ShouldResemble, keyValuePair{"bbb", "bbb"})
-		So(actual.Params[2], ShouldResemble, keyValuePair{"ccc", "ccc"})
-
-		expectedStr := "unable to audit event, attempted action: _action, action result: _result, cause: _cause, params: [{Key:aaa Value:aaa} {Key:bbb Value:bbb} {Key:ccc Value:ccc}]"
+		expectedStr := "unable to audit event, attempted action: _action, action result: _result, cause: _cause, params: [aaa:aaa, bbb:bbb, ccc:ccc]"
 		So(actual.Error(), ShouldEqual, expectedStr)
 	})
 }

@@ -2,8 +2,7 @@ package audit
 
 import "github.com/ONSdigital/go-ns/avro"
 
-var event = `
-{
+var event = `{
   "type": "record",
   "name": "audit-event",
   "namespace": "",
@@ -40,25 +39,10 @@ var event = `
     },
     {
       "name": "params",
-      "default": [],
+      "default": "",
       "type": {
-        "type": "array",
-        "items": {
-          "name": "Params",
-          "type": "record",
-          "fields": [
-            {
-              "name": "key",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "name": "value",
-              "type": "string",
-              "default": ""
-            }
-          ]
-        }
+        "type": "map",
+        "values": "string"
       }
     }
   ]
