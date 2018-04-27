@@ -3,14 +3,16 @@ package audit
 import (
 	"context"
 	"fmt"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
-	"time"
 )
 
 const (
@@ -94,7 +96,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		So(actualEvent.Result, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
-		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
+		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
 	})
 }
 
@@ -140,7 +142,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		So(actualEvent.Result, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
-		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
+		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
 	})
 }
 
@@ -181,7 +183,7 @@ func Test_newAuditError(t *testing.T) {
 				Cause:  "nil",
 				Action: "nil",
 				Result: "nil",
-				Params: []keyValuePair{},
+				Params: common.Params{},
 			}
 
 			So(actual, ShouldResemble, expected)
@@ -189,7 +191,7 @@ func Test_newAuditError(t *testing.T) {
 
 		Convey("and Error() returns the expected value", func() {
 			fmt.Println(actual.Error())
-			So(actual.Error(), ShouldEqual, "unable to audit event, action: nil, result: nil, cause: nil, params: []")
+			So(actual.Error(), ShouldEqual, "unable to audit event, action: nil, result: nil, cause: nil, params: map[]")
 		})
 	})
 
@@ -204,10 +206,10 @@ func Test_newAuditError(t *testing.T) {
 			Cause:  "_cause",
 			Action: "_action",
 			Result: "_result",
-			Params: []keyValuePair{
-				{"bbb", "bbb"},
-				{"aaa", "aaa"},
-				{"ccc", "ccc"},
+			Params: common.Params{
+				"bbb": "bbb",
+				"aaa": "aaa",
+				"ccc": "ccc",
 			},
 		}
 
@@ -215,13 +217,16 @@ func Test_newAuditError(t *testing.T) {
 		So(actual.Action, ShouldEqual, expected.Action)
 		So(actual.Result, ShouldEqual, expected.Result)
 
-		// verify that the parameters are in the expected order
-		So(actual.Params[0], ShouldResemble, keyValuePair{"aaa", "aaa"})
-		So(actual.Params[1], ShouldResemble, keyValuePair{"bbb", "bbb"})
-		So(actual.Params[2], ShouldResemble, keyValuePair{"ccc", "ccc"})
+		// verify that the parameters are as expected
+		So(actual.Params, ShouldResemble, expected.Params)
 
-		expectedStr := "unable to audit event, action: _action, result: _result, cause: _cause, params: [{Key:aaa Value:aaa} {Key:bbb Value:bbb} {Key:ccc Value:ccc}]"
-		So(actual.Error(), ShouldEqual, expectedStr)
+		expectedStr := "unable to audit event, action: _action, result: _result, cause: _cause, params: map["
+		So(actual.Error(), ShouldStartWith, expectedStr)
+
+		actualErrorAsMap, err := extractMapFromString(actual.Error())
+		So(err, ShouldBeNil)
+		So(len(actualErrorAsMap), ShouldEqual, len(expected.Params))
+		So(actualErrorAsMap, ShouldResemble, expected.Params)
 	})
 }
 
@@ -233,4 +238,22 @@ func setUpContext() context.Context {
 	ctx = identity.SetCaller(ctx, service)
 	ctx = identity.SetUser(ctx, user)
 	return ctx
+}
+
+func extractMapFromString(str string) (params common.Params, err error) {
+	var indexPos int
+	if indexPos = strings.Index(str, "map["); indexPos == -1 {
+		return params, errors.New("No map[] start")
+	}
+	str = str[indexPos+4:] // str is now: `aaa:aaa bbb:bbb ccc:ccc]` - now remove the trailing `]`
+	if indexPos = strings.LastIndex(str, "]"); indexPos == -1 {
+		return params, errors.New("No map[] end")
+	}
+	params = make(common.Params)
+	for _, keyValString := range strings.Split(str[:indexPos], " ") {
+		// keyValString is: `aaa:aaa` - now split into (key,val) and put into params
+		keyValArray := strings.SplitN(keyValString, ":", 2)
+		params[keyValArray[0]] = keyValArray[1]
+	}
+	return
 }

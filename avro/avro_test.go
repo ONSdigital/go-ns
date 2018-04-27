@@ -8,6 +8,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type stringMap map[string]string
+
 func TestUnitMarshal(t *testing.T) {
 	Convey("Nested objects", t, func() {
 		schema := &Schema{
@@ -19,6 +21,11 @@ func TestUnitMarshal(t *testing.T) {
 			Footballer: FootballerName{
 				Surname:  "Kane",
 				Forename: "Harry",
+				AKA:      map[string]string{"Hurricane": "positive"},
+			},
+			AKA: map[string]string{
+				"Spurs":          "team name",
+				"The Lilywhites": "another team name",
 			},
 			Stats: int32(10),
 		}
@@ -37,6 +44,8 @@ func TestUnitMarshal(t *testing.T) {
 		So(footballMessage.Team, ShouldEqual, "Tottenham")
 		So(footballMessage.Footballer.Surname, ShouldEqual, "Kane")
 		So(footballMessage.Footballer.Forename, ShouldEqual, "Harry")
+		So(footballMessage.Footballer.AKA, ShouldResemble, map[string]string{"Hurricane": "positive"})
+		So(footballMessage.AKA, ShouldResemble, map[string]string{"Spurs": "team name", "The Lilywhites": "another team name"})
 		So(footballMessage.Stats, ShouldEqual, int32(10))
 	})
 

@@ -209,6 +209,10 @@ func getRecord(avroSchema avro.Schema, v reflect.Value, typ reflect.Type) (*avro
 		case reflect.Int64:
 			value := v.FieldByName(fieldName).Interface().(int64)
 			record.Set(fieldTag, value)
+		case reflect.Map:
+			if err := marshalMap(record, v, i, fieldTag, avroSchema); err != nil {
+				return nil, err
+			}
 		case reflect.Slice:
 			if err := marshalSlice(record, v, i, fieldTag, avroSchema); err != nil {
 				return nil, err
@@ -236,6 +240,7 @@ func isValidType(kind reflect.Kind) bool {
 		reflect.Bool,
 		reflect.Int32,
 		reflect.Int64,
+		reflect.Map,
 		reflect.Slice,
 		reflect.String,
 		reflect.Struct,
@@ -339,13 +344,24 @@ func populateItem(nestedMap map[string]interface{}, typ reflect.Type) reflect.Va
 				continue
 			}
 			value := reflect.ValueOf(fieldValue)
-			if typ.Field(i).Type.Kind() == reflect.Slice {
+			switch typ.Field(i).Type.Kind() {
+			case reflect.Slice:
 				sliceInterface := fieldValue.([]interface{})
 				sliceString := make([]string, len(sliceInterface))
 				for _, val := range sliceInterface {
 					sliceString = append(sliceString, val.(string))
 				}
 				value = reflect.ValueOf(sliceString)
+			case reflect.Map:
+				mapInterface := fieldValue.(map[string]interface{})
+				if len(mapInterface) == 0 {
+					continue
+				}
+				mapString := make(map[string]string, len(mapInterface))
+				for key, val := range mapInterface {
+					mapString[key] = val.(string)
+				}
+				value = reflect.ValueOf(mapString)
 			}
 			v.Field(i).Set(value)
 		}
@@ -370,7 +386,10 @@ func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v
 		value := decodedRecord.Get(field)
 
 		if fieldName.IsValid() {
-			if v.Field(i).Type().Kind() == reflect.Slice {
+			switch v.Field(i).Type().Kind() {
+			case reflect.Map:
+				value = unmarshalMap(value)
+			case reflect.Slice:
 				switch v.Field(i).Type().Elem().Kind() {
 				case reflect.String:
 					value = unmarshalStringSlice(value)
@@ -383,9 +402,8 @@ func populateStructFromSchema(schema string, message []byte, typ reflect.Type, v
 				default:
 					return ErrUnsupportedType(v.Field(i).Type().Elem().Kind())
 				}
-			}
 
-			if v.Field(i).Type().Kind() == reflect.Struct {
+			case reflect.Struct:
 				value, err = unmarshalStruct(value, v, i)
 				if err != nil {
 					return err
@@ -409,17 +427,48 @@ func setNestedStructs(nestedMap map[string]interface{}, v reflect.Value, typ ref
 				continue
 			}
 			value := reflect.ValueOf(fieldValue)
-			if typ.Field(i).Type.Kind() == reflect.Slice {
+			switch typ.Field(i).Type.Kind() {
+			case reflect.Slice:
 				sliceInterface := fieldValue.([]interface{})
 				sliceString := make([]string, len(sliceInterface))
 				for i, val := range sliceInterface {
 					sliceString[i] = val.(string)
 				}
 				value = reflect.ValueOf(sliceString)
+			case reflect.Map:
+				mapInterface := fieldValue.(map[string]interface{})
+				if len(mapInterface) == 0 {
+					continue
+				}
+				mapString := make(map[string]string, len(mapInterface))
+				for key, val := range mapInterface {
+					mapString[key] = val.(string)
+				}
+				value = reflect.ValueOf(mapString)
 			}
 			v.Field(i).Set(value)
 		}
 	}
+}
+
+func marshalMap(record *avro.GenericRecord, v reflect.Value, i int, fieldTag string, avroSchema avro.Schema) error {
+	// This switch statement will need to be extended to support other native types,
+	// Currently supports strings
+	switch v.Field(i).Type().Elem().Kind() {
+	case reflect.String:
+		stringMap := marshalStringMap(v, i)
+		record.Set(fieldTag, stringMap)
+	}
+	return nil
+}
+
+func marshalStringMap(v reflect.Value, i int) map[string]string {
+	vals := v.Field(i)
+	stringMap := make(map[string]string)
+	for _, key := range vals.MapKeys() {
+		stringMap[key.String()] = vals.MapIndex(key).String()
+	}
+	return stringMap
 }
 
 func unmarshalStringSlice(value interface{}) []string {
@@ -460,4 +509,17 @@ func unmarshalStruct(val interface{}, v reflect.Value, i int) (interface{}, erro
 	item := populateItem(dataMap, v.Field(i).Type())
 
 	return item.Interface(), nil
+}
+
+func unmarshalMap(value interface{}) map[string]string {
+	return unmarshalStringMap(value)
+}
+
+func unmarshalStringMap(value interface{}) map[string]string {
+	mapInterface := value.(map[string]interface{})
+	mapString := make(map[string]string, len(mapInterface))
+	for key, val := range mapInterface {
+		mapString[key] = val.(string)
+	}
+	return mapString
 }
