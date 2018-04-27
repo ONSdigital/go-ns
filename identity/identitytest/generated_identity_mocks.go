@@ -111,7 +111,7 @@ type AuditorMock struct {
 			Ctx context.Context
 			// Action is the action argument value.
 			Action string
-			// Result is the result argument value.
+			// ActionResult is the result argument value.
 			Result string
 			// Params is the params argument value.
 			Params common.Params

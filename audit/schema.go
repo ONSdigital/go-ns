@@ -34,7 +34,7 @@ var event = `
       "default": ""
     },
     {
-      "name": "result",
+      "name": "action_result",
       "type": "string",
       "default": ""
     },

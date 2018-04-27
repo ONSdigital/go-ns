@@ -29,7 +29,7 @@ type Event struct {
 	RequestID       string         `avro:"request_id" json:"request_id,omitempty"`
 	User            string         `avro:"user" json:"user,omitempty"`
 	AttemptedAction string         `avro:"attempted_action" json:"attempted_action,omitempty"`
-	Result          string         `avro:"result" json:"result,omitempty"`
+	ActionResult    string         `avro:"action_result" json:"action_result,omitempty"`
 	Params          []keyValuePair `avro:"params" json:"params,omitempty"`
 }
 
@@ -70,26 +70,26 @@ func New(producer OutboundProducer, namespace string) *Auditor {
 //Record captures the provided action, result and parameters and an audit event. Common fields - time, user, service
 // are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
 // decide what do with the error in these cases.
-func (a *Auditor) Record(ctx context.Context, action string, result string, params common.Params) error {
+func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
 	//NOTE: for now we are only auditing user actions - this may be subject to change
 	user := identity.User(ctx)
 	if user == "" {
-		log.Info("not user action: skipping audit event", nil)
+		log.Debug("not user attempted action: skipping audit event", nil)
 		return nil
 	}
 
-	if action == "" {
-		return newAuditError("attempted action required but was empty", "", result, params)
+	if attemptedAction == "" {
+		return NewAuditError("attemptedAction required but was empty", "", actionResult, params)
 	}
-	if result == "" {
-		return newAuditError("result required but was empty", action, "", params)
+	if actionResult == "" {
+		return NewAuditError("actionResult required but was empty", attemptedAction, "", params)
 	}
 
 	e := Event{
 		Namespace:       a.namespace,
 		User:            user,
-		AttemptedAction: action,
-		Result:          result,
+		AttemptedAction: attemptedAction,
+		ActionResult:    actionResult,
 		Created:         time.Now().String(),
 	}
 
@@ -107,7 +107,7 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
 		log.Error(err, nil)
-		return newAuditError("error marshalling event to arvo", action, result, params)
+		return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
 	}
 
 	log.Info("logging audit message", log.Data{"auditEvent": e})
@@ -115,8 +115,8 @@ func (a *Auditor) Record(ctx context.Context, action string, result string, para
 	return nil
 }
 
-//newAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
-func newAuditError(cause string, action string, result string, params common.Params) Error {
+//NewAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
+func NewAuditError(cause string, attemptedAction string, actionResult string, params common.Params) Error {
 	sortedParams := make([]keyValuePair, 0)
 
 	// Params is a type alias for map and map does not guarantee the order in which the range iterates over the keyset.
@@ -135,24 +135,24 @@ func newAuditError(cause string, action string, result string, params common.Par
 		cause = "nil"
 	}
 
-	if action == "" {
-		action = "nil"
+	if attemptedAction == "" {
+		attemptedAction = "nil"
 	}
 
-	if result == "" {
-		result = "nil"
+	if actionResult == "" {
+		actionResult = "nil"
 	}
 
 	return Error{
 		Cause:  cause,
-		Action: action,
-		Result: result,
+		Action: attemptedAction,
+		Result: actionResult,
 		Params: sortedParams,
 	}
 }
 
 // fulfill the error interface contract
 func (e Error) Error() string {
-	return fmt.Sprintf("unable to audit event, action: %s, result: %s, cause: %s, params: %+v",
+	return fmt.Sprintf("unable to audit event, attempted action: %s, action result: %s, cause: %s, params: %+v",
 		e.Action, e.Result, e.Cause, e.Params)
 }

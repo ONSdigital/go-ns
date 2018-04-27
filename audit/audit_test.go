@@ -47,7 +47,7 @@ func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 		// record the audit event
 		err := auditor.Record(setUpContext(), auditAction, auditResult, nil)
 
-		expectedErr := newAuditError("error marshalling event to arvo", auditAction, auditResult, nil)
+		expectedErr := NewAuditError("error marshalling event to arvo", auditAction, auditResult, nil)
 		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
@@ -91,7 +91,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		So(actualEvent.RequestID, ShouldBeEmpty)
 		So(actualEvent.Namespace, ShouldEqual, namespace)
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
-		So(actualEvent.Result, ShouldEqual, auditResult)
+		So(actualEvent.ActionResult, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
@@ -137,7 +137,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		So(actualEvent.RequestID, ShouldEqual, "666")
 		So(actualEvent.Namespace, ShouldEqual, namespace)
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
-		So(actualEvent.Result, ShouldEqual, auditResult)
+		So(actualEvent.ActionResult, ShouldEqual, auditResult)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, []keyValuePair{{"ID", "12345"}})
@@ -153,7 +153,7 @@ func TestAuditor_RecordEmptyAction(t *testing.T) {
 		err := auditor.Record(setUpContext(), "", "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
-		expectedErr := newAuditError("attempted action required but was empty", "nil", "", nil)
+		expectedErr := NewAuditError("attemptedAction required but was empty", "nil", "", nil)
 		So(err, ShouldResemble, expectedErr)
 	})
 }
@@ -167,14 +167,14 @@ func TestAuditor_RecordEmptyResult(t *testing.T) {
 		err := auditor.Record(setUpContext(), auditAction, "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
-		expectedErr := newAuditError("result required but was empty", "test", "", nil)
+		expectedErr := NewAuditError("actionResult required but was empty", "test", "", nil)
 		So(err, ShouldResemble, expectedErr)
 	})
 }
 
 func Test_newAuditError(t *testing.T) {
 	Convey("given no values are provided", t, func() {
-		actual := newAuditError("", "", "", nil)
+		actual := NewAuditError("", "", "", nil)
 
 		Convey("then an error with default values is returned", func() {
 			expected := Error{
@@ -189,12 +189,12 @@ func Test_newAuditError(t *testing.T) {
 
 		Convey("and Error() returns the expected value", func() {
 			fmt.Println(actual.Error())
-			So(actual.Error(), ShouldEqual, "unable to audit event, action: nil, result: nil, cause: nil, params: []")
+			So(actual.Error(), ShouldEqual, "unable to audit event, attempted action: nil, action result: nil, cause: nil, params: []")
 		})
 	})
 
 	Convey("given valid values for all fields", t, func() {
-		actual := newAuditError("_cause", "_action", "_result", common.Params{
+		actual := NewAuditError("_cause", "_action", "_result", common.Params{
 			"bbb": "bbb",
 			"aaa": "aaa",
 			"ccc": "ccc",
@@ -220,7 +220,7 @@ func Test_newAuditError(t *testing.T) {
 		So(actual.Params[1], ShouldResemble, keyValuePair{"bbb", "bbb"})
 		So(actual.Params[2], ShouldResemble, keyValuePair{"ccc", "ccc"})
 
-		expectedStr := "unable to audit event, action: _action, result: _result, cause: _cause, params: [{Key:aaa Value:aaa} {Key:bbb Value:bbb} {Key:ccc Value:ccc}]"
+		expectedStr := "unable to audit event, attempted action: _action, action result: _result, cause: _cause, params: [{Key:aaa Value:aaa} {Key:bbb Value:bbb} {Key:ccc Value:ccc}]"
 		So(actual.Error(), ShouldEqual, expectedStr)
 	})
 }
