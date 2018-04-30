@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-//go:generate moq -out audit_test/generated_mocks.go -pkg audit_test . AuditorService OutboundProducer
+//go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
 
 const nilStr = "nil"
 
@@ -51,22 +51,23 @@ type AuditorService interface {
 //Auditor provides functions for interception HTTP requests and populating the context with a base audit event and
 // recording audit events
 type Auditor struct {
-	auditEnabled  bool
 	service       string
 	marshalToAvro avroMarshaller
 	producer      OutboundProducer
 }
 
-//New creates a new Auditor with the namespace, producer and token provided.
-func New(auditEnabled bool, producer OutboundProducer, namespace string) *Auditor {
-	if !auditEnabled {
-		log.Debug("auditing disabled by application configuration, returning noop auditor", log.Data{"service": namespace})
-		return &Auditor{auditEnabled: false}
-	}
+// NopAuditor is an no op implementation of the AuditorService.
+type NopAuditor struct{}
 
+//Record is a no op implementation of Auditor.Record
+func (a *NopAuditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
+	return nil
+}
+
+//New creates a new Auditor with the namespace, producer and token provided.
+func New(producer OutboundProducer, namespace string) *Auditor {
 	log.Debug("auditing enabled for service", log.Data{"service": namespace})
 	return &Auditor{
-		auditEnabled:  auditEnabled,
 		producer:      producer,
 		service:       namespace,
 		marshalToAvro: EventSchema.Marshal,
@@ -77,43 +78,39 @@ func New(auditEnabled bool, producer OutboundProducer, namespace string) *Audito
 // are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
 // decide what do with the error in these cases.
 func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
-	if a.auditEnabled {
-		//NOTE: for now we are only auditing user actions - this may be subject to change
-		user := identity.User(ctx)
-		if user == "" {
-			log.Debug("not user attempted action: skipping audit event", nil)
-			return nil
-		}
-
-		if attemptedAction == "" {
-			return NewAuditError("attemptedAction required but was empty", "", actionResult, params)
-		}
-		if actionResult == "" {
-			return NewAuditError("actionResult required but was empty", attemptedAction, "", params)
-		}
-
-		e := Event{
-			Service:         a.service,
-			User:            user,
-			AttemptedAction: attemptedAction,
-			ActionResult:    actionResult,
-			Created:         time.Now().String(),
-			Params:          params,
-		}
-
-		e.RequestID = requestID.Get(ctx)
-
-		avroBytes, err := a.marshalToAvro(e)
-		if err != nil {
-			log.Error(err, nil)
-			return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
-		}
-
-		log.Info("logging audit message", log.Data{"auditEvent": e})
-		a.producer.Output() <- avroBytes
+	//NOTE: for now we are only auditing user actions - this may be subject to change
+	user := identity.User(ctx)
+	if user == "" {
+		log.Debug("not user attempted action: skipping audit event", nil)
 		return nil
 	}
-	// if audit is not enabled simply return
+
+	if attemptedAction == "" {
+		return NewAuditError("attemptedAction required but was empty", "", actionResult, params)
+	}
+	if actionResult == "" {
+		return NewAuditError("actionResult required but was empty", attemptedAction, "", params)
+	}
+
+	e := Event{
+		Service:         a.service,
+		User:            user,
+		AttemptedAction: attemptedAction,
+		ActionResult:    actionResult,
+		Created:         time.Now().String(),
+		Params:          params,
+	}
+
+	e.RequestID = requestID.Get(ctx)
+
+	avroBytes, err := a.marshalToAvro(e)
+	if err != nil {
+		log.Error(err, nil)
+		return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
+	}
+
+	log.Info("logging audit message", log.Data{"auditEvent": e})
+	a.producer.Output() <- avroBytes
 	return nil
 }
 
@@ -151,10 +148,10 @@ func (e Error) formatParams() string {
 		return "[]"
 	}
 
-	keyValuePairs := make([]struct {
+	var keyValuePairs []struct {
 		key   string
 		value string
-	}, 0)
+	}
 
 	for k, v := range e.Params {
 		keyValuePairs = append(keyValuePairs, struct {

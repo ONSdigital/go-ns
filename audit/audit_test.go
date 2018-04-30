@@ -3,7 +3,6 @@ package audit
 import (
 	"context"
 	"fmt"
-	. "github.com/ONSdigital/go-ns/audit/audit_test"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/identity"
@@ -21,25 +20,11 @@ const (
 	user        = "some-user"
 )
 
-func TestAuditor_RecordAuditNotEnabled(t *testing.T) {
-	Convey("given audit is not enabled when called no action is taken", t, func() {
-		producer := &OutboundProducerMock{}
-
-		auditor := New(false, producer, service)
-
-		// record the audit event
-		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
-
-		So(err, ShouldBeNil)
-		So(len(producer.OutputCalls()), ShouldEqual, 0)
-	})
-}
-
 func TestAuditor_RecordNoUser(t *testing.T) {
 	Convey("given no user identity exists in the provided context", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		// record the audit event
 		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
@@ -52,7 +37,7 @@ func TestAuditor_RecordNoUser(t *testing.T) {
 func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 	Convey("given there is an error converting the audit event to into avro", t, func() {
 		producer := &OutboundProducerMock{}
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		auditor.marshalToAvro = func(s interface{}) ([]byte, error) {
 			return nil, errors.New("avro marshal error")
@@ -77,7 +62,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 			},
 		}
 
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		var results []byte
 
@@ -122,7 +107,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 			},
 		}
 
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		var results []byte
 
@@ -162,7 +147,7 @@ func TestAuditor_RecordEmptyAction(t *testing.T) {
 	Convey("given Record is called with an empty action value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		err := auditor.Record(setUpContext(), "", "", nil)
 
@@ -176,7 +161,7 @@ func TestAuditor_RecordEmptyResult(t *testing.T) {
 	Convey("given Record is called with an empty result value then the expected error is returned", t, func() {
 		producer := &OutboundProducerMock{}
 
-		auditor := New(true, producer, service)
+		auditor := New(producer, service)
 
 		err := auditor.Record(setUpContext(), auditAction, "", nil)
 
