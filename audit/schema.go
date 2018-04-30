@@ -39,11 +39,14 @@ var event = `{
     },
     {
       "name": "params",
-      "default": "",
-      "type": {
-        "type": "map",
-        "values": "string"
-      }
+      "default": null,
+      "type": [
+        "null",
+        {
+          "type": "map",
+          "values": "string"
+        }
+      ]
     }
   ]
 }`
