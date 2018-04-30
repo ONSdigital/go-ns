@@ -27,7 +27,7 @@ func TestCheck_nilIdentity(t *testing.T) {
 			Check(httpHandler)(responseRecorder, req)
 
 			Convey("Then a 404 response is returned", func() {
-				So(responseRecorder.Code, ShouldEqual, http.StatusNotFound)
+				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
 			Convey("Then the downstream HTTP handler is not called", func() {
@@ -58,7 +58,7 @@ func TestCheck_emptyIdentity(t *testing.T) {
 			Check(httpHandler)(responseRecorder, req)
 
 			Convey("Then a 404 response is returned", func() {
-				So(responseRecorder.Code, ShouldEqual, http.StatusNotFound)
+				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
 			Convey("Then the downstream HTTP handler is not called", func() {
