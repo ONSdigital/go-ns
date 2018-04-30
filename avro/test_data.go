@@ -90,9 +90,20 @@ var nestedObjectSchema = `{
 		{
 			"name": "aka",
 			"type": {
-				"type": "map",
-				"values": "string"
-			}
+					"type": "map",
+					"values": "string"
+				}
+		},
+		{
+			"name": "silverware",
+			"default": null,
+			"type": [
+				"null",
+				{
+					"type": "map",
+					"values": "string"
+				}
+			]
 		},
 		{
 			"name": "stats",
@@ -110,6 +121,7 @@ type NestedTestData struct {
 	Footballer FootballerName    `avro:"footballer"`
 	Stats      int32             `avro:"stats"`
 	AKA        map[string]string `avro:"aka"`
+	Silverware map[string]string `avro:"silverware"`
 }
 
 // FootballerName represents an object containing the footballers name

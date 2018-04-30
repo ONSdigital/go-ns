@@ -512,6 +512,9 @@ func unmarshalStruct(val interface{}, v reflect.Value, i int) (interface{}, erro
 }
 
 func unmarshalMap(value interface{}) map[string]string {
+	if value == nil {
+		return nil
+	}
 	return unmarshalStringMap(value)
 }
 

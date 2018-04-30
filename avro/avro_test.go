@@ -27,7 +27,8 @@ func TestUnitMarshal(t *testing.T) {
 				"Spurs":          "team name",
 				"The Lilywhites": "another team name",
 			},
-			Stats: int32(10),
+			Silverware: map[string]string{"FA Cup": "1900-01"},
+			Stats:      int32(10),
 		}
 
 		bufferBytes, err := schema.Marshal(data)
@@ -46,6 +47,7 @@ func TestUnitMarshal(t *testing.T) {
 		So(footballMessage.Footballer.Forename, ShouldEqual, "Harry")
 		So(footballMessage.Footballer.AKA, ShouldResemble, map[string]string{"Hurricane": "positive"})
 		So(footballMessage.AKA, ShouldResemble, map[string]string{"Spurs": "team name", "The Lilywhites": "another team name"})
+		So(footballMessage.Silverware, ShouldResemble, map[string]string{"FA Cup": "1900-01"})
 		So(footballMessage.Stats, ShouldEqual, int32(10))
 	})
 
@@ -73,6 +75,11 @@ func TestUnitMarshal(t *testing.T) {
 		So(footballMessage.Team, ShouldEqual, "Tottenham")
 		So(footballMessage.Footballer, ShouldResemble, FootballerName{})
 		So(footballMessage.Stats, ShouldEqual, 0)
+		// Note: AKA was empty, so remains empty (no "null" default)
+		So(footballMessage.AKA, ShouldNotBeNil)
+		So(footballMessage.AKA, ShouldResemble, map[string]string{})
+		// Note: Silverware was empty, but has a default of nil
+		So(footballMessage.Silverware, ShouldBeNil)
 	})
 
 	Convey("Successfully marshal data", t, func() {
@@ -185,6 +192,11 @@ func TestUnitIsValidType(t *testing.T) {
 
 		Convey("returned true for string type", func() {
 			isValid := isValidType(reflect.String)
+			So(isValid, ShouldEqual, true)
+		})
+
+		Convey("returned true for map type", func() {
+			isValid := isValidType(reflect.Map)
 			So(isValid, ShouldEqual, true)
 		})
 
