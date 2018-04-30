@@ -13,7 +13,7 @@ var event = `{
       "default": ""
     },
     {
-      "name": "namespace",
+      "name": "service",
       "type": "string",
       "default": ""
     },
@@ -51,6 +51,7 @@ var event = `{
   ]
 }`
 
+// EventSchema defines the avro schema for an audit event.
 var EventSchema *avro.Schema = &avro.Schema{
 	Definition: event,
 }
