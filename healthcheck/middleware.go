@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-// HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
+// NewMiddleware creates a new http.Handler to intercept /healthcheck requests.
 func NewMiddleware(healthcheckHandler func(http.ResponseWriter, *http.Request)) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
