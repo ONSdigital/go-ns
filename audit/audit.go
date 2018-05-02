@@ -105,29 +105,15 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
-		log.Error(err, nil)
 		return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
 	}
 
-	log.Info("logging audit message", log.Data{"auditEvent": e})
 	a.producer.Output() <- avroBytes
 	return nil
 }
 
 //NewAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
 func NewAuditError(cause string, attemptedAction string, actionResult string, params common.Params) Error {
-	if cause == "" {
-		cause = nilStr
-	}
-
-	if attemptedAction == "" {
-		attemptedAction = nilStr
-	}
-
-	if actionResult == "" {
-		actionResult = nilStr
-	}
-
 	return Error{
 		Cause:  cause,
 		Action: attemptedAction,

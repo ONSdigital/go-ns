@@ -152,7 +152,7 @@ func TestAuditor_RecordEmptyAction(t *testing.T) {
 		err := auditor.Record(setUpContext(), "", "", nil)
 
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
-		expectedErr := NewAuditError("attemptedAction required but was empty", "nil", "", nil)
+		expectedErr := NewAuditError("attemptedAction required but was empty", "", "", nil)
 		So(err, ShouldResemble, expectedErr)
 	})
 }
@@ -177,9 +177,9 @@ func Test_newAuditError(t *testing.T) {
 
 		Convey("then an error with default values is returned", func() {
 			expected := Error{
-				Cause:  "nil",
-				Action: "nil",
-				Result: "nil",
+				Cause:  "",
+				Action: "",
+				Result: "",
 				Params: nil,
 			}
 
@@ -188,7 +188,7 @@ func Test_newAuditError(t *testing.T) {
 
 		Convey("and Error() returns the expected value", func() {
 			fmt.Println(actual.Error())
-			So(actual.Error(), ShouldEqual, "unable to audit event, attempted action: nil, action result: nil, cause: nil, params: []")
+			So(actual.Error(), ShouldEqual, "unable to audit event, attempted action: , action result: , cause: , params: []")
 		})
 	})
 
