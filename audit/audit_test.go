@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
@@ -224,7 +223,7 @@ func setUpContext() context.Context {
 		Service: service,
 		User:    user,
 	})
-	ctx = identity.SetCaller(ctx, service)
-	ctx = identity.SetUser(ctx, user)
+	ctx = common.SetCaller(ctx, service)
+	ctx = common.SetUser(ctx, user)
 	return ctx
 }

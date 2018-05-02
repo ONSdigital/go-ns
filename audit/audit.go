@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
-	"github.com/ONSdigital/go-ns/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"sort"
 	"time"
@@ -79,7 +78,7 @@ func New(producer OutboundProducer, namespace string) *Auditor {
 // decide what do with the error in these cases.
 func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
 	//NOTE: for now we are only auditing user actions - this may be subject to change
-	user := identity.User(ctx)
+	user := common.User(ctx)
 	if user == "" {
 		log.Debug("not user attempted action: skipping audit event", nil)
 		return nil
