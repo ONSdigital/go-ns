@@ -219,11 +219,7 @@ func Test_newAuditError(t *testing.T) {
 }
 
 func setUpContext() context.Context {
-	ctx := context.WithValue(context.Background(), contextKey("audit"), Event{
-		Service: service,
-		User:    user,
-	})
-	ctx = common.SetCaller(ctx, service)
+	ctx := common.SetCaller(context.Background(), service)
 	ctx = common.SetUser(ctx, user)
 	return ctx
 }

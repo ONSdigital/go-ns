@@ -12,10 +12,6 @@ import (
 
 //go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
 
-const nilStr = "nil"
-
-type contextKey string
-
 // Error represents containing details of an attempt to audit and action that failed.
 type Error struct {
 	Cause  string
