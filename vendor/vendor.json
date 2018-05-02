@@ -105,10 +105,10 @@
 			"revisionTime": "2018-01-23T06:50:59Z"
 		},
 		{
-			"checksumSHA1": "I6MnUzkLJt+sh73CodD0NKswFrs=",
+			"checksumSHA1": "bmfodlfB53b/p4GGAyV5Li6eVYA=",
 			"path": "github.com/go-avro/avro",
-			"revision": "eb366719b57296a0940b70c42578181e3a12b985",
-			"revisionTime": "2017-04-25T22:40:50Z"
+			"revision": "444163702c11c47ac6bc8f02320ac76b71141688",
+			"revisionTime": "2017-12-19T23:29:20Z"
 		},
 		{
 			"checksumSHA1": "27kaxcKYfEk52ZVUU5wtfndQVAY=",

@@ -37,14 +37,14 @@ var testNestedArraySchema = `{
                     "name" : "footballer",
                     "type" : "record",
                     "fields" : [
-												{
-														"name" : "email",
-														"type" : "string"
-													},
-												{
-														"name": "name",
-														"type": "string"
-												}
+                        {
+                            "name" : "email",
+                            "type" : "string"
+                        },
+                        {
+                            "name": "name",
+                            "type": "string"
+                        }
                     ]
                 }
             }
@@ -54,58 +54,81 @@ var testNestedArraySchema = `{
 `
 
 var nestedObjectSchema = `{
-    "type": "record",
-    "name": "nested-object-example",
-    "fields": [
-        {
-            "name": "team",
-            "type": "string"
-        },
-        {
-            "name": "footballer",
-            "type": {
-                "name": "footballer-name",
-                "type": "record",
-                "fields": [
-                    {
-                        "name": "surname",
-                        "type": "string",
-                        "default": ""
-                    },
-                    {
-                        "name": "middle-name",
-                        "type": "string",
-                        "default": ""
-                    },
-                    {
-                        "name": "forename",
-                        "type": "string",
-                        "default": ""
-                    }
-                ]
-            }
-        },
-        {
-            "name": "stats",
-            "type": [
-                "int",
-                "null"
-            ]
-        }
-    ]
+	"type": "record",
+	"name": "nested-object-example",
+	"fields": [
+		{
+			"name": "team",
+			"type": "string"
+		},
+		{
+			"name": "footballer",
+			"type": {
+				"name": "footballer-name",
+				"type": "record",
+				"fields": [
+					{
+						"name": "surname",
+						"type": "string",
+						"default": ""
+					},
+					{
+						"name": "forename",
+						"type": "string",
+						"default": ""
+					},
+                                	{
+                                        	"name": "aka",
+                                                "type": {
+                                                        "type": "map",
+                                                        "values": "string"
+                                		}
+                                        }
+				]
+			}
+		},
+		{
+			"name": "aka",
+			"type": {
+					"type": "map",
+					"values": "string"
+				}
+		},
+		{
+			"name": "silverware",
+			"default": null,
+			"type": [
+				"null",
+				{
+					"type": "map",
+					"values": "string"
+				}
+			]
+		},
+		{
+			"name": "stats",
+			"type": [
+				"int",
+				"null"
+			]
+		}
+	]
 }`
 
 // NestedTestData represents an object nested within an object
 type NestedTestData struct {
-	Team       string         `avro:"team"`
-	Footballer FootballerName `avro:"footballer"`
-	Stats      int32          `avro:"stats"`
+	Team       string            `avro:"team"`
+	Footballer FootballerName    `avro:"footballer"`
+	Stats      int32             `avro:"stats"`
+	AKA        map[string]string `avro:"aka"`
+	Silverware map[string]string `avro:"silverware"`
 }
 
 // FootballerName represents an object containing the footballers name
 type FootballerName struct {
-	Surname  string `avro:"surname"`
-	Forename string `avro:"forename"`
+	Surname  string            `avro:"surname"`
+	Forename string            `avro:"forename"`
+	AKA      map[string]string `avro:"aka"`
 }
 
 type testData struct {
