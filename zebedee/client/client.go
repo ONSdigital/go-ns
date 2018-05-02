@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 )
@@ -130,7 +131,7 @@ func (c *ZebedeeClient) get(path string) ([]byte, error) {
 	}
 
 	if len(c.accessToken) > 0 {
-		req.Header.Set("X-Florence-Token", c.accessToken)
+		req.Header.Set(common.FlorenceHeaderKey, c.accessToken)
 	}
 
 	resp, err := c.client.Do(req)

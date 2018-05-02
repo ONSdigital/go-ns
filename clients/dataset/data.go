@@ -60,7 +60,7 @@ type Metadata struct {
 
 // Download represents a version download from the dataset api
 type Download struct {
-	URL     string `json:"url"`
+	URL     string `json:"href"`
 	Size    string `json:"size"`
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
