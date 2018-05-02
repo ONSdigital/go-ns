@@ -1,12 +1,17 @@
 package requestID
 
 import (
+	"context"
 	"math/rand"
 	"net/http"
 	"time"
 )
 
 var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+type contextKey string
+
+const ContextKey = contextKey("request-id")
 
 // Handler is a wrapper which adds an X-Request-Id header if one does not yet exist
 func Handler(size int) func(http.Handler) http.Handler {
@@ -21,10 +26,17 @@ func Handler(size int) func(http.Handler) http.Handler {
 				for i := range b {
 					b[i] = letters[requestIDRandom.Intn(len(letters))]
 				}
-				req.Header.Set("X-Request-Id", string(b))
+				requestID = string(b)
+				req.Header.Set("X-Request-Id", requestID)
 			}
 
-			h.ServeHTTP(w, req)
+			ctx := context.WithValue(req.Context(), ContextKey, requestID)
+			h.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}
+}
+
+func Get(ctx context.Context) string {
+	id, _ := ctx.Value(ContextKey).(string)
+	return id
 }
