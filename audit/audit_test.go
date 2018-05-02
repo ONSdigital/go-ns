@@ -19,6 +19,20 @@ const (
 	user        = "some-user"
 )
 
+func TestAuditor_RecordNoUserOrService(t *testing.T) {
+	Convey("given no user or service identity exists in the provided context", t, func() {
+		producer := &OutboundProducerMock{}
+
+		auditor := New(producer, service)
+
+		// record the audit event
+		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
+
+		So(err, ShouldResemble, NewAuditError("expected user or caller identity but none found", auditAction, auditResult, nil))
+		So(len(producer.OutputCalls()), ShouldEqual, 0)
+	})
+}
+
 func TestAuditor_RecordNoUser(t *testing.T) {
 	Convey("given no user identity exists in the provided context", t, func() {
 		producer := &OutboundProducerMock{}
@@ -26,7 +40,8 @@ func TestAuditor_RecordNoUser(t *testing.T) {
 		auditor := New(producer, service)
 
 		// record the audit event
-		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
+		ctx := common.SetCaller(context.Background(), "Lucky The Donkey")
+		err := auditor.Record(ctx, auditAction, auditResult, nil)
 
 		So(err, ShouldBeNil)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)

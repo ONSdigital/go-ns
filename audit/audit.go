@@ -72,9 +72,17 @@ func New(producer OutboundProducer, namespace string) *Auditor {
 //Record captures the provided action, result and parameters and an audit event. Common fields - time, user, service
 // are added automatically. An error is returned if there is a problem recording the event it is up to the caller to
 // decide what do with the error in these cases.
+// NOTE: Record relies on the identity middleware having run first. If no user / service identity is available in the
+// provided context an error will be returned.
 func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
 	//NOTE: for now we are only auditing user actions - this may be subject to change
 	user := common.User(ctx)
+	service := common.Caller(ctx)
+
+	if user == "" && service == "" {
+		return NewAuditError("expected user or caller identity but none found", attemptedAction, actionResult, params)
+	}
+
 	if user == "" {
 		log.Debug("not user attempted action: skipping audit event", nil)
 		return nil
