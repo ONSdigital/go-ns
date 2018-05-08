@@ -20,59 +20,20 @@ const (
 	url                = "/whatever"
 	florenceToken      = "123"
 	upstreamAuthToken  = "YourClaimToBeWhoYouAre"
-	serviceToken       = "IAmWhoIAm"
 	serviceIdentifier  = "api1"
 	userIdentifier     = "fred@ons.gov.uk"
 	zebedeeURL         = "http://localhost:8082"
 	expectedZebedeeURL = zebedeeURL + "/identity"
 )
 
-func TestHandler_NoAuth(t *testing.T) {
-
-	Convey("Given an instance of identity handler with doAuth set to false", t, func() {
-
-		doAuth := false
-		req := httptest.NewRequest("GET", url, nil)
-		responseRecorder := httptest.NewRecorder()
-
-		httpClient := &commontest.RCHTTPClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, nil
-			},
-		}
-		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
-
-		handlerCalled := false
-		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			handlerCalled = true
-		})
-
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
-
-		Convey("When ServeHTTP is called", func() {
-
-			identityHandler.ServeHTTP(responseRecorder, req)
-
-			Convey("Then the downstream HTTP handler is called", func() {
-				So(handlerCalled, ShouldBeTrue)
-			})
-		})
-	})
-}
-
 func TestHandler_NoHeaders(t *testing.T) {
 
 	Convey("Given a http request with no headers", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, nil
-			},
-		}
+		httpClient := &commontest.RCHTTPClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -80,14 +41,18 @@ func TestHandler_NoHeaders(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
 			identityHandler.ServeHTTP(responseRecorder, req)
 
 			Convey("Then the downstream HTTP handler is called", func() {
-				So(handlerCalled, ShouldBeTrue)
+				So(handlerCalled, ShouldBeFalse)
+			})
+
+			Convey("Then the http response should have a 401 status", func() {
+				So(responseRecorder.Result().StatusCode, ShouldEqual, http.StatusUnauthorized)
 			})
 		})
 	})
@@ -97,7 +62,6 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns an error", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
@@ -117,7 +81,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -143,7 +107,6 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns a non-200 response", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
@@ -165,7 +128,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -191,7 +154,6 @@ func TestHandler_florenceToken(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns 200", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
@@ -222,7 +184,7 @@ func TestHandler_florenceToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -251,7 +213,6 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns invalid response JSON", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
@@ -277,7 +238,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -305,7 +266,6 @@ func TestHandler_authToken(t *testing.T) {
 
 	Convey("Given a request with an auth token, and mock client that returns 200", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.AuthHeaderKey: {upstreamAuthToken},
@@ -336,7 +296,7 @@ func TestHandler_authToken(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
@@ -368,7 +328,6 @@ func TestHandler_bothTokens(t *testing.T) {
 
 	Convey("Given a request with both a florence token and service token", t, func() {
 
-		doAuth := true
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey:    {florenceToken},
@@ -400,7 +359,7 @@ func TestHandler_bothTokens(t *testing.T) {
 			handlerCalled = true
 		})
 
-		identityHandler := HandlerForHTTPClient(doAuth, idClient)(httpHandler)
+		identityHandler := HandlerForHTTPClient(idClient)(httpHandler)
 
 		Convey("When ServeHTTP is called", func() {
 
