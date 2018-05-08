@@ -136,11 +136,8 @@ func TestHandler(t *testing.T) {
 
 		wrapped := Handler(dummyHandler)
 
-		var eventName, eventContext string
 		var eventData Data
 		Event = func(name string, context string, data Data) {
-			eventName = name
-			eventContext = context
 			eventData = data
 		}
 
