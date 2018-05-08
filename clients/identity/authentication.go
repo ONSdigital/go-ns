@@ -34,19 +34,15 @@ func NewAPIClient(cli common.RCHTTPClienter, url string) (api *IdentityClient) {
 
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
 func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int, error) {
-	var logData log.Data
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
 
 	florenceToken := req.Header.Get(common.FlorenceHeaderKey)
 	authToken := req.Header.Get(common.AuthHeaderKey)
-	logData = splitTokens(florenceToken, authToken)
 
 	isUserReq := len(florenceToken) > 0
 	isServiceReq := len(authToken) > 0
-	logData["is_user_request"] = isUserReq
-	logData["is_service_request"] = isServiceReq
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
@@ -54,7 +50,13 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	}
 
 	url := api.BaseURL + "/identity"
-	logData["url"] = url
+
+	logData := log.Data{
+		"is_user_request":    isUserReq,
+		"is_service_request": isServiceReq,
+		"url":                url,
+	}
+	splitTokens(florenceToken, authToken, logData)
 
 	log.DebugR(req, "calling AuthAPI to authenticate", logData)
 
@@ -112,33 +114,27 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	return ctx, http.StatusOK, nil
 }
 
-func splitTokens(florenceToken, authToken string) log.Data {
-	var ft, at tokenObject
-	logData := log.Data{}
-
+func splitTokens(florenceToken, authToken string, logData log.Data) {
 	if len(florenceToken) > 0 {
-		ft = splitToken(florenceToken)
-		logData["florence_token"] = ft
+		logData["florence_token"] = splitToken(florenceToken)
 	}
-
 	if len(authToken) > 0 {
-		at = splitToken(authToken)
-		logData["auth_token"] = at
+		logData["auth_token"] = splitToken(authToken)
 	}
-
-	return logData
 }
 
 func splitToken(token string) (tokenObj tokenObject) {
-
 	splitToken := strings.Split(token, " ")
 	tokenObj.numberOfParts = len(splitToken)
 	tokenObj.hasPrefix = strings.HasPrefix(token, common.BearerPrefix)
-	if len(token) > 6 {
-		tokenObj.tokenPart = token[len(token)-6:]
-	} else {
-		tokenObj.tokenPart = token
+
+	// sample last 6 chars (or half, if smaller) of last token part
+	lastTokenPart := len(splitToken) - 1
+	tokenSampleStart := len(splitToken[lastTokenPart]) - 6
+	if tokenSampleStart < 1 {
+		tokenSampleStart = len(splitToken[lastTokenPart]) / 2
 	}
+	tokenObj.tokenPart = splitToken[lastTokenPart][tokenSampleStart:]
 
 	return tokenObj
 }

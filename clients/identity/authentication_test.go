@@ -12,6 +12,7 @@ import (
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
+	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -267,7 +268,8 @@ func TestSplitTokens(t *testing.T) {
 		serviceToken := "Bearer 123456789"
 
 		Convey("When we pass both tokens into splitTokens function", func() {
-			logData := splitTokens(florenceToken, serviceToken)
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
 				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
@@ -275,12 +277,14 @@ func TestSplitTokens(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a florence token and an empty service token", t, func() {
 		florenceToken := "987654321"
 		serviceToken := ""
 
 		Convey("When we pass both tokens into splitTokens function", func() {
-			logData := splitTokens(florenceToken, serviceToken)
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
 				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
@@ -288,12 +292,14 @@ func TestSplitTokens(t *testing.T) {
 			})
 		})
 	})
+
 	Convey("Given a florence token and service token", t, func() {
 		florenceToken := "987654321"
 		serviceToken := "Bearer 123456789"
 
 		Convey("When we pass both tokens into splitTokens function", func() {
-			logData := splitTokens(florenceToken, serviceToken)
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
 				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
@@ -301,6 +307,22 @@ func TestSplitTokens(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a small service token", t, func() {
+		florenceToken := "54321"
+		serviceToken := "Bearer A 12"
+
+		Convey("When we pass the tokens into splitTokens function", func() {
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 3, hasPrefix: true, tokenPart: "2"})
+			})
+		})
+	})
+
 }
 
 func getClientReturningIdentifier(id string) *commontest.RCHTTPClienterMock {
