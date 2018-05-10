@@ -11,6 +11,8 @@ const (
 	FlorenceHeaderKey        = "X-Florence-Token"
 	DownloadServiceHeaderKey = "X-Download-Service-Token"
 
+	FlorenceCookieKey = "access_token"
+
 	AuthHeaderKey = "Authorization"
 	UserHeaderKey = "User-Identity"
 

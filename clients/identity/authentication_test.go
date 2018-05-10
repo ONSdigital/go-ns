@@ -151,6 +151,33 @@ func TestHandler_florenceToken(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a request with a florence token as a cookie, and mock client that returns 200", t, func() {
+		req := httptest.NewRequest("GET", url, nil)
+		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: florenceToken})
+
+		httpClient := getClientReturningIdentifier(userIdentifier)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
+
+		Convey("When CheckRequest is called", func() {
+
+			ctx, status, err := idClient.CheckRequest(req)
+
+			Convey("Then the identity service is called as expected", func() {
+				So(err, ShouldBeNil)
+				So(status, ShouldEqual, http.StatusOK)
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				zebedeeReq := httpClient.DoCalls()[0].Req
+				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
+				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+			})
+
+			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
+				So(common.Caller(ctx), ShouldEqual, userIdentifier)
+				So(common.User(ctx), ShouldEqual, userIdentifier)
+			})
+		})
+	})
 }
 
 func TestHandler_InvalidIdentityResponse(t *testing.T) {
