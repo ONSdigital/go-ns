@@ -1,9 +1,11 @@
 package elasticsearch
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"time"
 
 	"github.com/ONSdigital/go-ns/healthcheck"
 	"github.com/ONSdigital/go-ns/rhttp"
@@ -23,6 +25,7 @@ var (
 	ErrorUnexpectedStatusCode   = errors.New("unexpected status code from api")
 	ErrorParsingBody            = errors.New("error parsing cluster health response body")
 	ErrorUnhealthyClusterStatus = errors.New("error cluster health red")
+	ErrorTimedOut               = errors.New("timeout waiting for response")
 )
 
 const unhealthy = "red"
@@ -33,6 +36,7 @@ type HealthCheckClient struct {
 	path         string
 	serviceName  string
 	signRequests bool
+	timeout      time.Duration
 }
 
 // ClusterHealth represents the response from the elasticsearch cluster health check
@@ -41,14 +45,19 @@ type ClusterHealth struct {
 }
 
 // NewHealthCheckClient returns a new elasticsearch health check client.
-func NewHealthCheckClient(url string, signRequests bool) *HealthCheckClient {
+func NewHealthCheckClient(url string, signRequests bool, timeout time.Duration) *HealthCheckClient {
 
 	return &HealthCheckClient{
 		cli:          rhttp.DefaultClient,
 		path:         url + "/_cluster/health",
 		serviceName:  "elasticsearch",
 		signRequests: signRequests,
+		timeout:      timeout,
 	}
+}
+
+type healthResult struct {
+	Error error
 }
 
 // Healthcheck calls elasticsearch to check its health status.
@@ -56,56 +65,112 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 
 	logData := log.Data{"url": elasticsearch.path}
 
-	URL, err := url.Parse(elasticsearch.path)
-	if err != nil {
-		log.ErrorC("failed to create url for elasticsearch healthcheck", err, logData)
-		return elasticsearch.serviceName, err
+	healthChan := make(chan healthResult)
+	defer close(healthChan)
+
+	ctx, cancel := context.WithTimeout(context.Background(), elasticsearch.timeout)
+
+	go func(ctx context.Context) {
+		URL, err := url.Parse(elasticsearch.path)
+		if err != nil {
+			log.ErrorC("failed to create url for elasticsearch healthcheck", err, logData)
+
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: err}
+			}
+
+			return
+		}
+
+		path := URL.String()
+		logData["url"] = path
+
+		req, err := http.NewRequest("GET", path, nil)
+		if err != nil {
+			log.ErrorC("failed to create request for healthcheck call to elasticsearch", err, logData)
+
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: err}
+			}
+
+			return
+		}
+
+		if elasticsearch.signRequests {
+			awsauth.Sign(req)
+		}
+
+		resp, err := elasticsearch.cli.Do(req)
+		if err != nil {
+			log.ErrorC("failed to call elasticsearch", err, logData)
+
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: err}
+			}
+
+			return
+		}
+		defer resp.Body.Close()
+
+		logData["http_code"] = resp.StatusCode
+		if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
+			log.Error(ErrorUnexpectedStatusCode, logData)
+
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: ErrorUnexpectedStatusCode}
+			}
+
+			return
+		}
+
+		jsonBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+
+			log.ErrorC("failed to read response body from call to elastic", err, logData)
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: ErrorUnexpectedStatusCode}
+			}
+
+			return
+		}
+
+		var clusterHealth ClusterHealth
+		err = json.Unmarshal(jsonBody, &clusterHealth)
+		if err != nil {
+			log.Error(ErrorParsingBody, logData)
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: ErrorParsingBody}
+			}
+
+			return
+		}
+
+		logData["cluster_health"] = clusterHealth.Status
+		if clusterHealth.Status == unhealthy {
+			log.Error(ErrorUnhealthyClusterStatus, logData)
+			if ctx.Err() == nil {
+				healthChan <- healthResult{Error: ErrorUnhealthyClusterStatus}
+			}
+
+			return
+		}
+
+		if ctx.Err() == nil {
+			healthChan <- healthResult{Error: nil}
+		}
+
+		return
+	}(ctx)
+
+	var myError error
+	select {
+	case res := <-healthChan:
+		myError = res.Error
+	case <-ctx.Done():
+		log.Error(ErrorTimedOut, logData)
+		myError = ErrorTimedOut
 	}
 
-	path := URL.String()
-	logData["url"] = path
-
-	req, err := http.NewRequest("GET", path, nil)
-	if err != nil {
-		log.ErrorC("failed to create request for healthcheck call to elasticsearch", err, logData)
-		return elasticsearch.serviceName, err
-	}
-
-	if elasticsearch.signRequests {
-		awsauth.Sign(req)
-	}
-
-	resp, err := elasticsearch.cli.Do(req)
-	if err != nil {
-		log.ErrorC("failed to call elasticsearch", err, logData)
-		return elasticsearch.serviceName, err
-	}
-	defer resp.Body.Close()
-
-	logData["http_code"] = resp.StatusCode
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Error(ErrorUnexpectedStatusCode, logData)
-		return elasticsearch.serviceName, ErrorUnexpectedStatusCode
-	}
-
-	jsonBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.ErrorC("failed to read response body from call to elastic", err, logData)
-		return elasticsearch.serviceName, ErrorUnexpectedStatusCode
-	}
-
-	var clusterHealth ClusterHealth
-	err = json.Unmarshal(jsonBody, &clusterHealth)
-	if err != nil {
-		log.Error(ErrorParsingBody, logData)
-		return elasticsearch.serviceName, ErrorParsingBody
-	}
-
-	logData["cluster_health"] = clusterHealth.Status
-	if clusterHealth.Status == unhealthy {
-		log.Error(ErrorUnhealthyClusterStatus, logData)
-		return elasticsearch.serviceName, ErrorUnhealthyClusterStatus
-	}
-
-	return elasticsearch.serviceName, nil
+	cancel()
+	return elasticsearch.serviceName, myError
 }
