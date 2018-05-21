@@ -23,6 +23,11 @@ var (
 	URI        = "localhost:27017"
 )
 
+const (
+	returnContextKey = "want_return"
+	early            = "early"
+)
+
 // Mongo represents a simplistic MongoDB configuration.
 type Mongo struct {
 	Collection string
@@ -34,7 +39,7 @@ type ungraceful struct{}
 
 func (t ungraceful) shutdown(ctx context.Context, session *mgo.Session, closedChannel chan bool) {
 	time.Sleep(timeLeft + (100 * time.Millisecond))
-	if ctx.Value("return") == "true" || ctx.Err() != nil {
+	if ctx.Value(returnContextKey) == early || ctx.Err() != nil {
 		return
 	}
 
@@ -47,8 +52,8 @@ func (t ungraceful) shutdown(ctx context.Context, session *mgo.Session, closedCh
 func TestSuccessfulCloseMongoSession(t *testing.T) {
 	_, err := setupSession()
 	if err != nil {
-		log.Info("mongo instance not available, skip tests", log.Data{"error": err})
-		os.Exit(0)
+		log.Info("mongo instance not available, skip close tests", log.Data{"error": err})
+		return
 	}
 
 	if err = cleanupTestData(session.Copy()); err != nil {
@@ -94,13 +99,12 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 			start = ungraceful{}
 			copiedSession := session.Copy()
 			go func() {
-				_ = queryMongo(copiedSession)
+				_ = slowQueryMongo(copiedSession)
 			}()
 			// Sleep for half a second for mongo query to begin
 			time.Sleep(500 * time.Millisecond)
 
-			contextKey := "return"
-			ctx := context.WithValue(context.Background(), contextKey, "true")
+			ctx := context.WithValue(context.Background(), returnContextKey, early)
 			err := Close(ctx, copiedSession)
 
 			So(err, ShouldNotBeNil)
@@ -111,7 +115,7 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 		Convey("with context deadline", func() {
 			copiedSession := session.Copy()
 			go func() {
-				_ = queryMongo(copiedSession)
+				_ = slowQueryMongo(copiedSession)
 			}()
 			// Sleep for half a second for mongo query to begin
 			time.Sleep(500 * time.Millisecond)
@@ -141,7 +145,7 @@ func cleanupTestData(session *mgo.Session) error {
 	return nil
 }
 
-func queryMongo(session *mgo.Session) error {
+func slowQueryMongo(session *mgo.Session) error {
 	defer session.Close()
 
 	_, err := session.DB(Database).C(Collection).Find(bson.M{"$where": "sleep(2000) || true"}).Count()
