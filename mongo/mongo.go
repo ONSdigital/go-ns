@@ -127,3 +127,12 @@ func WithUniqueTimestampQuery(queryDoc bson.M, timestamp bson.MongoTimestamp) bs
 	queryDoc[uniqueTimestampKey] = timestamp
 	return queryDoc
 }
+
+// WithNamespacedUniqueTimestampQuery adds unique timestamps to queryDoc sub-docs
+func WithNamespacedUniqueTimestampQuery(queryDoc bson.M, timestamps []bson.MongoTimestamp, prefixes []string) bson.M {
+	newQueryDoc := queryDoc
+	for idx, prefix := range prefixes {
+		newQueryDoc[prefix+uniqueTimestampKey] = timestamps[idx]
+	}
+	return newQueryDoc
+}

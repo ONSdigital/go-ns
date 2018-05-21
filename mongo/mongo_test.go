@@ -154,10 +154,70 @@ func TestSuccessfulCloseMongoSession(t *testing.T) {
 }
 
 func TestSuccessfulMongoDates(t *testing.T) {
+
+	Convey("ensure adds all requested time fields", t, func() {
+
+		timestamp := bson.MongoTimestamp(int64(1234567 << 32))
+		anotherTimestamp := bson.MongoTimestamp(int64(987654321 << 32))
+
+		Convey("check WithUniqueTimestampQuery", func() {
+
+			query := bson.M{"foo": bson.M{"bar": 321}}
+			queryWithTimestamp := WithUniqueTimestampQuery(query, timestamp)
+			So(queryWithTimestamp, ShouldResemble, bson.M{"unique_timestamp": timestamp, "foo": bson.M{"bar": 321}})
+
+		})
+
+		Convey("check WithNamespacedUniqueTimestampQuery", func() {
+
+			query := bson.M{"foo": bson.M{"key": 12345}}
+			queryWithTimestamps := WithNamespacedUniqueTimestampQuery(query, []bson.MongoTimestamp{timestamp, anotherTimestamp}, []string{"nixed.", "currant."})
+			So(queryWithTimestamps, ShouldResemble, bson.M{
+				"currant.unique_timestamp": anotherTimestamp,
+				"nixed.unique_timestamp":   timestamp,
+				"foo": bson.M{"key": 12345},
+			})
+
+		})
+
+		Convey("check WithUpdates", func() {
+
+			update := bson.M{"$set": bson.M{"new_key": 321}}
+			updateWithTimestamps := WithUpdates(update)
+			So(updateWithTimestamps, ShouldResemble, bson.M{
+				"$currentDate": bson.M{
+					"last_updated":     true,
+					"unique_timestamp": bson.M{"$type": "timestamp"},
+				},
+				"$set": bson.M{"new_key": 321},
+			})
+
+		})
+
+		Convey("check WithNamespacedUpdates", func() {
+
+			update := bson.M{"$set": bson.M{"new_key": 1234}}
+			updateWithTimestamps := WithNamespacedUpdates(update, []string{"nixed.", "currant."})
+			So(updateWithTimestamps, ShouldResemble, bson.M{
+				"$currentDate": bson.M{
+					"currant.last_updated":     true,
+					"currant.unique_timestamp": bson.M{"$type": "timestamp"},
+					"nixed.last_updated":       true,
+					"nixed.unique_timestamp":   bson.M{"$type": "timestamp"},
+				},
+				"$set": bson.M{"new_key": 1234},
+			})
+
+		})
+
+	})
+}
+
+func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 	session = nil
 	if _, err := setupSession(); err != nil {
-		log.Info("mongo instance not available, skip tests", log.Data{"error": err})
-		t.FailNow()
+		log.Info("mongo instance not available, skip timestamp tests", log.Data{"error": err})
+		return
 	}
 
 	if err := setUpTestData(session.Copy()); err != nil {
