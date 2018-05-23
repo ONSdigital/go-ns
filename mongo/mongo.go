@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	mgo "github.com/gedge/mgo"
+	"github.com/gedge/mgo/bson"
 )
 
 // keep these in sync with Timestamps tags below

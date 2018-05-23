@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	mgo "github.com/gedge/mgo"
+	"github.com/gedge/mgo/bson"
 
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
@@ -157,8 +157,11 @@ func TestSuccessfulMongoDates(t *testing.T) {
 
 	Convey("ensure adds all requested time fields", t, func() {
 
-		timestamp := bson.MongoTimestamp(int64(1234567 << 32))
-		anotherTimestamp := bson.MongoTimestamp(int64(987654321 << 32))
+		now := time.Now()
+		timestamp, err := bson.NewMongoTimestamp(now, 1234)
+		So(err, ShouldBeNil)
+		anotherTimestamp, err := bson.NewMongoTimestamp(now, 1235)
+		So(err, ShouldBeNil)
 
 		Convey("check WithUniqueTimestampQuery", func() {
 
@@ -268,7 +271,7 @@ func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 			So(res.NewKey, ShouldEqual, 321)
 			So(res.LastUpdated, ShouldHappenOnOrAfter, testStartTime)
 			// extract time part
-			So(res.UniqueTimestamp<<32, ShouldBeGreaterThanOrEqualTo, testStartTime.Unix())
+			So(res.UniqueTimestamp.Time(), ShouldHappenOnOrAfter, testStartTime)
 
 		})
 
@@ -301,8 +304,8 @@ func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 			So(res.Currant.LastUpdated, ShouldHappenOnOrAfter, testStartTime)
 			So(res.Nixed.LastUpdated, ShouldHappenOnOrAfter, testStartTime)
 			// extract time part
-			So(res.Currant.UniqueTimestamp<<32, ShouldBeGreaterThanOrEqualTo, testStartTime.Unix())
-			So(res.Nixed.UniqueTimestamp<<32, ShouldBeGreaterThanOrEqualTo, testStartTime.Unix())
+			So(res.Currant.UniqueTimestamp.Time(), ShouldHappenOnOrAfter, testStartTime)
+			So(res.Nixed.UniqueTimestamp.Time(), ShouldHappenOnOrAfter, testStartTime)
 
 		})
 
