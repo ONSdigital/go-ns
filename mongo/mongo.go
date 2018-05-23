@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
+	"github.com/globalsign/mgo"
 )
 
 // Shutdown represents an interface to the shutdown method

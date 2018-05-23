@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"github.com/ONSdigital/go-ns/log"
-	mgo "gopkg.in/mgo.v2"
+	"github.com/globalsign/mgo"
 )
 
 // HealthCheckClient provides a healthcheck.Client implementation for health checking the service
