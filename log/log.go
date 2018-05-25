@@ -2,6 +2,7 @@ package log
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,13 +13,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/mgutz/ansi"
 )
 
 // Namespace is the service namespace used for logging
 var Namespace = "service-namespace"
 
-// HumanReadable, if true, outputs log events in a human readable format
+// HumanReadable represents a flag to determine if log events
+// will be in a human readable format
 var HumanReadable bool
 var hrMutex sync.Mutex
 
@@ -179,6 +182,12 @@ func ErrorC(context string, err error, data Data) {
 	Event("error", context, data)
 }
 
+// ErrorCtx is a structured info message for go context
+func ErrorCtx(ctx context.Context, err error, data Data) {
+	context := requestID.Get(ctx)
+	ErrorC(context, err, data)
+}
+
 // ErrorR is a structured error message for a request
 func ErrorR(req *http.Request, err error, data Data) {
 	ErrorC(Context(req), err, data)
@@ -198,6 +207,12 @@ func DebugC(context string, message string, data Data) {
 		data["message"] = message
 	}
 	Event("debug", context, data)
+}
+
+// DebugCtx is a structured info message for go context
+func DebugCtx(ctx context.Context, message string, data Data) {
+	context := requestID.Get(ctx)
+	DebugC(context, message, data)
 }
 
 // DebugR is a structured debug message for a request
@@ -221,6 +236,12 @@ func TraceC(context string, message string, data Data) {
 	Event("trace", context, data)
 }
 
+// TraceCtx is a structured info message for go context
+func TraceCtx(ctx context.Context, message string, data Data) {
+	context := requestID.Get(ctx)
+	TraceC(context, message, data)
+}
+
 // TraceR is a structured trace message for a request
 func TraceR(req *http.Request, message string, data Data) {
 	TraceC(Context(req), message, data)
@@ -240,6 +261,12 @@ func InfoC(context string, message string, data Data) {
 		data["message"] = message
 	}
 	Event("info", context, data)
+}
+
+// InfoCtx is a structured info message for go context
+func InfoCtx(ctx context.Context, message string, data Data) {
+	context := requestID.Get(ctx)
+	InfoC(context, message, data)
 }
 
 // InfoR is a structured info message for a request

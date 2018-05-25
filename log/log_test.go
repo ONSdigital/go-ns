@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/mgutz/ansi"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -20,6 +22,8 @@ import (
 var dummyHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 })
+
+var contextWithRequestHeader = context.WithValue(context.Background(), requestID.ContextKey, "request id")
 
 func captureOutput(f func()) string {
 	stdout := os.Stdout
@@ -46,7 +50,10 @@ func captureOutput(f func()) string {
 
 func TestHumanLog(t *testing.T) {
 	Convey("HUMAN_LOG environment variable should configure human log output", t, func() {
-		So(HumanReadable, ShouldBeFalse)
+		// Cannot guarentee the variable has not been set already
+		if os.Getenv("HUMAN_LOG") == "" {
+			So(HumanReadable, ShouldBeFalse)
+		}
 
 		os.Setenv("HUMAN_LOG", "true")
 		configureHumanReadable()
@@ -206,6 +213,26 @@ func TestError(t *testing.T) {
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
 	})
 
+	Convey("ErrorCtx", t, func() {
+		ErrorCtx(context.Background(), errors.New("test error"), nil)
+		So(eventName, ShouldEqual, "error")
+		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test error")
+		So(eventData, ShouldContainKey, "error")
+		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
+		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
+
+		ErrorCtx(contextWithRequestHeader, errors.New("test error"), nil)
+		So(eventName, ShouldEqual, "error")
+		So(eventContext, ShouldEqual, "request id")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test error")
+		So(eventData, ShouldContainKey, "error")
+		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
+		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
+	})
+
 	Convey("ErrorC", t, func() {
 		ErrorC("context", errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
@@ -256,6 +283,20 @@ func TestDebug(t *testing.T) {
 		So(eventData["message"], ShouldEqual, "test message")
 	})
 
+	Convey("DebugCtx", t, func() {
+		DebugCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "debug")
+		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		DebugCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "debug")
+		So(eventContext, ShouldEqual, "request id")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
 	Convey("DebugC", t, func() {
 		DebugC("context", "test message", nil)
 		So(eventName, ShouldEqual, "debug")
@@ -300,6 +341,20 @@ func TestTrace(t *testing.T) {
 		So(eventData["message"], ShouldEqual, "test message")
 	})
 
+	Convey("TraceCtx", t, func() {
+		TraceCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "trace")
+		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		TraceCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "trace")
+		So(eventContext, ShouldEqual, "request id")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
 	Convey("TraceC", t, func() {
 		TraceC("context", "test message", nil)
 		So(eventName, ShouldEqual, "trace")
@@ -340,6 +395,20 @@ func TestInfo(t *testing.T) {
 		Info("test message", nil)
 		So(eventName, ShouldEqual, "info")
 		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("InfoCtx", t, func() {
+		InfoCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventContext, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		InfoCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventContext, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
