@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"context"
+
+	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -25,7 +27,7 @@ func TestHandler(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		So(req.Header.Get("X-Request-Id"), ShouldBeEmpty)
+		So(req.Header.Get(common.RequestHeaderKey), ShouldBeEmpty)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -33,7 +35,7 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 20)
 	})
@@ -45,8 +47,8 @@ func TestHandler(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		req.Header.Set("X-Request-Id", "test")
-		So(req.Header.Get("X-Request-Id"), ShouldNotBeEmpty)
+		req.Header.Set(common.RequestHeaderKey, "test")
+		So(req.Header.Get(common.RequestHeaderKey), ShouldNotBeEmpty)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -54,7 +56,7 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 4)
 		So(header, ShouldEqual, "test")
@@ -73,7 +75,7 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 30)
 	})
@@ -108,7 +110,7 @@ func TestHandler(t *testing.T) {
 		if err != nil {
 			t.Fail()
 		}
-		req.Header.Set("X-Request-Id", "666")
+		req.Header.Set(common.RequestHeaderKey, "666")
 
 		var reqCtx context.Context
 		var captureContextHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -144,5 +146,17 @@ func TestGet(t *testing.T) {
 	Convey("should return empty value if context value is not in the expected format", t, func() {
 		id := Get(context.WithValue(context.Background(), ContextKey, struct{}{}))
 		So(id, ShouldBeBlank)
+	})
+}
+
+func TestSet(t *testing.T) {
+	Convey("set request id in empty context", t, func() {
+		ctx := Set(context.Background(), "123")
+		So(ctx.Value(ContextKey), ShouldEqual, "123")
+
+		Convey("overwrite context request id with new value", func() {
+			newCtx := Set(ctx, "456")
+			So(newCtx.Value(ContextKey), ShouldEqual, "456")
+		})
 	})
 }
