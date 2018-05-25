@@ -2,15 +2,10 @@ package requestID
 
 import (
 	"context"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/ONSdigital/go-ns/common"
 )
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type contextKey string
 
@@ -25,7 +20,7 @@ func Handler(size int) func(http.Handler) http.Handler {
 			requestID := req.Header.Get(common.RequestHeaderKey)
 
 			if len(requestID) == 0 {
-				requestID = NewRequestID(size)
+				requestID = common.NewRequestID(size)
 				req.Header.Set(common.RequestHeaderKey, requestID)
 			}
 
@@ -33,15 +28,6 @@ func Handler(size int) func(http.Handler) http.Handler {
 			h.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}
-}
-
-// NewRequestID generates a random string of requested length
-func NewRequestID(size int) string {
-	b := make([]rune, size)
-	for i := range b {
-		b[i] = letters[requestIDRandom.Intn(len(letters))]
-	}
-	return string(b)
 }
 
 // Get retrieves the value of the context key (request-id)

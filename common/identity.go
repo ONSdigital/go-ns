@@ -2,7 +2,9 @@ package common
 
 import (
 	"context"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 // ContextKey is an alias of type string
@@ -107,4 +109,16 @@ func Caller(ctx context.Context) string {
 func SetCaller(ctx context.Context, caller string) context.Context {
 
 	return context.WithValue(ctx, CallerIdentityKey, caller)
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+// NewRequestID generates a random string of requested length
+func NewRequestID(size int) string {
+	b := make([]rune, size)
+	for i := range b {
+		b[i] = letters[requestIDRandom.Intn(len(letters))]
+	}
+	return string(b)
 }

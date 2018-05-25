@@ -132,19 +132,6 @@ func TestHandler(t *testing.T) {
 	})
 }
 
-func TestNewRequestID(t *testing.T) {
-	Convey("create a requestID with length of 12", t, func() {
-		requestID := NewRequestID(12)
-		So(len(requestID), ShouldEqual, 12)
-
-		Convey("create a second requestID with length of 12", func() {
-			secondRequestID := NewRequestID(12)
-			So(len(secondRequestID), ShouldEqual, 12)
-			So(secondRequestID, ShouldNotEqual, requestID)
-		})
-	})
-}
-
 func TestGet(t *testing.T) {
 	Convey("should return requestID if it exists in the provided context", t, func() {
 		id := Get(context.WithValue(context.Background(), ContextKey, "666"))
