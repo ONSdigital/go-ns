@@ -11,7 +11,7 @@ var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type contextKey string
 
-// ContextKey represents the constant key name name
+// ContextKey represents the constant key name
 const ContextKey = contextKey("request-id")
 
 // Handler is a wrapper which adds an X-Request-Id header if one does not yet exist
@@ -50,6 +50,5 @@ func Get(ctx context.Context) string {
 
 // Set creates/overwrites the value of the context key (request-id)
 func Set(ctx context.Context, requestID string) context.Context {
-	ctx = context.WithValue(ctx, ContextKey, requestID)
-	return ctx
+	return context.WithValue(ctx, ContextKey, requestID)
 }

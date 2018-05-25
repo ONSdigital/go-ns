@@ -13,11 +13,11 @@ import (
 
 func TestAuditErrorLog(t *testing.T) {
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData log.Data
-	log.Event = func(name string, context string, data log.Data) {
+	log.Event = func(name string, correlationKey string, data log.Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 
@@ -26,7 +26,7 @@ func TestAuditErrorLog(t *testing.T) {
 	Convey("with empty context", t, func() {
 		LogError(ctx, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -42,7 +42,7 @@ func TestAuditErrorLog(t *testing.T) {
 		contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
 		LogError(contextWithRequestID, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "request id")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -58,7 +58,7 @@ func TestAuditErrorLog(t *testing.T) {
 		contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
 		LogError(contextWithUser, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -76,7 +76,7 @@ func TestAuditErrorLog(t *testing.T) {
 		contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
 		LogError(contextWithCaller, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -94,7 +94,7 @@ func TestAuditErrorLog(t *testing.T) {
 		ctx := getContextWithCallerUserAndRequestIDcontext()
 		LogError(ctx, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "request id")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -113,11 +113,11 @@ func TestAuditErrorLog(t *testing.T) {
 
 func TestAuditInfoLog(t *testing.T) {
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData log.Data
-	log.Event = func(name string, context string, data log.Data) {
+	log.Event = func(name string, correlationKey string, data log.Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 	Convey("Info", t, func() {
@@ -126,7 +126,7 @@ func TestAuditInfoLog(t *testing.T) {
 		Convey("with empty context", func() {
 			LogInfo(ctx, "info message", nil)
 			So(eventName, ShouldEqual, "info")
-			So(eventContext, ShouldEqual, "")
+			So(eventCorrelationKey, ShouldEqual, "")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
 			So(eventData, ShouldNotContainKey, "caller")
@@ -139,7 +139,7 @@ func TestAuditInfoLog(t *testing.T) {
 			contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
 			LogInfo(contextWithRequestID, "info message", nil)
 			So(eventName, ShouldEqual, "info")
-			So(eventContext, ShouldEqual, "request id")
+			So(eventCorrelationKey, ShouldEqual, "request id")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
 			So(eventData, ShouldNotContainKey, "caller")
@@ -152,7 +152,7 @@ func TestAuditInfoLog(t *testing.T) {
 			contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
 			LogInfo(contextWithUser, "info message", nil)
 			So(eventName, ShouldEqual, "info")
-			So(eventContext, ShouldEqual, "")
+			So(eventCorrelationKey, ShouldEqual, "")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
 			So(eventData, ShouldContainKey, "user")
@@ -167,7 +167,7 @@ func TestAuditInfoLog(t *testing.T) {
 			contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
 			LogInfo(contextWithCaller, "info message", nil)
 			So(eventName, ShouldEqual, "info")
-			So(eventContext, ShouldEqual, "")
+			So(eventCorrelationKey, ShouldEqual, "")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
 			So(eventData, ShouldContainKey, "caller")
@@ -182,7 +182,7 @@ func TestAuditInfoLog(t *testing.T) {
 			ctx := getContextWithCallerUserAndRequestIDcontext()
 			LogInfo(ctx, "info message", nil)
 			So(eventName, ShouldEqual, "info")
-			So(eventContext, ShouldEqual, "request id")
+			So(eventCorrelationKey, ShouldEqual, "request id")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
 			So(eventData, ShouldContainKey, "caller")
