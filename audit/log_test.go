@@ -11,7 +11,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestAuditErrorLog(t *testing.T) {
+func TestErrorLog(t *testing.T) {
 
 	var eventName, eventCorrelationKey string
 	var eventData log.Data
@@ -32,8 +32,8 @@ func TestAuditErrorLog(t *testing.T) {
 		So(eventData, ShouldContainKey, "error")
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldNotContainKey, "caller")
-		So(eventData, ShouldNotContainKey, "user")
+		So(eventData, ShouldNotContainKey, reqCaller)
+		So(eventData, ShouldNotContainKey, reqUser)
 
 		eventData = log.Data{}
 	})
@@ -48,8 +48,8 @@ func TestAuditErrorLog(t *testing.T) {
 		So(eventData, ShouldContainKey, "error")
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldNotContainKey, "caller")
-		So(eventData, ShouldNotContainKey, "user")
+		So(eventData, ShouldNotContainKey, reqCaller)
+		So(eventData, ShouldNotContainKey, reqUser)
 
 		eventData = log.Data{}
 	})
@@ -64,10 +64,10 @@ func TestAuditErrorLog(t *testing.T) {
 		So(eventData, ShouldContainKey, "error")
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "user")
-		So(eventData["user"], ShouldHaveSameTypeAs, "")
-		So(eventData["user"], ShouldEqual, "user email")
-		So(eventData, ShouldNotContainKey, "caller")
+		So(eventData, ShouldContainKey, reqUser)
+		So(eventData[reqUser], ShouldHaveSameTypeAs, "")
+		So(eventData[reqUser], ShouldEqual, "user email")
+		So(eventData, ShouldNotContainKey, reqCaller)
 
 		eventData = log.Data{}
 	})
@@ -82,10 +82,10 @@ func TestAuditErrorLog(t *testing.T) {
 		So(eventData, ShouldContainKey, "error")
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "caller")
-		So(eventData["caller"], ShouldHaveSameTypeAs, "")
-		So(eventData["caller"], ShouldEqual, "api service")
-		So(eventData, ShouldNotContainKey, "user")
+		So(eventData, ShouldContainKey, reqCaller)
+		So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
+		So(eventData[reqCaller], ShouldEqual, "api service")
+		So(eventData, ShouldNotContainKey, reqUser)
 
 		eventData = log.Data{}
 	})
@@ -100,18 +100,18 @@ func TestAuditErrorLog(t *testing.T) {
 		So(eventData, ShouldContainKey, "error")
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "caller")
-		So(eventData["caller"], ShouldHaveSameTypeAs, "")
-		So(eventData["caller"], ShouldEqual, "api service")
-		So(eventData, ShouldContainKey, "user")
-		So(eventData["user"], ShouldHaveSameTypeAs, "")
-		So(eventData["user"], ShouldEqual, "user email")
+		So(eventData, ShouldContainKey, reqCaller)
+		So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
+		So(eventData[reqCaller], ShouldEqual, "api service")
+		So(eventData, ShouldContainKey, reqUser)
+		So(eventData[reqUser], ShouldHaveSameTypeAs, "")
+		So(eventData[reqUser], ShouldEqual, "user email")
 
 		eventData = log.Data{}
 	})
 }
 
-func TestAuditInfoLog(t *testing.T) {
+func TestInfoLog(t *testing.T) {
 
 	var eventName, eventCorrelationKey string
 	var eventData log.Data
@@ -155,10 +155,10 @@ func TestAuditInfoLog(t *testing.T) {
 			So(eventCorrelationKey, ShouldEqual, "")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, "user")
-			So(eventData["user"], ShouldHaveSameTypeAs, "")
-			So(eventData["user"], ShouldEqual, "user email")
-			So(eventData, ShouldNotContainKey, "caller")
+			So(eventData, ShouldContainKey, reqUser)
+			So(eventData[reqUser], ShouldHaveSameTypeAs, "")
+			So(eventData[reqUser], ShouldEqual, "user email")
+			So(eventData, ShouldNotContainKey, reqCaller)
 
 			eventData = log.Data{}
 		})
@@ -170,10 +170,10 @@ func TestAuditInfoLog(t *testing.T) {
 			So(eventCorrelationKey, ShouldEqual, "")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, "caller")
-			So(eventData["caller"], ShouldHaveSameTypeAs, "")
-			So(eventData["caller"], ShouldEqual, "api service")
-			So(eventData, ShouldNotContainKey, "user")
+			So(eventData, ShouldContainKey, reqCaller)
+			So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
+			So(eventData[reqCaller], ShouldEqual, "api service")
+			So(eventData, ShouldNotContainKey, reqUser)
 
 			eventData = log.Data{}
 		})
@@ -185,12 +185,12 @@ func TestAuditInfoLog(t *testing.T) {
 			So(eventCorrelationKey, ShouldEqual, "request id")
 			So(eventData, ShouldContainKey, "message")
 			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, "caller")
-			So(eventData["caller"], ShouldHaveSameTypeAs, "")
-			So(eventData["caller"], ShouldEqual, "api service")
-			So(eventData, ShouldContainKey, "user")
-			So(eventData["user"], ShouldHaveSameTypeAs, "")
-			So(eventData["user"], ShouldEqual, "user email")
+			So(eventData, ShouldContainKey, reqCaller)
+			So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
+			So(eventData[reqCaller], ShouldEqual, "api service")
+			So(eventData, ShouldContainKey, reqUser)
+			So(eventData[reqUser], ShouldHaveSameTypeAs, "")
+			So(eventData[reqUser], ShouldEqual, "user email")
 
 			eventData = log.Data{}
 		})

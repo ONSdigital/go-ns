@@ -101,7 +101,7 @@ func event(name string, correlationKey string, data Data) {
 	}
 
 	if len(correlationKey) > 0 {
-		m["correlationKey"] = correlationKey
+		m["correlation_key"] = correlationKey
 	}
 
 	if data != nil {
@@ -119,11 +119,11 @@ func event(name string, correlationKey string, data Data) {
 		// We'll log the error (which for our purposes, can't fail), which
 		// gives us an indication we have something to investigate
 		b, _ = json.Marshal(map[string]interface{}{
-			"created":        time.Now(),
-			"event":          "log_error",
-			"namespace":      Namespace,
-			"correlationKey": correlationKey,
-			"data":           map[string]interface{}{"error": err.Error()},
+			"created":         time.Now(),
+			"event":           "log_error",
+			"namespace":       Namespace,
+			"correlation_key": correlationKey,
+			"data":            map[string]interface{}{"error": err.Error()},
 		})
 	}
 

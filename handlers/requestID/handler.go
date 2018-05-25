@@ -5,8 +5,11 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/ONSdigital/go-ns/common"
 )
 
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type contextKey string
@@ -19,11 +22,11 @@ func Handler(size int) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			requestID := req.Header.Get("X-Request-Id")
+			requestID := req.Header.Get(common.RequestHeaderKey)
 
 			if len(requestID) == 0 {
 				requestID = NewRequestID(size)
-				req.Header.Set("X-Request-Id", requestID)
+				req.Header.Set(common.RequestHeaderKey, requestID)
 			}
 
 			ctx := context.WithValue(req.Context(), ContextKey, requestID)
@@ -34,7 +37,6 @@ func Handler(size int) func(http.Handler) http.Handler {
 
 // NewRequestID generates a random string of requested length
 func NewRequestID(size int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, size)
 	for i := range b {
 		b[i] = letters[requestIDRandom.Intn(len(letters))]
