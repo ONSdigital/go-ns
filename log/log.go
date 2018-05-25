@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/mgutz/ansi"
 )
@@ -38,7 +39,7 @@ type Data map[string]interface{}
 
 // GetRequestID returns the request ID from a request (using X-Request-Id)
 func GetRequestID(req *http.Request) string {
-	return req.Header.Get("X-Request-Id")
+	return req.Header.Get(common.RequestHeaderKey)
 }
 
 // Handler wraps a http.Handler and logs the status code and total response time
