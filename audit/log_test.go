@@ -11,188 +11,181 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var (
+	eventRes eventResults
+
+	ctx = context.Background()
+)
+
+type eventResults struct {
+	name string
+	cKey string
+	data log.Data
+}
+
+func init() {
+	log.Event = func(name string, correlationKey string, data log.Data) {
+		eventRes = eventResults{
+			name: name,
+			cKey: correlationKey,
+			data: data,
+		}
+	}
+}
+
 func TestErrorLog(t *testing.T) {
 
-	var eventName, eventCorrelationKey string
-	var eventData log.Data
-	log.Event = func(name string, correlationKey string, data log.Data) {
-		eventName = name
-		eventCorrelationKey = correlationKey
-		eventData = data
-	}
-
-	ctx := context.Background()
+	errTest := errors.New("test error")
 
 	Convey("with empty context", t, func() {
-		LogError(ctx, errors.New("test error"), nil)
-		So(eventName, ShouldEqual, "error")
-		So(eventCorrelationKey, ShouldEqual, "")
-		So(eventData, ShouldContainKey, "message")
-		So(eventData["message"], ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "error")
-		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
-		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldNotContainKey, reqCaller)
-		So(eventData, ShouldNotContainKey, reqUser)
+		LogError(ctx, errTest, nil)
 
-		eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "error",
+			cKey: "",
+			data: log.Data{"message": "test error", "error": errTest},
+		})
 	})
 
 	Convey("context with request id", t, func() {
 		contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
-		LogError(contextWithRequestID, errors.New("test error"), nil)
-		So(eventName, ShouldEqual, "error")
-		So(eventCorrelationKey, ShouldEqual, "request id")
-		So(eventData, ShouldContainKey, "message")
-		So(eventData["message"], ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "error")
-		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
-		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldNotContainKey, reqCaller)
-		So(eventData, ShouldNotContainKey, reqUser)
+		LogError(contextWithRequestID, errTest, nil)
 
-		eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "error",
+			cKey: "request id",
+			data: log.Data{"message": "test error", "error": errTest},
+		})
 	})
 
 	Convey("context with user", t, func() {
 		contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
-		LogError(contextWithUser, errors.New("test error"), nil)
-		So(eventName, ShouldEqual, "error")
-		So(eventCorrelationKey, ShouldEqual, "")
-		So(eventData, ShouldContainKey, "message")
-		So(eventData["message"], ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "error")
-		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
-		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, reqUser)
-		So(eventData[reqUser], ShouldHaveSameTypeAs, "")
-		So(eventData[reqUser], ShouldEqual, "user email")
-		So(eventData, ShouldNotContainKey, reqCaller)
+		LogError(contextWithUser, errTest, nil)
 
-		eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "error",
+			cKey: "",
+			data: log.Data{"message": "test error", "error": errTest, reqUser: "user email"},
+		})
 	})
 
 	Convey("context with caller id", t, func() {
 		contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
-		LogError(contextWithCaller, errors.New("test error"), nil)
-		So(eventName, ShouldEqual, "error")
-		So(eventCorrelationKey, ShouldEqual, "")
-		So(eventData, ShouldContainKey, "message")
-		So(eventData["message"], ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "error")
-		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
-		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, reqCaller)
-		So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
-		So(eventData[reqCaller], ShouldEqual, "api service")
-		So(eventData, ShouldNotContainKey, reqUser)
+		LogError(contextWithCaller, errTest, nil)
 
-		eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "error",
+			cKey: "",
+			data: log.Data{"message": "test error", "error": errTest, reqCaller: "api service"},
+		})
 	})
 
 	Convey("context with request, user and caller ids", t, func() {
-		ctx := getContextWithCallerUserAndRequestIDcontext()
-		LogError(ctx, errors.New("test error"), nil)
-		So(eventName, ShouldEqual, "error")
-		So(eventCorrelationKey, ShouldEqual, "request id")
-		So(eventData, ShouldContainKey, "message")
-		So(eventData["message"], ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, "error")
-		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
-		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
-		So(eventData, ShouldContainKey, reqCaller)
-		So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
-		So(eventData[reqCaller], ShouldEqual, "api service")
-		So(eventData, ShouldContainKey, reqUser)
-		So(eventData[reqUser], ShouldHaveSameTypeAs, "")
-		So(eventData[reqUser], ShouldEqual, "user email")
+		ctxWithIDs := getContextWithCallerUserAndRequestIDcontext()
+		LogError(ctxWithIDs, errTest, nil)
 
-		eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "error",
+			cKey: "request id",
+			data: log.Data{
+				"message": "test error",
+				"error":   errTest,
+				reqCaller: "api service",
+				reqUser:   "user email",
+			},
+		})
 	})
 }
 
 func TestInfoLog(t *testing.T) {
 
-	var eventName, eventCorrelationKey string
-	var eventData log.Data
-	log.Event = func(name string, correlationKey string, data log.Data) {
-		eventName = name
-		eventCorrelationKey = correlationKey
-		eventData = data
-	}
-	Convey("Info", t, func() {
-		ctx := context.Background()
+	Convey("with empty context", t, func() {
+		LogInfo(ctx, "info message", nil)
 
-		Convey("with empty context", func() {
-			LogInfo(ctx, "info message", nil)
-			So(eventName, ShouldEqual, "info")
-			So(eventCorrelationKey, ShouldEqual, "")
-			So(eventData, ShouldContainKey, "message")
-			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldNotContainKey, "caller")
-			So(eventData, ShouldNotContainKey, "user")
-
-			eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "info",
+			cKey: "",
+			data: log.Data{"message": "info message"},
 		})
+	})
 
-		Convey("context with request id", func() {
-			contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
-			LogInfo(contextWithRequestID, "info message", nil)
-			So(eventName, ShouldEqual, "info")
-			So(eventCorrelationKey, ShouldEqual, "request id")
-			So(eventData, ShouldContainKey, "message")
-			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldNotContainKey, "caller")
-			So(eventData, ShouldNotContainKey, "user")
+	Convey("context with request id", t, func() {
+		contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
+		LogInfo(contextWithRequestID, "info message", nil)
 
-			eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "info",
+			cKey: "request id",
+			data: log.Data{"message": "info message"},
 		})
+	})
 
-		Convey("context with user", func() {
-			contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
-			LogInfo(contextWithUser, "info message", nil)
-			So(eventName, ShouldEqual, "info")
-			So(eventCorrelationKey, ShouldEqual, "")
-			So(eventData, ShouldContainKey, "message")
-			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, reqUser)
-			So(eventData[reqUser], ShouldHaveSameTypeAs, "")
-			So(eventData[reqUser], ShouldEqual, "user email")
-			So(eventData, ShouldNotContainKey, reqCaller)
+	Convey("context with user", t, func() {
+		contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
+		LogInfo(contextWithUser, "info message", nil)
 
-			eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "info",
+			cKey: "",
+			data: log.Data{"message": "info message", reqUser: "user email"},
 		})
+	})
 
-		Convey("context with caller id", func() {
-			contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
-			LogInfo(contextWithCaller, "info message", nil)
-			So(eventName, ShouldEqual, "info")
-			So(eventCorrelationKey, ShouldEqual, "")
-			So(eventData, ShouldContainKey, "message")
-			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, reqCaller)
-			So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
-			So(eventData[reqCaller], ShouldEqual, "api service")
-			So(eventData, ShouldNotContainKey, reqUser)
+	Convey("context with caller id", t, func() {
+		contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
+		LogInfo(contextWithCaller, "info message", nil)
 
-			eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "info",
+			cKey: "",
+			data: log.Data{"message": "info message", reqCaller: "api service"},
 		})
+	})
 
-		Convey("context with request, user and caller ids", func() {
-			ctx := getContextWithCallerUserAndRequestIDcontext()
-			LogInfo(ctx, "info message", nil)
-			So(eventName, ShouldEqual, "info")
-			So(eventCorrelationKey, ShouldEqual, "request id")
-			So(eventData, ShouldContainKey, "message")
-			So(eventData["message"], ShouldEqual, "info message")
-			So(eventData, ShouldContainKey, reqCaller)
-			So(eventData[reqCaller], ShouldHaveSameTypeAs, "")
-			So(eventData[reqCaller], ShouldEqual, "api service")
-			So(eventData, ShouldContainKey, reqUser)
-			So(eventData[reqUser], ShouldHaveSameTypeAs, "")
-			So(eventData[reqUser], ShouldEqual, "user email")
+	Convey("context with request, user and caller ids", t, func() {
+		ctxWithIDs := getContextWithCallerUserAndRequestIDcontext()
+		LogInfo(ctxWithIDs, "info message", nil)
 
-			eventData = log.Data{}
+		So(eventRes, ShouldResemble, eventResults{
+			name: "info",
+			cKey: "request id",
+			data: log.Data{
+				"message": "info message",
+				reqCaller: "api service",
+				reqUser:   "user email",
+			},
+		})
+	})
+}
+
+func TestAddLogData(t *testing.T) {
+	Convey("with empty context", t, func() {
+		data := addLogData(ctx, nil)
+
+		So(data, ShouldResemble, log.Data{})
+	})
+
+	Convey("context with user", t, func() {
+		contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
+		data := addLogData(contextWithUser, nil)
+
+		So(data, ShouldResemble, log.Data{reqUser: "user email"})
+	})
+
+	Convey("context with caller id", t, func() {
+		contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
+		data := addLogData(contextWithCaller, nil)
+
+		So(data, ShouldResemble, log.Data{reqCaller: "api service"})
+	})
+
+	Convey("context with request, user and caller ids", t, func() {
+		ctx := getContextWithCallerUserAndRequestIDcontext()
+		data := addLogData(ctx, nil)
+
+		So(data, ShouldResemble, log.Data{
+			reqCaller: "api service",
+			reqUser:   "user email",
 		})
 	})
 }
