@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"context"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -130,6 +131,19 @@ func TestHandler(t *testing.T) {
 	})
 }
 
+func TestNewRequestID(t *testing.T) {
+	Convey("create a requestID with length of 12", t, func() {
+		requestID := NewRequestID(12)
+		So(len(requestID), ShouldEqual, 12)
+
+		Convey("create a second requestID with length of 12", func() {
+			secondRequestID := NewRequestID(12)
+			So(len(secondRequestID), ShouldEqual, 12)
+			So(secondRequestID, ShouldNotEqual, requestID)
+		})
+	})
+}
+
 func TestGet(t *testing.T) {
 	Convey("should return requestID if it exists in the provided context", t, func() {
 		id := Get(context.WithValue(context.Background(), ContextKey, "666"))
@@ -144,5 +158,17 @@ func TestGet(t *testing.T) {
 	Convey("should return empty value if context value is not in the expected format", t, func() {
 		id := Get(context.WithValue(context.Background(), ContextKey, struct{}{}))
 		So(id, ShouldBeBlank)
+	})
+}
+
+func TestSet(t *testing.T) {
+	Convey("set request id in empty context", t, func() {
+		ctx := Set(context.Background(), "123")
+		So(ctx.Value(ContextKey), ShouldEqual, "123")
+
+		Convey("overwrite context request id with new value", func() {
+			newCtx := Set(ctx, "456")
+			So(newCtx.Value(ContextKey), ShouldEqual, "456")
+		})
 	})
 }
