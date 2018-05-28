@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/go-ns/handlers/requestID"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/mgutz/ansi"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -23,7 +23,7 @@ var dummyHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Reques
 	w.WriteHeader(200)
 })
 
-var contextWithRequestHeader = context.WithValue(context.Background(), requestID.ContextKey, "request id")
+var contextWithRequestHeader = common.WithRequestId(context.Background(), "request id")
 
 func captureOutput(f func()) string {
 	stdout := os.Stdout

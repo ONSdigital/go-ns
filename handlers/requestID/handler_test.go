@@ -100,7 +100,7 @@ func TestHandler(t *testing.T) {
 		So(w.Code, ShouldEqual, 200)
 		So(reqCtx, ShouldNotBeNil)
 
-		id, _ := reqCtx.Value(ContextKey).(string)
+		id := common.GetRequestId(reqCtx)
 		So(id, ShouldNotBeEmpty)
 		So(len(id), ShouldEqual, 30)
 	})
@@ -126,37 +126,8 @@ func TestHandler(t *testing.T) {
 		So(w.Code, ShouldEqual, 200)
 		So(reqCtx, ShouldNotBeNil)
 
-		id, _ := reqCtx.Value(ContextKey).(string)
+		id := common.GetRequestId(reqCtx)
 		So(id, ShouldNotBeEmpty)
 		So(id, ShouldEqual, "666")
-	})
-}
-
-func TestGet(t *testing.T) {
-	Convey("should return requestID if it exists in the provided context", t, func() {
-		id := Get(context.WithValue(context.Background(), ContextKey, "666"))
-		So(id, ShouldEqual, "666")
-	})
-
-	Convey("should return empty value if requestID is not in the provided context", t, func() {
-		id := Get(context.Background())
-		So(id, ShouldBeBlank)
-	})
-
-	Convey("should return empty value if context value is not in the expected format", t, func() {
-		id := Get(context.WithValue(context.Background(), ContextKey, struct{}{}))
-		So(id, ShouldBeBlank)
-	})
-}
-
-func TestSet(t *testing.T) {
-	Convey("set request id in empty context", t, func() {
-		ctx := Set(context.Background(), "123")
-		So(ctx.Value(ContextKey), ShouldEqual, "123")
-
-		Convey("overwrite context request id with new value", func() {
-			newCtx := Set(ctx, "456")
-			So(newCtx.Value(ContextKey), ShouldEqual, "456")
-		})
 	})
 }

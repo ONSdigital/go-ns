@@ -3,13 +3,13 @@ package audit
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
-	"time"
 )
 
 const (
@@ -126,7 +126,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		var results []byte
 
 		// record the audit event
-		ctx := context.WithValue(setUpContext(), requestID.ContextKey, "666")
+		ctx := common.WithRequestId(setUpContext(), "666")
 		err := auditor.Record(ctx, auditAction, auditResult, common.Params{"ID": "12345"})
 		So(err, ShouldBeNil)
 

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/mgutz/ansi"
 )
 
@@ -185,7 +184,7 @@ func ErrorC(correlationKey string, err error, data Data) {
 
 // ErrorCtx is a structured error message and retrieves the correlationKey from go context
 func ErrorCtx(ctx context.Context, err error, data Data) {
-	correlationKey := requestID.Get(ctx)
+	correlationKey := common.GetRequestId(ctx)
 	ErrorC(correlationKey, err, data)
 }
 
@@ -212,7 +211,7 @@ func DebugC(correlationKey string, message string, data Data) {
 
 // DebugCtx is a structured debug message and retrieves the correlationKey from go context
 func DebugCtx(ctx context.Context, message string, data Data) {
-	correlationKey := requestID.Get(ctx)
+	correlationKey := common.GetRequestId(ctx)
 	DebugC(correlationKey, message, data)
 }
 
@@ -239,7 +238,7 @@ func TraceC(correlationKey string, message string, data Data) {
 
 // TraceCtx is a structured trace message and retrieves the correlationKey from go context
 func TraceCtx(ctx context.Context, message string, data Data) {
-	correlationKey := requestID.Get(ctx)
+	correlationKey := common.GetRequestId(ctx)
 	TraceC(correlationKey, message, data)
 }
 
@@ -266,7 +265,7 @@ func InfoC(correlationKey string, message string, data Data) {
 
 // InfoCtx is a structured info message and retrieves the correlationKey from go context
 func InfoCtx(ctx context.Context, message string, data Data) {
-	correlationKey := requestID.Get(ctx)
+	correlationKey := common.GetRequestId(ctx)
 	InfoC(correlationKey, message, data)
 }
 

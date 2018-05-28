@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rchttp"
 )
@@ -30,7 +31,8 @@ func main() {
 	rcClient.SetTimeout(3 * time.Second)
 
 	clientCompleteChan := make(chan *gettit)
-	ctx, cancel := context.WithCancel(context.Background())
+	defer close(clientCompleteChan)
+	ctx, cancel := context.WithCancel(common.WithRequestId(context.Background(), "correlation-id1,c-id2"))
 	defer cancel()
 
 	payloadReader := strings.NewReader(*data)

@@ -25,6 +25,7 @@ const (
 
 	UserIdentityKey   = ContextKey("User-Identity")
 	CallerIdentityKey = ContextKey("Caller-Identity")
+	RequestIdKey      = ContextKey("request-id")
 )
 
 // CheckRequester is an interface to allow mocking of auth.CheckRequest
@@ -109,6 +110,24 @@ func Caller(ctx context.Context) string {
 func SetCaller(ctx context.Context, caller string) context.Context {
 
 	return context.WithValue(ctx, CallerIdentityKey, caller)
+}
+
+// GetRequestId gets the correlation id on the context
+func GetRequestId(ctx context.Context) string {
+	correlationId, _ := ctx.Value(RequestIdKey).(string)
+	return correlationId
+}
+
+// WithRequestId sets the correlation id on the context
+func WithRequestId(ctx context.Context, correlationId string) context.Context {
+	return context.WithValue(ctx, RequestIdKey, correlationId)
+}
+
+// AddRequestIdHeader add header for given correlation ID
+func AddRequestIdHeader(r *http.Request, token string) {
+	if len(token) > 0 {
+		r.Header.Add(RequestHeaderKey, token)
+	}
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

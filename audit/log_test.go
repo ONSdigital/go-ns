@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/handlers/requestID"
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -48,7 +47,7 @@ func TestErrorLog(t *testing.T) {
 	})
 
 	Convey("context with request id", t, func() {
-		contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
+		contextWithRequestID := common.WithRequestId(ctx, "request id")
 		LogError(contextWithRequestID, errTest, nil)
 
 		So(eventRes, ShouldResemble, eventResults{
@@ -110,7 +109,7 @@ func TestInfoLog(t *testing.T) {
 	})
 
 	Convey("context with request id", t, func() {
-		contextWithRequestID := context.WithValue(ctx, requestID.ContextKey, "request id")
+		contextWithRequestID := common.WithRequestId(ctx, "request id")
 		LogInfo(contextWithRequestID, "info message", nil)
 
 		So(eventRes, ShouldResemble, eventResults{
@@ -191,7 +190,7 @@ func TestAddLogData(t *testing.T) {
 }
 
 func getContextWithCallerUserAndRequestIDcontext() context.Context {
-	ctx := context.WithValue(context.Background(), requestID.ContextKey, "request id")
+	ctx := common.WithRequestId(context.Background(), "request id")
 	ctx = context.WithValue(ctx, common.UserIdentityKey, "user email")
 	ctx = context.WithValue(ctx, common.CallerIdentityKey, "api service")
 	return ctx

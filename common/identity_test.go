@@ -174,6 +174,24 @@ func TestAddAuthHeaders(t *testing.T) {
 	})
 }
 
+func TestAddRequestIdHeader(t *testing.T) {
+
+	Convey("Given a request", t, func() {
+
+		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+
+		Convey("When AddRequestIdHeader is called", func() {
+
+			reqId := "123"
+			AddRequestIdHeader(r, reqId)
+
+			Convey("Then the request has the correct header set", func() {
+				So(r.Header.Get(RequestHeaderKey), ShouldEqual, reqId)
+			})
+		})
+	})
+}
+
 func TestNewRequestID(t *testing.T) {
 	Convey("create a requestID with length of 12", t, func() {
 		requestID := NewRequestID(12)
@@ -183,6 +201,30 @@ func TestNewRequestID(t *testing.T) {
 			secondRequestID := NewRequestID(12)
 			So(len(secondRequestID), ShouldEqual, 12)
 			So(secondRequestID, ShouldNotEqual, requestID)
+		})
+	})
+}
+
+func TestGetRequestId(t *testing.T) {
+	Convey("should return requestID if it exists in the provided context", t, func() {
+		ctx := WithRequestId(context.Background(), "666")
+		So(ctx.Value(ContextKey("request-id")).(string), ShouldEqual, "666")
+	})
+
+	Convey("should return empty value if requestID is not in the provided context", t, func() {
+		id := GetRequestId(context.Background())
+		So(id, ShouldBeBlank)
+	})
+}
+
+func TestSetRequestId(t *testing.T) {
+	Convey("set request id in empty context", t, func() {
+		ctx := WithRequestId(context.Background(), "123")
+		So(ctx.Value(ContextKey("request-id")), ShouldEqual, "123")
+
+		Convey("overwrite context request id with new value", func() {
+			newCtx := WithRequestId(ctx, "456")
+			So(newCtx.Value(ContextKey("request-id")), ShouldEqual, "456")
 		})
 	})
 }

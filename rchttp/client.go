@@ -119,6 +119,19 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 		}
 	}
 
+	// get any existing correlation-id (might be "id1,id2"), append a new one, add to headers
+	upstreamCorrelationIds := common.GetRequestId(ctx)
+	addedIdLen := 20
+	if upstreamCorrelationIds != "" {
+		// get length of (first of) IDs (e.g. "id1" is 3), new ID will be half that size
+		addedIdLen = len(upstreamCorrelationIds) / 2
+		if commaPosition := strings.Index(upstreamCorrelationIds, ","); commaPosition > 1 {
+			addedIdLen = commaPosition / 2
+		}
+		upstreamCorrelationIds += ","
+	}
+	common.AddRequestIdHeader(req, upstreamCorrelationIds+common.NewRequestID(addedIdLen))
+
 	doer := func(args ...interface{}) (*http.Response, error) {
 		req := args[2].(*http.Request)
 		if req.ContentLength > 0 {
