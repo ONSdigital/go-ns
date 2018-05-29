@@ -17,8 +17,8 @@ const (
 
 // keep tags in sync with above const
 type Timestamps struct {
-	LastUpdated     time.Time           `bson:"last_updated,omitempty"     json:"last_updated,omitempty"`
-	UniqueTimestamp bson.MongoTimestamp `bson:"unique_timestamp,omitempty" json:"-"`
+	LastUpdated     time.Time            `bson:"last_updated,omitempty"     json:"last_updated,omitempty"`
+	UniqueTimestamp *bson.MongoTimestamp `bson:"unique_timestamp,omitempty" json:"-"`
 }
 
 // Shutdown represents an interface to the shutdown method
@@ -68,7 +68,7 @@ func Close(ctx context.Context, session *mgo.Session) error {
 }
 
 // withCurrentDate creates or adds $currentDate to updateDoc - populates that with key:val
-func withCurrentDate(updateDoc bson.M, key string, val interface{}) bson.M {
+func withCurrentDate(updateDoc bson.M, key string, val interface{}) (bson.M, error) {
 	var currentDate bson.M
 	var ok bool
 	if currentDate, ok = updateDoc["$currentDate"].(bson.M); !ok {
@@ -78,48 +78,60 @@ func withCurrentDate(updateDoc bson.M, key string, val interface{}) bson.M {
 	case bool, bson.M:
 		currentDate[key] = v
 	default:
-		panic("Cannot handle that type")
+		return nil, errors.New("withCurrentDate: Cannot handle that type")
 	}
 	updateDoc["$currentDate"] = currentDate
-	return updateDoc
+	return updateDoc, nil
 }
 
 // WithUpdates adds all timestamps to updateDoc
-func WithUpdates(updateDoc bson.M) bson.M {
-	return WithUniqueTimestampUpdate(WithLastUpdatedUpdate(updateDoc))
+func WithUpdates(updateDoc bson.M) (bson.M, error) {
+	newUpdateDoc, err := WithLastUpdatedUpdate(updateDoc)
+	if err != nil {
+		return nil, err
+	}
+	return WithUniqueTimestampUpdate(newUpdateDoc)
 }
 
 // WithNamespacedUpdates adds all timestamps to updateDoc
-func WithNamespacedUpdates(updateDoc bson.M, prefixes []string) bson.M {
-	return WithNamespacedUniqueTimestampUpdate(WithNamespacedLastUpdatedUpdate(updateDoc, prefixes), prefixes)
+func WithNamespacedUpdates(updateDoc bson.M, prefixes []string) (bson.M, error) {
+	newUpdateDoc, err := WithNamespacedLastUpdatedUpdate(updateDoc, prefixes)
+	if err != nil {
+		return nil, err
+	}
+	return WithNamespacedUniqueTimestampUpdate(newUpdateDoc, prefixes)
 }
 
 // WithLastUpdatedUpdate adds last_updated to updateDoc
-func WithLastUpdatedUpdate(updateDoc bson.M) bson.M {
+func WithLastUpdatedUpdate(updateDoc bson.M) (bson.M, error) {
 	return withCurrentDate(updateDoc, lastUpdatedKey, true)
 }
 
 // WithNamespacedLastUpdatedUpdate adds unique timestamp to updateDoc
-func WithNamespacedLastUpdatedUpdate(updateDoc bson.M, prefixes []string) bson.M {
-	newUpdateDoc := updateDoc
+func WithNamespacedLastUpdatedUpdate(updateDoc bson.M, prefixes []string) (newUpdateDoc bson.M, err error) {
+	newUpdateDoc = updateDoc
 	for _, prefix := range prefixes {
-		newUpdateDoc = withCurrentDate(newUpdateDoc, prefix+lastUpdatedKey, true)
+		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+lastUpdatedKey, true); err != nil {
+			return nil, err
+		}
 	}
-	return newUpdateDoc
+	return newUpdateDoc, nil
 }
 
 // WithUniqueTimestampUpdate adds unique timestamp to updateDoc
-func WithUniqueTimestampUpdate(updateDoc bson.M) bson.M {
+func WithUniqueTimestampUpdate(updateDoc bson.M) (bson.M, error) {
 	return withCurrentDate(updateDoc, uniqueTimestampKey, bson.M{"$type": "timestamp"})
 }
 
 // WithNamespacedUniqueTimestampUpdate adds unique timestamp to updateDoc
-func WithNamespacedUniqueTimestampUpdate(updateDoc bson.M, prefixes []string) bson.M {
-	newUpdateDoc := updateDoc
+func WithNamespacedUniqueTimestampUpdate(updateDoc bson.M, prefixes []string) (newUpdateDoc bson.M, err error) {
+	newUpdateDoc = updateDoc
 	for _, prefix := range prefixes {
-		newUpdateDoc = withCurrentDate(newUpdateDoc, prefix+uniqueTimestampKey, bson.M{"$type": "timestamp"})
+		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+uniqueTimestampKey, bson.M{"$type": "timestamp"}); err != nil {
+			return nil, err
+		}
 	}
-	return newUpdateDoc
+	return newUpdateDoc, nil
 }
 
 // WithUniqueTimestampQuery adds unique timestamp to queryDoc

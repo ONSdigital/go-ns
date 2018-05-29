@@ -36,15 +36,15 @@ type Mongo struct {
 }
 
 type TestModel struct {
-	State           string              `bson:"state"`
-	NewKey          int                 `bson:"new_key,omitempty"`
-	LastUpdated     time.Time           `bson:"last_updated"`
-	UniqueTimestamp bson.MongoTimestamp `bson:"unique_timestamp,omitempty"`
+	State           string               `bson:"state"`
+	NewKey          int                  `bson:"new_key,omitempty"`
+	LastUpdated     time.Time            `bson:"last_updated"`
+	UniqueTimestamp *bson.MongoTimestamp `bson:"unique_timestamp,omitempty"`
 }
 
 type Times struct {
-	LastUpdated     time.Time           `bson:"last_updated"`
-	UniqueTimestamp bson.MongoTimestamp `bson:"unique_timestamp,omitempty"`
+	LastUpdated     time.Time            `bson:"last_updated"`
+	UniqueTimestamp *bson.MongoTimestamp `bson:"unique_timestamp,omitempty"`
 }
 
 type testNamespacedModel struct {
@@ -186,7 +186,8 @@ func TestSuccessfulMongoDates(t *testing.T) {
 		Convey("check WithUpdates", func() {
 
 			update := bson.M{"$set": bson.M{"new_key": 321}}
-			updateWithTimestamps := WithUpdates(update)
+			updateWithTimestamps, err := WithUpdates(update)
+			So(err, ShouldBeNil)
 			So(updateWithTimestamps, ShouldResemble, bson.M{
 				"$currentDate": bson.M{
 					"last_updated":     true,
@@ -200,7 +201,8 @@ func TestSuccessfulMongoDates(t *testing.T) {
 		Convey("check WithNamespacedUpdates", func() {
 
 			update := bson.M{"$set": bson.M{"new_key": 1234}}
-			updateWithTimestamps := WithNamespacedUpdates(update, []string{"nixed.", "currant."})
+			updateWithTimestamps, err := WithNamespacedUpdates(update, []string{"nixed.", "currant."})
+			So(err, ShouldBeNil)
 			So(updateWithTimestamps, ShouldResemble, bson.M{
 				"$currentDate": bson.M{
 					"currant.last_updated":     true,
@@ -259,10 +261,11 @@ func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 			res := TestModel{}
 
 			update := bson.M{"$set": bson.M{"new_key": 321}}
-			updateWithTimestamps := WithUpdates(update)
+			updateWithTimestamps, err := WithUpdates(update)
+			So(err, ShouldBeNil)
 			So(updateWithTimestamps, ShouldResemble, bson.M{"$currentDate": bson.M{"last_updated": true, "unique_timestamp": bson.M{"$type": "timestamp"}}, "$set": bson.M{"new_key": 321}})
 
-			err := session.DB(Database).C(Collection).Update(bson.M{"_id": "1"}, updateWithTimestamps)
+			err = session.DB(Database).C(Collection).Update(bson.M{"_id": "1"}, updateWithTimestamps)
 			So(err, ShouldBeNil)
 
 			err = queryMongo(session.Copy(), bson.M{"_id": "1"}, &res)
@@ -283,7 +286,8 @@ func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 			res := testNamespacedModel{}
 
 			update := bson.M{"$set": bson.M{"new_key": 1234}}
-			updateWithTimestamps := WithNamespacedUpdates(update, []string{"nixed.", "currant."})
+			updateWithTimestamps, err := WithNamespacedUpdates(update, []string{"nixed.", "currant."})
+			So(err, ShouldBeNil)
 			So(updateWithTimestamps, ShouldResemble, bson.M{
 				"$currentDate": bson.M{
 					"currant.last_updated":     true,
@@ -294,7 +298,7 @@ func TestSuccessfulMongoDatesViaMongo(t *testing.T) {
 				"$set": bson.M{"new_key": 1234},
 			})
 
-			err := session.DB(Database).C(Collection).Update(bson.M{"_id": "1"}, updateWithTimestamps)
+			err = session.DB(Database).C(Collection).Update(bson.M{"_id": "1"}, updateWithTimestamps)
 			So(err, ShouldBeNil)
 
 			err = queryNamespacedMongo(session.Copy(), bson.M{"_id": "1"}, &res)
