@@ -17,6 +17,12 @@ import (
 
 const service = "import-api"
 
+// Clienter defines that interface for a client of the ImportAPI
+type Clienter interface {
+	GetImportJob(ctx context.Context, importJobID string) (ImportJob, bool, error)
+	UpdateImportJobState(ctx context.Context, jobID string, newState string) error
+}
+
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
 	client common.RCHTTPClienter
