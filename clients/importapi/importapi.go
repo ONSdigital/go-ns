@@ -81,7 +81,7 @@ func (c *Client) Healthcheck() (string, error) {
 // ImportJob comes from the Import API and links an import job to its (other) instances
 type ImportJob struct {
 	JobID string  `json:"id"`
-	Links LinkMap `json:"links,ignoreempty"`
+	Links LinkMap `json:"links,omitempty"`
 }
 
 // LinkMap is an array of instance links associated with am import job
@@ -100,7 +100,7 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID string) (Import
 	var importJob ImportJob
 	path := api.url + "/jobs/" + importJobID
 
-	jsonBody, httpCode, err := api.getJson(ctx, path, 0, nil)
+	jsonBody, httpCode, err := api.getJSON(ctx, path, 0, nil)
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
@@ -137,7 +137,7 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID string, newSt
 	path := api.url + "/jobs/" + jobID
 	jsonUpload := []byte(`{"state":"` + newState + `"}`)
 
-	jsonResult, httpCode, err := api.putJson(ctx, path, 0, jsonUpload)
+	jsonResult, httpCode, err := api.putJSON(ctx, path, 0, jsonUpload)
 	logData := log.Data{
 		"path":        path,
 		"importJobID": jobID,
@@ -155,17 +155,15 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID string, newSt
 	return nil
 }
 
-func (api *Client) getJson(ctx context.Context, path string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJsonAPI(ctx, api.client, "GET", path, vars)
+func (api *Client) getJSON(ctx context.Context, path string, attempts int, vars url.Values) ([]byte, int, error) {
+	return callJSONAPI(ctx, api.client, "GET", path, vars)
 }
 
-func (api *Client) putJson(ctx context.Context, path string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJsonAPI(ctx, api.client, "PUT", path, payload)
+func (api *Client) putJSON(ctx context.Context, path string, attempts int, payload []byte) ([]byte, int, error) {
+	return callJSONAPI(ctx, api.client, "PUT", path, payload)
 }
 
-// func callJsonAPI(ctx context.Context, client *rchttp.Client, method, path string, payload interface{}) ([]byte, int, error) {
-func callJsonAPI(ctx context.Context, // client *rchttp.Client
-	client common.RCHTTPClienter, method, path string, payload interface{}) ([]byte, int, error) {
+func callJSONAPI(ctx context.Context, client common.RCHTTPClienter, method, path string, payload interface{}) ([]byte, int, error) {
 
 	logData := log.Data{"url": path, "method": method}
 
@@ -225,7 +223,7 @@ func NewAPIResponse(resp *http.Response, uri string) (e *ErrInvalidAPIResponse) 
 	if resp.StatusCode == http.StatusNotFound {
 		body, err := getBody(resp)
 		if err != nil {
-			e.body = "Client failed to read Client body"
+			e.body = "Client failed to read response body"
 			return
 		}
 		e.body = string(body)
