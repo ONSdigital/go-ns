@@ -3,11 +3,11 @@ package audit
 import (
 	"context"
 	"fmt"
-	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/handlers/requestID"
-	"github.com/ONSdigital/go-ns/log"
 	"sort"
 	"time"
+
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 //go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
@@ -104,7 +104,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		Params:          params,
 	}
 
-	e.RequestID = requestID.Get(ctx)
+	e.RequestID = common.GetRequestId(ctx)
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {

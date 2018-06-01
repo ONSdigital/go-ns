@@ -148,37 +148,6 @@ func TestClientNoRetries(t *testing.T) {
 	})
 }
 
-func TestClientWithServiceTokenHasAuthHeader(t *testing.T) {
-	ts := rchttptest.NewTestServer()
-	defer ts.Close()
-	expectedCallCount := 0
-
-	Convey("Given an rchttp client with an auth token", t, func() {
-		expectedAuthToken := "IAmWhoIAm"
-		// throw in a check for wrapped client instantiation
-		httpClient := ClientWithServiceToken(ClientWithTimeout(nil, 5*time.Second), expectedAuthToken)
-
-		Convey("When Post() is called on a URL", func() {
-			expectedCallCount++
-			resp, err := httpClient.Post(context.Background(), ts.URL, rchttptest.JsonContentType, strings.NewReader(`{"hello":"there"}`))
-			So(resp, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-
-			call, err := unmarshallResp(resp)
-			So(err, ShouldBeNil)
-
-			Convey("Then the server sees the auth header", func() {
-				So(call.CallCount, ShouldEqual, expectedCallCount)
-				So(call.Method, ShouldEqual, "POST")
-				So(call.Body, ShouldEqual, `{"hello":"there"}`)
-				So(call.Error, ShouldEqual, "")
-				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
-				So(len(call.Headers[common.UserHeaderKey]), ShouldEqual, 0)
-			})
-		})
-	})
-}
-
 func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 	ts := rchttptest.NewTestServer()
 	defer ts.Close()
@@ -187,8 +156,9 @@ func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 	Convey("Given an rchttp client with an auth token and context with userId", t, func() {
 		expectedAuthToken := "IAmWhoIAm"
 		testUser := "hello@test"
+		upstreamRequestId := "call123"
 		httpClient := ClientWithServiceToken(ClientWithTimeout(nil, 5*time.Second), expectedAuthToken)
-		ctx := common.SetUser(context.Background(), testUser)
+		ctx := common.WithRequestId(common.SetUser(context.Background(), testUser), upstreamRequestId)
 
 		Convey("When Get() is called on a URL", func() {
 			expectedCallCount++
@@ -205,6 +175,70 @@ func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 				So(call.Error, ShouldEqual, "")
 				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
 				So(call.Headers[common.UserHeaderKey], ShouldResemble, []string{testUser})
+				So(len(call.Headers[common.RequestHeaderKey]), ShouldEqual, 1)
+				So(call.Headers[common.RequestHeaderKey][0], ShouldStartWith, upstreamRequestId+",")
+				So(len(call.Headers[common.RequestHeaderKey][0]), ShouldBeGreaterThan, len(upstreamRequestId)*3/2)
+			})
+		})
+	})
+}
+
+func TestClientAddsRequestIdHeader(t *testing.T) {
+	ts := rchttptest.NewTestServer()
+	defer ts.Close()
+	expectedCallCount := 0
+
+	Convey("Given an rchttp client with no correlation id in context", t, func() {
+		// throw in a check for wrapped client instantiation
+		httpClient := ClientWithTimeout(nil, 5*time.Second)
+
+		Convey("When Post() is called on a URL", func() {
+			expectedCallCount++
+			resp, err := httpClient.Post(context.Background(), ts.URL, rchttptest.JsonContentType, strings.NewReader(`{"hello":"there"}`))
+			So(resp, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+
+			call, err := unmarshallResp(resp)
+			So(err, ShouldBeNil)
+
+			Convey("Then the server sees the auth header", func() {
+				So(call.CallCount, ShouldEqual, expectedCallCount)
+				So(call.Method, ShouldEqual, "POST")
+				So(call.Body, ShouldEqual, `{"hello":"there"}`)
+				So(call.Error, ShouldEqual, "")
+				So(len(call.Headers[common.RequestHeaderKey]), ShouldEqual, 1)
+				So(len(call.Headers[common.RequestHeaderKey][0]), ShouldEqual, 20)
+			})
+		})
+	})
+}
+
+func TestClientAppendsRequestIdHeader(t *testing.T) {
+	ts := rchttptest.NewTestServer()
+	defer ts.Close()
+	expectedCallCount := 0
+
+	Convey("Given an rchttp client with existing correlation id in context", t, func() {
+		upstreamRequestId := "call1234"
+		// throw in a check for wrapped client instantiation
+		httpClient := ClientWithTimeout(nil, 5*time.Second)
+
+		Convey("When Post() is called on a URL", func() {
+			expectedCallCount++
+			resp, err := httpClient.Post(common.WithRequestId(context.Background(), upstreamRequestId), ts.URL, rchttptest.JsonContentType, strings.NewReader(`{}`))
+			So(resp, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+
+			call, err := unmarshallResp(resp)
+			So(err, ShouldBeNil)
+
+			Convey("Then the server sees the auth header", func() {
+				So(call.CallCount, ShouldEqual, expectedCallCount)
+				So(call.Method, ShouldEqual, "POST")
+				So(call.Error, ShouldEqual, "")
+				So(len(call.Headers[common.RequestHeaderKey]), ShouldEqual, 1)
+				So(call.Headers[common.RequestHeaderKey][0], ShouldStartWith, upstreamRequestId+",")
+				So(len(call.Headers[common.RequestHeaderKey][0]), ShouldBeGreaterThan, len(upstreamRequestId)*3/2)
 			})
 		})
 	})
