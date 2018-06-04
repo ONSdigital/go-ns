@@ -121,8 +121,8 @@ type Items []Dimension
 func (d Items) Len() int      { return len(d) }
 func (d Items) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 func (d Items) Less(i, j int) bool {
-	iRunes := []rune(d[i].ID)
-	jRunes := []rune(d[j].ID)
+	iRunes := []rune(d[i].Name)
+	jRunes := []rune(d[j].Name)
 
 	max := len(iRunes)
 	if max > len(jRunes) {
@@ -151,7 +151,7 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	ID          string `json:"dimension"`
+	Name        string `json:"dimension"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
 	Label       string `json:"label"`
