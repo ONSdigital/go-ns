@@ -5,12 +5,25 @@ import (
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
+	"github.com/pkg/errors"
 )
 
 const (
 	reqUser   = "req_user"
 	reqCaller = "req_caller"
 )
+
+// LogActionFailure adds auditting data to log.Data before calling LogError
+func LogActionFailure(ctx context.Context, auditedAction string, auditedResult string, err error, logData log.Data) {
+	if logData == nil {
+		logData = log.Data{}
+	}
+
+	logData["auditAction"] = auditedAction
+	logData["auditResult"] = auditedResult
+
+	LogError(ctx, errors.WithMessage(err, AuditActionErr), logData)
+}
 
 // LogError creates a structured error message when auditing fails
 func LogError(ctx context.Context, err error, data log.Data) {
