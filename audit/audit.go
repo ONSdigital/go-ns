@@ -108,7 +108,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
-		return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
+		return NewAuditError("error marshalling event to avro", attemptedAction, actionResult, params)
 	}
 
 	log.InfoCtx(ctx, "capturing audit event", log.Data{"auditEvent": e})
