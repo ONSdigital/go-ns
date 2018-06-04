@@ -84,7 +84,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 	}
 
 	if user == "" {
-		log.Debug("not user attempted action: skipping audit event", nil)
+		log.DebugCtx(ctx, "not user attempted action: skipping audit event", nil)
 		return nil
 	}
 
@@ -111,6 +111,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		return NewAuditError("error marshalling event to arvo", attemptedAction, actionResult, params)
 	}
 
+	log.InfoCtx(ctx, "capturing audit event", log.Data{"auditEvent": e})
 	a.producer.Output() <- avroBytes
 	return nil
 }
