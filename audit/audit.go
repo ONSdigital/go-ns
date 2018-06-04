@@ -12,6 +12,16 @@ import (
 
 //go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
 
+// List of audit messages
+const (
+	ActionAttempted    = "attempted"
+	ActionSuccessful   = "successful"
+	ActionUnsuccessful = "unsuccessful"
+
+	AuditError     = "error while attempting to record audit event, failing request"
+	AuditActionErr = "failed to audit action"
+)
+
 // Error represents containing details of an attempt to audit and action that failed.
 type Error struct {
 	Cause  string
