@@ -60,7 +60,7 @@ func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 		// record the audit event
 		err := auditor.Record(setUpContext(), auditAction, auditResult, nil)
 
-		expectedErr := NewAuditError("error marshalling event to arvo", auditAction, auditResult, nil)
+		expectedErr := NewAuditError("error marshalling event to avro", auditAction, auditResult, nil)
 		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
