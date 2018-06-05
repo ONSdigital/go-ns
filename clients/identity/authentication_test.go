@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
-	"github.com/pkg/errors"
+	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -150,6 +151,33 @@ func TestHandler_florenceToken(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a request with a florence token as a cookie, and mock client that returns 200", t, func() {
+		req := httptest.NewRequest("GET", url, nil)
+		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: florenceToken})
+
+		httpClient := getClientReturningIdentifier(userIdentifier)
+		idClient := NewAPIClient(httpClient, zebedeeURL)
+
+		Convey("When CheckRequest is called", func() {
+
+			ctx, status, err := idClient.CheckRequest(req)
+
+			Convey("Then the identity service is called as expected", func() {
+				So(err, ShouldBeNil)
+				So(status, ShouldEqual, http.StatusOK)
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				zebedeeReq := httpClient.DoCalls()[0].Req
+				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
+				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+			})
+
+			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
+				So(common.Caller(ctx), ShouldEqual, userIdentifier)
+				So(common.User(ctx), ShouldEqual, userIdentifier)
+			})
+		})
+	})
 }
 
 func TestHandler_InvalidIdentityResponse(t *testing.T) {
@@ -264,6 +292,69 @@ func TestHandler_bothTokens(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestSplitTokens(t *testing.T) {
+	Convey("Given a service token and an empty florence token", t, func() {
+		florenceToken := ""
+		serviceToken := "Bearer 123456789"
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
+				So(logData["florence_token"], ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a florence token and an empty service token", t, func() {
+		florenceToken := "987654321"
+		serviceToken := ""
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a florence token and service token", t, func() {
+		florenceToken := "987654321"
+		serviceToken := "Bearer 123456789"
+
+		Convey("When we pass both tokens into splitTokens function", func() {
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
+			})
+		})
+	})
+
+	Convey("Given a small service token", t, func() {
+		florenceToken := "54321"
+		serviceToken := "Bearer A 12"
+
+		Convey("When we pass the tokens into splitTokens function", func() {
+			logData := log.Data{}
+			splitTokens(florenceToken, serviceToken, logData)
+
+			Convey("Then the token objects are returned with the expected values", func() {
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 3, hasPrefix: true, tokenPart: "2"})
+			})
+		})
+	})
+
 }
 
 func getClientReturningIdentifier(id string) *commontest.RCHTTPClienterMock {

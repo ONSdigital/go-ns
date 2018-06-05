@@ -2,17 +2,24 @@ package common
 
 import (
 	"context"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
+// ContextKey is an alias of type string
 type ContextKey string
 
+// A list of common constants used across go-ns packages
 const (
 	FlorenceHeaderKey        = "X-Florence-Token"
 	DownloadServiceHeaderKey = "X-Download-Service-Token"
 
-	AuthHeaderKey = "Authorization"
-	UserHeaderKey = "User-Identity"
+	FlorenceCookieKey = "access_token"
+
+	AuthHeaderKey    = "Authorization"
+	UserHeaderKey    = "User-Identity"
+	RequestHeaderKey = "X-Request-Id"
 
 	DeprecatedAuthHeader = "Internal-Token"
 	LegacyUser           = "legacyUser"
@@ -20,13 +27,15 @@ const (
 
 	UserIdentityKey   = ContextKey("User-Identity")
 	CallerIdentityKey = ContextKey("Caller-Identity")
+	RequestIdKey      = ContextKey("request-id")
 )
 
-// interface to allow mocking of auth.CheckRequest
+// CheckRequester is an interface to allow mocking of auth.CheckRequest
 type CheckRequester interface {
 	CheckRequest(*http.Request) (context.Context, int, error)
 }
 
+// IdentityResponse represents the response from the identity service
 type IdentityResponse struct {
 	Identifier string `json:"identifier"`
 }
@@ -68,6 +77,7 @@ func SetUser(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, UserIdentityKey, user)
 }
 
+// AddAuthHeaders sets authentication headers for request
 func AddAuthHeaders(ctx context.Context, r *http.Request, serviceToken string) {
 	if IsUserPresent(ctx) {
 		AddUserHeader(r, User(ctx))
@@ -102,4 +112,34 @@ func Caller(ctx context.Context) string {
 func SetCaller(ctx context.Context, caller string) context.Context {
 
 	return context.WithValue(ctx, CallerIdentityKey, caller)
+}
+
+// GetRequestId gets the correlation id on the context
+func GetRequestId(ctx context.Context) string {
+	correlationId, _ := ctx.Value(RequestIdKey).(string)
+	return correlationId
+}
+
+// WithRequestId sets the correlation id on the context
+func WithRequestId(ctx context.Context, correlationId string) context.Context {
+	return context.WithValue(ctx, RequestIdKey, correlationId)
+}
+
+// AddRequestIdHeader add header for given correlation ID
+func AddRequestIdHeader(r *http.Request, token string) {
+	if len(token) > 0 {
+		r.Header.Add(RequestHeaderKey, token)
+	}
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+// NewRequestID generates a random string of requested length
+func NewRequestID(size int) string {
+	b := make([]rune, size)
+	for i := range b {
+		b[i] = letters[requestIDRandom.Intn(len(letters))]
+	}
+	return string(b)
 }

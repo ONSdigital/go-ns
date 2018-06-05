@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
+	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -24,7 +27,7 @@ func TestHandler(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		So(req.Header.Get("X-Request-Id"), ShouldBeEmpty)
+		So(req.Header.Get(common.RequestHeaderKey), ShouldBeEmpty)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -32,7 +35,7 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 20)
 	})
@@ -44,8 +47,8 @@ func TestHandler(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		req.Header.Set("X-Request-Id", "test")
-		So(req.Header.Get("X-Request-Id"), ShouldNotBeEmpty)
+		req.Header.Set(common.RequestHeaderKey, "test")
+		So(req.Header.Get(common.RequestHeaderKey), ShouldNotBeEmpty)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -53,7 +56,7 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 4)
 		So(header, ShouldEqual, "test")
@@ -72,8 +75,59 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get("X-Request-Id")
+		header := req.Header.Get(common.RequestHeaderKey)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 30)
+	})
+
+	Convey("generated requestIDs should be added to the request context", t, func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fail()
+		}
+
+		var reqCtx context.Context
+		var captureContextHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			reqCtx = req.Context()
+		})
+
+		w := httptest.NewRecorder()
+
+		handler := Handler(30)
+		wrapped := handler(captureContextHandler)
+
+		wrapped.ServeHTTP(w, req)
+		So(w.Code, ShouldEqual, 200)
+		So(reqCtx, ShouldNotBeNil)
+
+		id := common.GetRequestId(reqCtx)
+		So(id, ShouldNotBeEmpty)
+		So(len(id), ShouldEqual, 30)
+	})
+
+	Convey("existing requestIDs should be added to the request context", t, func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fail()
+		}
+		req.Header.Set(common.RequestHeaderKey, "666")
+
+		var reqCtx context.Context
+		var captureContextHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			reqCtx = req.Context()
+		})
+
+		w := httptest.NewRecorder()
+
+		handler := Handler(30)
+		wrapped := handler(captureContextHandler)
+
+		wrapped.ServeHTTP(w, req)
+		So(w.Code, ShouldEqual, 200)
+		So(reqCtx, ShouldNotBeNil)
+
+		id := common.GetRequestId(reqCtx)
+		So(id, ShouldNotBeEmpty)
+		So(id, ShouldEqual, "666")
 	})
 }

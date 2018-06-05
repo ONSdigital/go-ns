@@ -2,6 +2,7 @@ package log
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,13 +13,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/mgutz/ansi"
 )
 
 // Namespace is the service namespace used for logging
 var Namespace = "service-namespace"
 
-// HumanReadable, if true, outputs log events in a human readable format
+// HumanReadable represents a flag to determine if log events
+// will be in a human readable format
 var HumanReadable bool
 var hrMutex sync.Mutex
 
@@ -33,9 +36,9 @@ func configureHumanReadable() {
 // Data contains structured log data
 type Data map[string]interface{}
 
-// Context returns a context ID from a request (using X-Request-Id)
-func Context(req *http.Request) string {
-	return req.Header.Get("X-Request-Id")
+// GetRequestID returns the request ID from a request (using X-Request-Id)
+func GetRequestID(req *http.Request) string {
+	return req.Header.Get(common.RequestHeaderKey)
 }
 
 // Handler wraps a http.Handler and logs the status code and total response time
@@ -59,7 +62,7 @@ func Handler(h http.Handler) http.Handler {
 		if len(req.URL.RawQuery) > 0 {
 			data["query"] = req.URL.Query()
 		}
-		Event("request", Context(req), data)
+		Event("request", GetRequestID(req), data)
 	})
 }
 
@@ -89,15 +92,15 @@ func (r *responseCapture) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // Event records an event
 var Event = event
 
-func event(name string, context string, data Data) {
+func event(name string, correlationKey string, data Data) {
 	m := map[string]interface{}{
 		"created":   time.Now(),
 		"event":     name,
 		"namespace": Namespace,
 	}
 
-	if len(context) > 0 {
-		m["context"] = context
+	if len(correlationKey) > 0 {
+		m["correlation_key"] = correlationKey
 	}
 
 	if data != nil {
@@ -105,7 +108,7 @@ func event(name string, context string, data Data) {
 	}
 
 	if HumanReadable {
-		printHumanReadable(name, context, data, m)
+		printHumanReadable(name, correlationKey, data, m)
 		return
 	}
 
@@ -115,24 +118,24 @@ func event(name string, context string, data Data) {
 		// We'll log the error (which for our purposes, can't fail), which
 		// gives us an indication we have something to investigate
 		b, _ = json.Marshal(map[string]interface{}{
-			"created":   time.Now(),
-			"event":     "log_error",
-			"namespace": Namespace,
-			"context":   context,
-			"data":      map[string]interface{}{"error": err.Error()},
+			"created":         time.Now(),
+			"event":           "log_error",
+			"namespace":       Namespace,
+			"correlation_key": correlationKey,
+			"data":            map[string]interface{}{"error": err.Error()},
 		})
 	}
 
 	fmt.Fprintf(os.Stdout, "%s\n", b)
 }
 
-func printHumanReadable(name, context string, data Data, m map[string]interface{}) {
+func printHumanReadable(name, correlationKey string, data Data, m map[string]interface{}) {
 	hrMutex.Lock()
 	defer hrMutex.Unlock()
 
 	ctx := ""
-	if len(context) > 0 {
-		ctx = "[" + context + "] "
+	if len(correlationKey) > 0 {
+		ctx = "[" + correlationKey + "] "
 	}
 	msg := ""
 	if message, ok := data["message"]; ok {
@@ -167,8 +170,8 @@ func printHumanReadable(name, context string, data Data, m map[string]interface{
 	}
 }
 
-// ErrorC is a structured error message with context
-func ErrorC(context string, err error, data Data) {
+// ErrorC is a structured error message with correlationKey
+func ErrorC(correlationKey string, err error, data Data) {
 	if data == nil {
 		data = Data{}
 	}
@@ -176,12 +179,18 @@ func ErrorC(context string, err error, data Data) {
 		data["message"] = err.Error()
 		data["error"] = err
 	}
-	Event("error", context, data)
+	Event("error", correlationKey, data)
+}
+
+// ErrorCtx is a structured error message and retrieves the correlationKey from go context
+func ErrorCtx(ctx context.Context, err error, data Data) {
+	correlationKey := common.GetRequestId(ctx)
+	ErrorC(correlationKey, err, data)
 }
 
 // ErrorR is a structured error message for a request
 func ErrorR(req *http.Request, err error, data Data) {
-	ErrorC(Context(req), err, data)
+	ErrorC(GetRequestID(req), err, data)
 }
 
 // Error is a structured error message
@@ -189,20 +198,26 @@ func Error(err error, data Data) {
 	ErrorC("", err, data)
 }
 
-// DebugC is a structured debug message with context
-func DebugC(context string, message string, data Data) {
+// DebugC is a structured debug message with correlationKey
+func DebugC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
 	if _, ok := data["message"]; !ok {
 		data["message"] = message
 	}
-	Event("debug", context, data)
+	Event("debug", correlationKey, data)
+}
+
+// DebugCtx is a structured debug message and retrieves the correlationKey from go context
+func DebugCtx(ctx context.Context, message string, data Data) {
+	correlationKey := common.GetRequestId(ctx)
+	DebugC(correlationKey, message, data)
 }
 
 // DebugR is a structured debug message for a request
 func DebugR(req *http.Request, message string, data Data) {
-	DebugC(Context(req), message, data)
+	DebugC(GetRequestID(req), message, data)
 }
 
 // Debug is a structured trace message
@@ -210,20 +225,26 @@ func Debug(message string, data Data) {
 	DebugC("", message, data)
 }
 
-// TraceC is a structured trace message with context
-func TraceC(context string, message string, data Data) {
+// TraceC is a structured trace message with correlationKey
+func TraceC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
 	if _, ok := data["message"]; !ok {
 		data["message"] = message
 	}
-	Event("trace", context, data)
+	Event("trace", correlationKey, data)
+}
+
+// TraceCtx is a structured trace message and retrieves the correlationKey from go context
+func TraceCtx(ctx context.Context, message string, data Data) {
+	correlationKey := common.GetRequestId(ctx)
+	TraceC(correlationKey, message, data)
 }
 
 // TraceR is a structured trace message for a request
 func TraceR(req *http.Request, message string, data Data) {
-	TraceC(Context(req), message, data)
+	TraceC(GetRequestID(req), message, data)
 }
 
 // Trace is a structured trace message
@@ -231,20 +252,26 @@ func Trace(message string, data Data) {
 	TraceC("", message, data)
 }
 
-// InfoC is a structured info message with context
-func InfoC(context string, message string, data Data) {
+// InfoC is a structured info message with correlationKey
+func InfoC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
 	if _, ok := data["message"]; !ok {
 		data["message"] = message
 	}
-	Event("info", context, data)
+	Event("info", correlationKey, data)
+}
+
+// InfoCtx is a structured info message and retrieves the correlationKey from go context
+func InfoCtx(ctx context.Context, message string, data Data) {
+	correlationKey := common.GetRequestId(ctx)
+	InfoC(correlationKey, message, data)
 }
 
 // InfoR is a structured info message for a request
 func InfoR(req *http.Request, message string, data Data) {
-	InfoC(Context(req), message, data)
+	InfoC(GetRequestID(req), message, data)
 }
 
 // Info is a structured info message
