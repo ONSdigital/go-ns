@@ -121,7 +121,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		return NewAuditError("error marshalling event to avro", attemptedAction, actionResult, params)
 	}
 
-	log.InfoCtx(ctx, "capturing audit event", log.Data{"auditEvent": e})
+	LogInfo(ctx, "capturing audit event", log.Data{"auditEvent": e})
 	a.producer.Output() <- avroBytes
 	return nil
 }
