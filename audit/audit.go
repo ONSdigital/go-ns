@@ -14,9 +14,9 @@ import (
 
 // List of audit messages
 const (
-	ActionAttempted    = "attempted"
-	ActionSuccessful   = "successful"
-	ActionUnsuccessful = "unsuccessful"
+	Attempted    = "attempted"
+	Successful   = "successful"
+	Unsuccessful = "unsuccessful"
 
 	AuditError     = "error while attempting to record audit event, failing request"
 	AuditActionErr = "failed to audit action"

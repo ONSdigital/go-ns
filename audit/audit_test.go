@@ -15,7 +15,6 @@ import (
 const (
 	service     = "audit-test"
 	auditAction = "test"
-	auditResult = "success"
 	user        = "some-user"
 )
 
@@ -26,9 +25,9 @@ func TestAuditor_RecordNoUserOrService(t *testing.T) {
 		auditor := New(producer, service)
 
 		// record the audit event
-		err := auditor.Record(context.Background(), auditAction, auditResult, nil)
+		err := auditor.Record(context.Background(), auditAction, Successful, nil)
 
-		So(err, ShouldResemble, NewAuditError("expected user or caller identity but none found", auditAction, auditResult, nil))
+		So(err, ShouldResemble, NewAuditError("expected user or caller identity but none found", auditAction, Successful, nil))
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
 }
@@ -41,7 +40,7 @@ func TestAuditor_RecordNoUser(t *testing.T) {
 
 		// record the audit event
 		ctx := common.SetCaller(context.Background(), "Lucky The Donkey")
-		err := auditor.Record(ctx, auditAction, auditResult, nil)
+		err := auditor.Record(ctx, auditAction, Successful, nil)
 
 		So(err, ShouldBeNil)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
@@ -58,9 +57,9 @@ func TestAuditor_RecordAvroMarshalError(t *testing.T) {
 		}
 
 		// record the audit event
-		err := auditor.Record(setUpContext(), auditAction, auditResult, nil)
+		err := auditor.Record(setUpContext(), auditAction, Successful, nil)
 
-		expectedErr := NewAuditError("error marshalling event to avro", auditAction, auditResult, nil)
+		expectedErr := NewAuditError("error marshalling event to avro", auditAction, Successful, nil)
 		So(err, ShouldResemble, expectedErr)
 		So(len(producer.OutputCalls()), ShouldEqual, 0)
 	})
@@ -81,7 +80,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		var results []byte
 
 		// record the audit event
-		err := auditor.Record(setUpContext(), auditAction, auditResult, common.Params{"ID": "12345"})
+		err := auditor.Record(setUpContext(), auditAction, Successful, common.Params{"ID": "12345"})
 		So(err, ShouldBeNil)
 
 		select {
@@ -104,7 +103,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		So(actualEvent.RequestID, ShouldBeEmpty)
 		So(actualEvent.Service, ShouldEqual, service)
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
-		So(actualEvent.ActionResult, ShouldEqual, auditResult)
+		So(actualEvent.ActionResult, ShouldEqual, Successful)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
@@ -127,7 +126,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 
 		// record the audit event
 		ctx := common.WithRequestId(setUpContext(), "666")
-		err := auditor.Record(ctx, auditAction, auditResult, common.Params{"ID": "12345"})
+		err := auditor.Record(ctx, auditAction, Successful, common.Params{"ID": "12345"})
 		So(err, ShouldBeNil)
 
 		select {
@@ -150,7 +149,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		So(actualEvent.RequestID, ShouldEqual, "666")
 		So(actualEvent.Service, ShouldEqual, service)
 		So(actualEvent.AttemptedAction, ShouldEqual, auditAction)
-		So(actualEvent.ActionResult, ShouldEqual, auditResult)
+		So(actualEvent.ActionResult, ShouldEqual, Successful)
 		So(actualEvent.Created, ShouldNotBeEmpty)
 		So(actualEvent.User, ShouldEqual, user)
 		So(actualEvent.Params, ShouldResemble, common.Params{"ID": "12345"})
