@@ -232,6 +232,32 @@ func Test_newAuditError(t *testing.T) {
 	})
 }
 
+func TestToLogData(t *testing.T) {
+	Convey("should return nil if audit parameters is nil", t, func() {
+		So(ToLogData(nil), ShouldBeNil)
+	})
+
+	Convey("should return nil if audit parameters empty nil", t, func() {
+		So(ToLogData(common.Params{}), ShouldBeNil)
+	})
+
+	Convey("should return expected value for non empty audit parameters", t, func() {
+		input := common.Params{
+			"action": "test",
+			"result": "success",
+			"ID":     "666",
+		}
+
+		expected := log.Data{
+			"result": "success",
+			"ID":     "666",
+			"action": "test",
+		}
+
+		So(ToLogData(input), ShouldResemble, expected)
+	})
+}
+
 func setUpContext() context.Context {
 	ctx := common.SetCaller(context.Background(), service)
 	ctx = common.SetUser(ctx, user)
