@@ -84,28 +84,40 @@ func New(producer OutboundProducer, namespace string) *Auditor {
 // decide what do with the error in these cases.
 // NOTE: Record relies on the identity middleware having run first. If no user / service identity is available in the
 // provided context an error will be returned.
-func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) error {
+func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResult string, params common.Params) (err error) {
+	var e Event
+	defer func() {
+		if err != nil {
+			LogActionFailure(ctx, attemptedAction, actionResult, err, ToLogData(params))
+		} else {
+			LogInfo(ctx, "captured audit event", log.Data{"auditEvent": e})
+		}
+	}()
+
 	//NOTE: for now we are only auditing user actions - this may be subject to change
 	user := common.User(ctx)
 	service := common.Caller(ctx)
 
 	if user == "" && service == "" {
-		return NewAuditError("expected user or caller identity but none found", attemptedAction, actionResult, params)
+		err = NewAuditError("expected user or caller identity but none found", attemptedAction, actionResult, params)
+		return
 	}
 
 	if user == "" {
 		log.DebugCtx(ctx, "not user attempted action: skipping audit event", nil)
-		return nil
+		return
 	}
 
 	if attemptedAction == "" {
-		return NewAuditError("attemptedAction required but was empty", "", actionResult, params)
+		err = NewAuditError("attemptedAction required but was empty", "", actionResult, params)
+		return
 	}
 	if actionResult == "" {
-		return NewAuditError("actionResult required but was empty", attemptedAction, "", params)
+		err = NewAuditError("actionResult required but was empty", attemptedAction, "", params)
+		return
 	}
 
-	e := Event{
+	e = Event{
 		Service:         a.service,
 		User:            user,
 		AttemptedAction: attemptedAction,
@@ -118,12 +130,12 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {
-		return NewAuditError("error marshalling event to avro", attemptedAction, actionResult, params)
+		err = NewAuditError("error marshalling event to avro", attemptedAction, actionResult, params)
+		return
 	}
 
-	LogInfo(ctx, "capturing audit event", log.Data{"auditEvent": e})
 	a.producer.Output() <- avroBytes
-	return nil
+	return
 }
 
 //NewAuditError creates new audit.Error with default field values where necessary and orders the params alphabetically.
@@ -176,4 +188,17 @@ func (e Error) formatParams() string {
 	}
 	result += "]"
 	return result
+}
+
+//ToLogData convert common.Params to log.Data
+func ToLogData(p common.Params) log.Data {
+	if len(p) == 0 {
+		return nil
+	}
+
+	data := log.Data{}
+	for k, v := range p {
+		data[k] = v
+	}
+	return data
 }
