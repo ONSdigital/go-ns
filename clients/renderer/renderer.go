@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -67,7 +68,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	uri := r.url + "/" + path
 
-	clientlog.Do(fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
+	clientlog.Do(context.Background(), fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
 		"method": "POST",
 	})
 

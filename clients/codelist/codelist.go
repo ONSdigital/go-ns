@@ -1,6 +1,7 @@
 package codelist
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -68,7 +69,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	clientlog.Do("retrieving codes from codelist", service, uri)
+	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
 
 	resp, err := c.cli.Get(uri)
 	if err != nil {
