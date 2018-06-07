@@ -1,6 +1,7 @@
 package hierarchy
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -69,7 +70,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetRoot(instanceID, name string) (m Model, err error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
 
-	clientlog.Do("retrieving hierarchy", service, path, log.Data{
+	clientlog.Do(context.Background(), "retrieving hierarchy", service, path, log.Data{
 		"method":      "GET",
 		"instance_id": instanceID,
 		"dimension":   name,
@@ -82,7 +83,7 @@ func (c *Client) GetRoot(instanceID, name string) (m Model, err error) {
 func (c *Client) GetChild(instanceID, name, code string) (m Model, err error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s/%s", instanceID, name, code)
 
-	clientlog.Do("retrieving hierarchy", service, path, log.Data{
+	clientlog.Do(context.Background(), "retrieving hierarchy", service, path, log.Data{
 		"method":      "GET",
 		"instance_id": instanceID,
 		"dimension":   name,

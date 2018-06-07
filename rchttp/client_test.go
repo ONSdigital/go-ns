@@ -156,9 +156,10 @@ func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 	Convey("Given an rchttp client with an auth token and context with userId", t, func() {
 		expectedAuthToken := "IAmWhoIAm"
 		testUser := "hello@test"
+		testFlorenceToken := "4749209394"
 		upstreamRequestId := "call123"
 		httpClient := ClientWithServiceToken(ClientWithTimeout(nil, 5*time.Second), expectedAuthToken)
-		ctx := common.WithRequestId(common.SetUser(context.Background(), testUser), upstreamRequestId)
+		ctx := common.WithRequestId(common.SetUser(common.SetFlorenceIdentity(context.Background(), testFlorenceToken), testUser), upstreamRequestId)
 
 		Convey("When Get() is called on a URL", func() {
 			expectedCallCount++
@@ -175,6 +176,7 @@ func TestClientWithServiceAndUserPopulatesAllHeaders(t *testing.T) {
 				So(call.Error, ShouldEqual, "")
 				So(call.Headers[common.AuthHeaderKey], ShouldResemble, []string{common.BearerPrefix + expectedAuthToken})
 				So(call.Headers[common.UserHeaderKey], ShouldResemble, []string{testUser})
+				So(call.Headers[common.FlorenceHeaderKey], ShouldResemble, []string{testFlorenceToken})
 				So(len(call.Headers[common.RequestHeaderKey]), ShouldEqual, 1)
 				So(call.Headers[common.RequestHeaderKey][0], ShouldStartWith, upstreamRequestId+",")
 				So(len(call.Headers[common.RequestHeaderKey][0]), ShouldBeGreaterThan, len(upstreamRequestId)*3/2)

@@ -118,6 +118,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 			common.AddUserHeader(req, common.User(ctx))
 		}
 	}
+	if common.IsFlorenceIdentityPresent(ctx) {
+		common.SetFlorenceHeader(ctx, req)
+	}
 
 	// get any existing correlation-id (might be "id1,id2"), append a new one, add to headers
 	upstreamCorrelationIds := common.GetRequestId(ctx)

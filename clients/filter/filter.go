@@ -85,7 +85,7 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetOutput(ctx context.Context, filterOutputID string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterOutputID)
 
-	clientlog.Do("retrieving filter output", service, uri)
+	clientlog.Do(ctx, "retrieving filter output", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *Client) GetOutput(ctx context.Context, filterOutputID string) (m Model,
 func (c *Client) GetDimension(ctx context.Context, filterID, name string) (dim Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
-	clientlog.Do("retrieving dimension information", service, uri)
+	clientlog.Do(ctx, "retrieving dimension information", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -152,7 +152,7 @@ func (c *Client) GetDimension(ctx context.Context, filterID, name string) (dim D
 func (c *Client) GetDimensions(ctx context.Context, filterID string) (dims []Dimension, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.url, filterID)
 
-	clientlog.Do("retrieving all dimensions for given filter job", service, uri)
+	clientlog.Do(ctx, "retrieving all dimensions for given filter job", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -183,7 +183,7 @@ func (c *Client) GetDimensions(ctx context.Context, filterID string) (dims []Dim
 func (c *Client) GetDimensionOptions(ctx context.Context, filterID, name string) (opts []DimensionOption, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.url, filterID, name)
 
-	clientlog.Do("retrieving selected dimension options for filter job", service, uri)
+	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -234,7 +234,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do("attemping to create filter blueprint", service, uri, log.Data{
+	clientlog.Do(ctx, "attemping to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,
 		"edition":   edition,
@@ -281,7 +281,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool) (m
 		uri = uri + "?submitted=true"
 	}
 
-	clientlog.Do("updating filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
 		"method": "PUT",
 		"body":   string(b),
 	})
@@ -317,7 +317,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool) (m
 func (c *Client) AddDimensionValue(ctx context.Context, filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
 
-	clientlog.Do("adding dimension option to filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "adding dimension option to filter job", service, uri, log.Data{
 		"method": "POST",
 		"value":  value,
 	})
@@ -347,7 +347,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value
 		return err
 	}
 
-	clientlog.Do("removing dimension option from filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "removing dimension option from filter job", service, uri, log.Data{
 		"method": "DELETE",
 		"value":  value,
 	})
@@ -367,7 +367,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value
 func (c *Client) RemoveDimension(ctx context.Context, filterID, name string) (err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
-	clientlog.Do("removing dimension from filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "removing dimension from filter job", service, uri, log.Data{
 		"method":    "DELETE",
 		"dimension": "name",
 	})
@@ -393,7 +393,7 @@ func (c *Client) RemoveDimension(ctx context.Context, filterID, name string) (er
 // AddDimension adds a new dimension to a filter job
 func (c *Client) AddDimension(ctx context.Context, id, name string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name)
-	clientlog.Do("adding dimension to filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "adding dimension to filter job", service, uri, log.Data{
 		"method":    "POST",
 		"dimension": name,
 	})
@@ -419,7 +419,7 @@ func (c *Client) AddDimension(ctx context.Context, id, name string) error {
 func (c *Client) GetJobState(ctx context.Context, filterID string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/filters/%s", c.url, filterID)
 
-	clientlog.Do("retrieving filter job state", service, uri)
+	clientlog.Do(ctx, "retrieving filter job state", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -450,7 +450,7 @@ func (c *Client) GetJobState(ctx context.Context, filterID string) (m Model, err
 func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, options []string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
-	clientlog.Do("adding multiple dimension values to filter job", service, uri, log.Data{
+	clientlog.Do(ctx, "adding multiple dimension values to filter job", service, uri, log.Data{
 		"method":  "POST",
 		"options": options,
 	})
@@ -487,7 +487,7 @@ func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, 
 func (c *Client) GetPreview(ctx context.Context, filterOutputID string) (p Preview, err error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.url, filterOutputID)
 
-	clientlog.Do("retrieving preview for filter output job", service, uri, log.Data{
+	clientlog.Do(ctx, "retrieving preview for filter output job", service, uri, log.Data{
 		"method":   "GET",
 		"filterID": filterOutputID,
 	})
