@@ -37,7 +37,7 @@ type Model struct {
 	State       string              `json:"state"`
 	Dimensions  []ModelDimension    `json:"dimensions,omitempty"`
 	Downloads   map[string]Download `json:"downloads,omitempty"`
-	Events      map[string][]Event  `json:"events,omitempty"`
+	Events      []Event             `json:"events,omitempty"`
 	IsPublished bool                `json:"published"`
 }
 
@@ -73,7 +73,6 @@ type Download struct {
 type Event struct {
 	Time    string `json:"time"`
 	Type    string `json:"type"`
-	Message string `json:"message"`
 }
 
 // Preview represents a preview document returned from the filter api
