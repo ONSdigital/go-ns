@@ -1,7 +1,7 @@
 ### Testing auditing
 
 The `audit_mocks` package provides useful methods for verifying calls to `audit.Record()` reducing the amount of 
-duplication to setup and verify calls to an auditor in unit tests.
+code duplication to setup a mock auditor and verify its invocations during a test case.
 
 ### Getting started
 Create an auditor mock that returns no error.
