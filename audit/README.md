@@ -44,5 +44,8 @@ if err := auditor.Record(ctx, "my_action", audit.Successful, auditParams); err !
     // handle error
 } 
 ```
-`Auditor.Record()` will return an error if there was a problem to auditing the event - in such cases the auditor will 
-log the error for you.
+`Auditor.Record()` will automatically extract `requestID`/`correlationID`, `User-Identity` & `Caller-Identity` from the
+ supplied context (if they exist) and add them to the audit event and log parameters.
+ 
+If `Auditor.Record()` fails to record the event it will log the error (including `requestID`/`correlationID`, 
+`User-Identity` & `Caller-Identity` if they are available) before returning.
