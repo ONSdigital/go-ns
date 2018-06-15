@@ -16,7 +16,7 @@ Assert `auditor.Record()` is called the expected number of times and the `action
  each call are as expected.
 ```go
 auditor.AssertRecordCalls(
-    audit_mock.ExpectedParams{"my_action", audit.Attempted, common.Params{"key":"value"},
-    audit_mock.ExpectedParams{instance.GetInstancesAction, audit.Successful, nil},
+    audit_mock.Expected{"my_action", audit.Attempted, common.Params{"key":"value"},
+    audit_mock.Expected{instance.GetInstancesAction, audit.Successful, nil},
 )
 ```

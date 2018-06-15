@@ -11,8 +11,8 @@ import (
 //ErrAudit is the test error returned from a MockAuditor if the audit action & result match error trigger criteria
 var ErrAudit = errors.New("auditing error")
 
-//ExpectedParams is a struct encapsulating the method parameters to audit.Record
-type ExpectedParams struct {
+//Expected is a struct encapsulating the method parameters to audit.Record
+type Expected struct {
 	Action string
 	Result string
 	Params common.Params
@@ -54,7 +54,7 @@ func NewErroring(a string, r string) *MockAuditor {
 
 //AssertRecordCalls is a convenience method which asserts the expected number of Record calls are made and
 // the parameters of each match the expected values.
-func (m *MockAuditor) AssertRecordCalls(expected ...ExpectedParams) {
+func (m *MockAuditor) AssertRecordCalls(expected ...Expected) {
 	actual := m.RecordCalls()
 
 	Convey("auditor.Record is called the expected number of times", func() {
