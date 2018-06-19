@@ -40,7 +40,7 @@ func New(t *testing.T) *MockAuditor {
 }
 
 //NewErroring creates new instance of MockAuditor that will return ErrAudit if the supplied audit action and result
-// match the specified errir trigger values.
+// match the specified error trigger values.
 func NewErroring(t *testing.T, a string, r string) *MockAuditor {
 	return &MockAuditor{
 		&audit.AuditorServiceMock{
