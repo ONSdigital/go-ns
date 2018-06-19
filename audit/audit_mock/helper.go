@@ -65,18 +65,22 @@ func (m *MockAuditor) AssertRecordCalls(expected ...Expected) {
 		if len(actual) != len(expected) {
 			m.t.Fatalf("audit.Record incorrect number of invocations, expected: %d, actual: %d", len(expected), len(actual))
 		}
+
+		total := len(actual)
+		var invocation int
 		for i, call := range actual {
+			invocation = i + 1
 
 			if result := ShouldResemble(call.Action, expected[i].Action); result != "" {
-				m.t.Fatalf("audit.Record invocation %d incorrect audit action - expected: \"%s\", actual: \"%s\"", i, expected[i].Action, call.Action)
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit action - expected: %q, actual: %q", invocation, total, expected[i].Action, call.Action)
 			}
 
 			if result := ShouldResemble(call.Result, expected[i].Result); result != "" {
-				m.t.Fatalf("audit.Record invocation %d incorrect audit result - expected: \"%s\", actual: \"%s\"", i, expected[i].Result, call.Result)
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit result - expected: %q, actual: %q", invocation, total, expected[i].Result, call.Result)
 			}
 
 			if result := ShouldResemble(call.Params, expected[i].Params); result != "" {
-				m.t.Fatalf("audit.Record invocation %d incorrect auditParams - expected: %+v, actual:  %+v", i, expected[i].Params, call.Params)
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect auditParams - expected: %+v, actual: %+v", invocation, total, expected[i].Params, call.Params)
 			}
 		}
 	})
