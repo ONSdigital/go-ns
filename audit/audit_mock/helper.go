@@ -3,9 +3,11 @@ package audit_mock
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
+	"reflect"
 	"testing"
 )
 
@@ -19,12 +21,28 @@ type Expected struct {
 	Params common.Params
 }
 
+// actual the actual calls to auditor.Record
+type actual Expected
+
 //MockAuditor is wrapper around the generated mock implementation of audit.AuditorService which can be configured
 // to return an error when specified audit action / result values are passed into the Record method, also provides
 //convenience test methods for asserting calls & params made to the mock.
 type MockAuditor struct {
 	*audit.AuditorServiceMock
 	t *testing.T
+}
+
+//actualCalls convenience method for converting the call values to the right format.
+func (m *MockAuditor) actualCalls() []actual {
+	if len(m.RecordCalls()) == 0 {
+		return []actual{}
+	}
+
+	actuals := make([]actual, 0)
+	for _, a := range m.RecordCalls() {
+		actuals = append(actuals, actual{Action: a.Action, Result: a.Result, Params: a.Params})
+	}
+	return actuals
 }
 
 //New creates new instance of MockAuditor that does not return any errors
@@ -59,29 +77,56 @@ func NewErroring(t *testing.T, a string, r string) *MockAuditor {
 //AssertRecordCalls is a convenience method which asserts the expected number of Record calls are made and
 // the parameters of each match the expected values.
 func (m *MockAuditor) AssertRecordCalls(expected ...Expected) {
-	actual := m.RecordCalls()
-
 	Convey("auditor.Record is called the expected number of times with the expected parameters", func() {
-		if len(actual) != len(expected) {
-			m.t.Fatalf("audit.Record incorrect number of invocations, expected: %d, actual: %d", len(expected), len(actual))
+
+		// shouldAuditAsExpected is a custom implementation of a Goconvey assertion which adds additional context to
+		// test failures reports to aid understanding/debugging test failures.
+		shouldAuditAsExpected := func(a interface{}, e ...interface{}) string {
+			if a == nil {
+				return "auditor.Record could not assert audit.Record calls: actual parameter required but was empty"
+			}
+
+			if e == nil || len(e) == 0 || e[0] == nil {
+				return "auditor.Record could not assert audit.Record calls: expected parameter required but was empty"
+			}
+
+			actualCalls, ok := a.([]actual)
+			if !ok {
+				return fmt.Sprintf("auditor.Record could not assert audit.Record calls: incorrect type for actual parameter expected: %s, actual: %s", reflect.TypeOf(actual{}), reflect.TypeOf(a))
+			}
+
+			expectedCalls, ok := e[0].([]Expected)
+			if !ok {
+				return fmt.Sprintf("auditor.Record could not assert audit.Record calls: incorrect type for expected parameter: expected: %s, actual: %s", reflect.TypeOf(Expected{}), reflect.TypeOf(e[0]))
+			}
+
+			if len(actualCalls) != len(expectedCalls) {
+				return fmt.Sprintf("auditor.Record incorrect number of invocations, expected: %d, actual: %d", len(expectedCalls), len(actualCalls))
+			}
+
+			total := len(actualCalls)
+			var invocation int
+			for i, call := range actualCalls {
+				invocation = i + 1
+
+				action := expectedCalls[i].Action
+				if equalErr := ShouldEqual(call.Action, action); equalErr != "" {
+					return fmt.Sprintf("auditor.Record invocation %d/%d incorrect audit action - expected: %q, actual: %q", invocation, total, action, call.Action)
+				}
+
+				result := expectedCalls[i].Result
+				if equalErr := ShouldEqual(call.Result, result); equalErr != "" {
+					return fmt.Sprintf("auditor.Record invocation %d/%d incorrect audit result - expected: %q, actual: %q", invocation, total, result, call.Result)
+				}
+
+				params := expectedCalls[i].Params
+				if equalErr := ShouldResemble(call.Params, params); equalErr != "" {
+					return fmt.Sprintf("auditor.Record invocation %d/%d incorrect auditParams - expected: %+v, actual: %+v", invocation, total, params, call.Params)
+				}
+			}
+			return ""
 		}
 
-		total := len(actual)
-		var invocation int
-		for i, call := range actual {
-			invocation = i + 1
-
-			if result := ShouldResemble(call.Action, expected[i].Action); result != "" {
-				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit action - expected: %q, actual: %q", invocation, total, expected[i].Action, call.Action)
-			}
-
-			if result := ShouldResemble(call.Result, expected[i].Result); result != "" {
-				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit result - expected: %q, actual: %q", invocation, total, expected[i].Result, call.Result)
-			}
-
-			if result := ShouldResemble(call.Params, expected[i].Params); result != "" {
-				m.t.Fatalf("auditor.Record invocation %d/%d incorrect auditParams - expected: %+v, actual: %+v", invocation, total, expected[i].Params, call.Params)
-			}
-		}
+		So(m.actualCalls(), shouldAuditAsExpected, expected)
 	})
 }
