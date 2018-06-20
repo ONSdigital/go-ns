@@ -50,8 +50,8 @@ type Times struct {
 type testNamespacedModel struct {
 	State   string `bson:"state"`
 	NewKey  int    `bson:"new_key,omitempty"`
-	Currant Times  `bson:"currant",omitempty"`
-	Nixed   Times  `bson:"nixed",omitempty"`
+	Currant Times  `bson:"currant,omitempty"`
+	Nixed   Times  `bson:"nixed,omitempty"`
 }
 
 type ungraceful struct{}
