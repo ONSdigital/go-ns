@@ -8,7 +8,6 @@ import (
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 	"reflect"
-	"testing"
 )
 
 //ErrAudit is the test error returned from a MockAuditor if the audit action & result match error trigger criteria
@@ -29,7 +28,6 @@ type actual Expected
 //convenience test methods for asserting calls & params made to the mock.
 type MockAuditor struct {
 	*audit.AuditorServiceMock
-	t *testing.T
 }
 
 //actualCalls convenience method for converting the call values to the right format.
@@ -46,20 +44,19 @@ func (m *MockAuditor) actualCalls() []actual {
 }
 
 //New creates new instance of MockAuditor that does not return any errors
-func New(t *testing.T) *MockAuditor {
+func New() *MockAuditor {
 	return &MockAuditor{
 		&audit.AuditorServiceMock{
 			RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
 				return nil
 			},
 		},
-		t,
 	}
 }
 
 //NewErroring creates new instance of MockAuditor that will return ErrAudit if the supplied audit action and result
 // match the specified error trigger values.
-func NewErroring(t *testing.T, a string, r string) *MockAuditor {
+func NewErroring(a string, r string) *MockAuditor {
 	return &MockAuditor{
 		&audit.AuditorServiceMock{
 			RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
@@ -70,7 +67,6 @@ func NewErroring(t *testing.T, a string, r string) *MockAuditor {
 				return nil
 			},
 		},
-		t,
 	}
 }
 
