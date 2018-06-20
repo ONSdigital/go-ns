@@ -120,6 +120,41 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	return
 }
 
+// GetDatasets returns the list of datasets
+func (c *Client) GetDatasets(ctx context.Context) (m ModelCollection, err error) {
+	uri := fmt.Sprintf("%s/datasets", c.url)
+
+	clientlog.Do(ctx, "retrieving datasets", service, uri)
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return
+	}
+
+	resp, err := c.cli.Do(ctx, req)
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return
+	}
+
+	return
+}
+
 // GetEdition retrieves a single edition document from a given datasetID and edition label
 func (c *Client) GetEdition(ctx context.Context, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)

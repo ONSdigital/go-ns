@@ -10,7 +10,7 @@ type Page struct {
 	model.ContactDetails
 }
 
-//DatasetLandingPage ...
+//DatasetLandingPage represents a frontend dataset landing page
 type DatasetLandingPage struct {
 	DatasetID           string    `json:"dataset_id"`
 	FilterID            string    `json:"filter_id"`

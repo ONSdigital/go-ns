@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	mgo "github.com/gedge/mgo"
-	"github.com/gedge/mgo/bson"
+	mgo "github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
@@ -50,8 +50,8 @@ type Times struct {
 type testNamespacedModel struct {
 	State   string `bson:"state"`
 	NewKey  int    `bson:"new_key,omitempty"`
-	Currant Times  `bson:"currant",omitempty"`
-	Nixed   Times  `bson:"nixed",omitempty"`
+	Currant Times  `bson:"currant,omitempty"`
+	Nixed   Times  `bson:"nixed,omitempty"`
 }
 
 type ungraceful struct{}

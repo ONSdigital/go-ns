@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	mgo "github.com/gedge/mgo"
-	"github.com/gedge/mgo/bson"
+	mgo "github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 )
 
 // keep these in sync with Timestamps tags below

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -153,12 +154,15 @@ func AddRequestIdHeader(r *http.Request, token string) {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+var randMutex sync.Mutex
 
 // NewRequestID generates a random string of requested length
 func NewRequestID(size int) string {
 	b := make([]rune, size)
+	randMutex.Lock()
 	for i := range b {
 		b[i] = letters[requestIDRandom.Intn(len(letters))]
 	}
+	randMutex.Unlock()
 	return string(b)
 }
