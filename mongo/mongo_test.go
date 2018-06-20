@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	mgo "github.com/gedge/mgo"
-	"github.com/gedge/mgo/bson"
+	mgo "github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
