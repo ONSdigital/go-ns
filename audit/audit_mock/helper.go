@@ -6,6 +6,7 @@ import (
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
 //ErrAudit is the test error returned from a MockAuditor if the audit action & result match error trigger criteria
@@ -23,22 +24,24 @@ type Expected struct {
 //convenience test methods for asserting calls & params made to the mock.
 type MockAuditor struct {
 	*audit.AuditorServiceMock
+	t *testing.T
 }
 
 //New creates new instance of MockAuditor that does not return any errors
-func New() *MockAuditor {
+func New(t *testing.T) *MockAuditor {
 	return &MockAuditor{
 		&audit.AuditorServiceMock{
 			RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
 				return nil
 			},
 		},
+		t,
 	}
 }
 
 //NewErroring creates new instance of MockAuditor that will return ErrAudit if the supplied audit action and result
-// match the specified errir trigger values.
-func NewErroring(a string, r string) *MockAuditor {
+// match the specified error trigger values.
+func NewErroring(t *testing.T, a string, r string) *MockAuditor {
 	return &MockAuditor{
 		&audit.AuditorServiceMock{
 			RecordFunc: func(ctx context.Context, action string, result string, params common.Params) error {
@@ -49,6 +52,7 @@ func NewErroring(a string, r string) *MockAuditor {
 				return nil
 			},
 		},
+		t,
 	}
 }
 
@@ -57,15 +61,27 @@ func NewErroring(a string, r string) *MockAuditor {
 func (m *MockAuditor) AssertRecordCalls(expected ...Expected) {
 	actual := m.RecordCalls()
 
-	Convey("auditor.Record is called the expected number of times", func() {
-		So(len(actual), ShouldEqual, len(expected))
-	})
+	Convey("auditor.Record is called the expected number of times with the expected parameters", func() {
+		if len(actual) != len(expected) {
+			m.t.Fatalf("audit.Record incorrect number of invocations, expected: %d, actual: %d", len(expected), len(actual))
+		}
 
-	Convey("audit.Record is called with the expected parameters ", func() {
+		total := len(actual)
+		var invocation int
 		for i, call := range actual {
-			So(call.Action, ShouldEqual, expected[i].Action)
-			So(call.Result, ShouldEqual, expected[i].Result)
-			So(call.Params, ShouldResemble, expected[i].Params)
+			invocation = i + 1
+
+			if result := ShouldResemble(call.Action, expected[i].Action); result != "" {
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit action - expected: %q, actual: %q", invocation, total, expected[i].Action, call.Action)
+			}
+
+			if result := ShouldResemble(call.Result, expected[i].Result); result != "" {
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect audit result - expected: %q, actual: %q", invocation, total, expected[i].Result, call.Result)
+			}
+
+			if result := ShouldResemble(call.Params, expected[i].Params); result != "" {
+				m.t.Fatalf("auditor.Record invocation %d/%d incorrect auditParams - expected: %+v, actual: %+v", invocation, total, expected[i].Params, call.Params)
+			}
 		}
 	})
 }
