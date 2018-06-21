@@ -6,11 +6,11 @@ code duplication to setup a mock auditor and verify its invocations during a tes
 ### Getting started
 Create an auditor mock that returns no error.
 ```go
-auditor := audit_mock.New()
+auditor := audit_mock.New(t)
 ```
 Create an auditor mock that returns an error when `Record()` is called with particular action and result values
 ```go
-auditor := audit_mock.NewErroring("some task", "the outcome")
+auditor := audit_mock.NewErroring(t, "some task", "the outcome")
 ```
 Assert `auditor.Record()` is called the expected number of times and the `action`, `result` and `auditParam` values in
  each call are as expected.

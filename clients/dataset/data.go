@@ -30,6 +30,10 @@ type Model struct {
 	URI               string           `json:"uri"`
 }
 
+type ModelCollection struct {
+	Items []Model `json:"items"`
+}
+
 // Version represents a version within a dataset
 type Version struct {
 	Alerts        []Alert             `json:"alerts"`
