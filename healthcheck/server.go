@@ -2,10 +2,11 @@ package healthcheck
 
 import (
 	"context"
+	"time"
+
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/server"
 	"github.com/gorilla/mux"
-	"time"
 )
 
 // Server provides a HTTP server specifically for health checks.
@@ -15,12 +16,15 @@ type Server struct {
 	ticker     *Ticker
 }
 
-func NewServer(bindAddr string, duration time.Duration, errorChannel chan error, clients ...Client) *Server {
+func NewServer(bindAddr string, duration, recoveryDuration time.Duration, errorChannel chan error, clients ...Client) *Server {
+	return NewServerWithAlerts(bindAddr, duration, recoveryDuration, errorChannel, nil, nil, clients...)
+}
 
+func NewServerWithAlerts(bindAddr string, duration, recoveryDuration time.Duration, errorChannel chan error, stateChangeChan, requestCheckChan chan bool, clients ...Client) *Server {
 	router := mux.NewRouter()
 	router.Path("/healthcheck").HandlerFunc(Do)
 
-	ticker := NewTicker(duration, clients...)
+	ticker := NewTickerWithAlerts(duration, recoveryDuration, stateChangeChan, requestCheckChan, clients...)
 
 	httpServer := server.New(bindAddr, router)
 
