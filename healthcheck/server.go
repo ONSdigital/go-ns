@@ -15,12 +15,12 @@ type Server struct {
 	ticker     *Ticker
 }
 
-func NewServer(bindAddr string, duration time.Duration, errorChannel chan error, clients ...Client) *Server {
+func NewServer(bindAddr string, warmup, duration time.Duration, errorChannel chan error, clients ...Client) *Server {
 
 	router := mux.NewRouter()
 	router.Path("/healthcheck").HandlerFunc(Do)
 
-	ticker := NewTicker(duration, clients...)
+	ticker := NewTicker(warmup, duration, clients...)
 
 	httpServer := server.New(bindAddr, router)
 

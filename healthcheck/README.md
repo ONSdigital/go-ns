@@ -11,11 +11,13 @@ filterAPIHealthChecker := filterHealthCheck.New(config.FilterAPIURL)
 
 healthChecker := healthcheck.NewServer(
     config.BindAddr,
+    config.HealthCheckWarmup,
     config.HealthCheckInterval,
     errorChannel,
-    filterAPIHealthChecker,
-    elasticsearchChecker,
-    neoHealthChecker)
+    healthcheck.healthMap{ Checker: filterAPIHealthChecker, IsFatal: false },
+    healthcheck.healthMap{ Checker: elasticsearchChecker,   IsFatal: true  },
+    healthcheck.healthMap{ Checker: neoHealthChecker,       IsFatal: true  },
+)
 ```
 
 Make sure you call close on shutdown:
@@ -32,8 +34,9 @@ router.Path("/healthcheck").HandlerFunc(healthcheck.Do)
 ```
 
 Create a healthcheck.Ticker to call the given client at regular intervals
+after a given warmup period
 ```
-ticker := healthcheck.NewTicker(duration, clients...)
+ticker := healthcheck.NewTicker(warmup, duration, clients...)
 ```
 
 Make sure you call ticker.Close() on shutdown to release resources:
