@@ -110,7 +110,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 
 	uri = uri + v.Encode()
 
-	clientlog.Do("searching for dataset dimension option", service, uri)
+	clientlog.Do(ctx, "searching for dataset dimension option", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {

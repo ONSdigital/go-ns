@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/mgutz/ansi"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -20,6 +22,8 @@ import (
 var dummyHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 })
+
+var contextWithRequestHeader = common.WithRequestId(context.Background(), "request id")
 
 func captureOutput(f func()) string {
 	stdout := os.Stdout
@@ -46,7 +50,10 @@ func captureOutput(f func()) string {
 
 func TestHumanLog(t *testing.T) {
 	Convey("HUMAN_LOG environment variable should configure human log output", t, func() {
-		So(HumanReadable, ShouldBeFalse)
+		// Cannot guarentee the variable has not been set already
+		if os.Getenv("HUMAN_LOG") == "" {
+			So(HumanReadable, ShouldBeFalse)
+		}
 
 		os.Setenv("HUMAN_LOG", "true")
 		configureHumanReadable()
@@ -66,16 +73,16 @@ func TestHumanLog(t *testing.T) {
 	})
 }
 
-func TestContext(t *testing.T) {
-	Convey("Context should retrieve the X-Request-Id from a request", t, func() {
+func TestGetRequestID(t *testing.T) {
+	Convey("GetRequestID should retrieve the X-Request-Id from a request", t, func() {
 		req, err := http.NewRequest("GET", "/", nil)
 		So(err, ShouldBeNil)
 
-		ctx := Context(req)
+		ctx := GetRequestID(req)
 		So(ctx, ShouldBeEmpty)
 
 		req.Header.Set("X-Request-Id", "test")
-		ctx = Context(req)
+		ctx = GetRequestID(req)
 		So(ctx, ShouldEqual, "test")
 	})
 }
@@ -187,18 +194,38 @@ func TestError(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name string, correlationKey string, data Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 
 	Convey("Error", t, func() {
 		Error(errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test error")
+		So(eventData, ShouldContainKey, "error")
+		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
+		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
+	})
+
+	Convey("ErrorCtx", t, func() {
+		ErrorCtx(context.Background(), errors.New("test error"), nil)
+		So(eventName, ShouldEqual, "error")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test error")
+		So(eventData, ShouldContainKey, "error")
+		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
+		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
+
+		ErrorCtx(contextWithRequestHeader, errors.New("test error"), nil)
+		So(eventName, ShouldEqual, "error")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -207,9 +234,9 @@ func TestError(t *testing.T) {
 	})
 
 	Convey("ErrorC", t, func() {
-		ErrorC("context", errors.New("test error"), nil)
+		ErrorC("correlation id", errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "context")
+		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -225,7 +252,7 @@ func TestError(t *testing.T) {
 
 		ErrorR(req, errors.New("test error"), nil)
 		So(eventName, ShouldEqual, "error")
-		So(eventContext, ShouldEqual, "test-request-id")
+		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test error")
 		So(eventData, ShouldContainKey, "error")
@@ -240,26 +267,40 @@ func TestDebug(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name string, correlationKey string, data Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 
 	Convey("Debug", t, func() {
 		Debug("test message", nil)
 		So(eventName, ShouldEqual, "debug")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("DebugCtx", t, func() {
+		DebugCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "debug")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		DebugCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "debug")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
 
 	Convey("DebugC", t, func() {
-		DebugC("context", "test message", nil)
+		DebugC("correlation id", "test message", nil)
 		So(eventName, ShouldEqual, "debug")
-		So(eventContext, ShouldEqual, "context")
+		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -272,7 +313,7 @@ func TestDebug(t *testing.T) {
 
 		DebugR(req, "test message", nil)
 		So(eventName, ShouldEqual, "debug")
-		So(eventContext, ShouldEqual, "test-request-id")
+		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -284,26 +325,40 @@ func TestTrace(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name string, correlationKey string, data Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 
 	Convey("Trace", t, func() {
 		Trace("test message", nil)
 		So(eventName, ShouldEqual, "trace")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("TraceCtx", t, func() {
+		TraceCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "trace")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		TraceCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "trace")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
 
 	Convey("TraceC", t, func() {
-		TraceC("context", "test message", nil)
+		TraceC("correlation id", "test message", nil)
 		So(eventName, ShouldEqual, "trace")
-		So(eventContext, ShouldEqual, "context")
+		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -316,7 +371,7 @@ func TestTrace(t *testing.T) {
 
 		TraceR(req, "test message", nil)
 		So(eventName, ShouldEqual, "trace")
-		So(eventContext, ShouldEqual, "test-request-id")
+		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -328,26 +383,40 @@ func TestInfo(t *testing.T) {
 		Event = oldEvent
 	}()
 
-	var eventName, eventContext string
+	var eventName, eventCorrelationKey string
 	var eventData Data
-	Event = func(name string, context string, data Data) {
+	Event = func(name string, correlationKey string, data Data) {
 		eventName = name
-		eventContext = context
+		eventCorrelationKey = correlationKey
 		eventData = data
 	}
 
 	Convey("Info", t, func() {
 		Info("test message", nil)
 		So(eventName, ShouldEqual, "info")
-		So(eventContext, ShouldEqual, "")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+	})
+
+	Convey("InfoCtx", t, func() {
+		InfoCtx(context.Background(), "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventCorrelationKey, ShouldEqual, "")
+		So(eventData, ShouldContainKey, "message")
+		So(eventData["message"], ShouldEqual, "test message")
+
+		InfoCtx(contextWithRequestHeader, "test message", nil)
+		So(eventName, ShouldEqual, "info")
+		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
 
 	Convey("InfoC", t, func() {
-		InfoC("context", "test message", nil)
+		InfoC("correlation id", "test message", nil)
 		So(eventName, ShouldEqual, "info")
-		So(eventContext, ShouldEqual, "context")
+		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -360,7 +429,7 @@ func TestInfo(t *testing.T) {
 
 		InfoR(req, "test message", nil)
 		So(eventName, ShouldEqual, "info")
-		So(eventContext, ShouldEqual, "test-request-id")
+		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 	})
@@ -371,7 +440,7 @@ func TestEvent(t *testing.T) {
 		Namespace = "namespace"
 
 		stdout := captureOutput(func() {
-			event("test", "context", Data{"foo": "bar"})
+			event("test", "request id", Data{"foo": "bar"})
 		})
 		var m map[string]interface{}
 		err := json.Unmarshal([]byte(stdout), &m)
@@ -382,8 +451,8 @@ func TestEvent(t *testing.T) {
 		So(m["event"], ShouldEqual, "test")
 		So(m, ShouldContainKey, "namespace")
 		So(m["namespace"], ShouldEqual, "namespace")
-		So(m, ShouldContainKey, "context")
-		So(m["context"], ShouldEqual, "context")
+		So(m, ShouldContainKey, "correlation_key")
+		So(m["correlation_key"], ShouldEqual, "request id")
 		So(m, ShouldContainKey, "data")
 		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
 		So(m["data"].(map[string]interface{})["foo"], ShouldEqual, "bar")
@@ -394,7 +463,7 @@ func TestEvent(t *testing.T) {
 		HumanReadable = false
 
 		stdout := captureOutput(func() {
-			event("test", "context", Data{"foo": func() {}})
+			event("test", "request id", Data{"foo": func() {}})
 		})
 		var m map[string]interface{}
 		err := json.Unmarshal([]byte(stdout), &m)
@@ -405,8 +474,8 @@ func TestEvent(t *testing.T) {
 		So(m["event"], ShouldEqual, "log_error")
 		So(m, ShouldContainKey, "namespace")
 		So(m["namespace"], ShouldEqual, "namespace")
-		So(m, ShouldContainKey, "context")
-		So(m["context"], ShouldEqual, "context")
+		So(m, ShouldContainKey, "correlation_key")
+		So(m["correlation_key"], ShouldEqual, "request id")
 		So(m, ShouldContainKey, "data")
 		So(m["data"], ShouldHaveSameTypeAs, map[string]interface{}{})
 		So(m["data"].(map[string]interface{})["error"], ShouldEqual, "json: unsupported type: func()")
@@ -414,49 +483,49 @@ func TestEvent(t *testing.T) {
 }
 
 type humanReadableTest struct {
-	name, context string
-	data          Data
-	m             map[string]interface{}
-	result        string
+	name, correlationKey string
+	data                 Data
+	m                    map[string]interface{}
+	result               string
 }
 
 func TestPrintHumanReadable(t *testing.T) {
 	now := time.Now()
 	var tests = []humanReadableTest{
 		{
-			"name", "context", Data{"foo": "bar"},
+			"name", "correlation_id", Data{"foo": "bar"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s%s\n  -> %s: %+v\n", ansi.DefaultFG, now, "context", "name", ansi.DefaultFG, "foo", "bar"),
+			fmt.Sprintf("%s%s [%s] %s%s\n  -> %s: %+v\n", ansi.DefaultFG, now, "correlation_id", "name", ansi.DefaultFG, "foo", "bar"),
 		},
 		{
-			"name", "context", Data{"message": "test message"},
+			"name", "correlation_id", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.DefaultFG, now, "context", "name", "test message", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.DefaultFG, now, "correlation_id", "name", "test message", ansi.DefaultFG),
 		},
 		{
-			"error", "context", Data{"error": errors.New("test error")},
+			"error", "correlation_id", Data{"error": errors.New("test error")},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightRed, now, "context", "error", "test error", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightRed, now, "correlation_id", "error", "test error", ansi.DefaultFG),
 		},
 		{
-			"trace", "context", Data{"message": "test message"},
+			"trace", "correlation_id", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Blue, now, "context", "trace", "test message", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Blue, now, "correlation_id", "trace", "test message", ansi.DefaultFG),
 		},
 		{
-			"debug", "context", Data{"message": "test message"},
+			"debug", "correlation_id", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Green, now, "context", "debug", "test message", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Green, now, "correlation_id", "debug", "test message", ansi.DefaultFG),
 		},
 		{
-			"info", "context", Data{"message": "test message"},
+			"info", "correlation_id", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightCyan, now, "context", "info", "test message", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.LightCyan, now, "correlation_id", "info", "test message", ansi.DefaultFG),
 		},
 		{
-			"request", "context", Data{"message": "test message"},
+			"request", "correlation_id", Data{"message": "test message"},
 			map[string]interface{}{"created": now},
-			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Cyan, now, "context", "request", "test message", ansi.DefaultFG),
+			fmt.Sprintf("%s%s [%s] %s: %s%s\n", ansi.Cyan, now, "correlation_id", "request", "test message", ansi.DefaultFG),
 		},
 	}
 
@@ -466,7 +535,7 @@ func TestPrintHumanReadable(t *testing.T) {
 
 		for _, test := range tests {
 			stdout := captureOutput(func() {
-				printHumanReadable(test.name, test.context, test.data, test.m)
+				printHumanReadable(test.name, test.correlationKey, test.data, test.m)
 			})
 			So(stdout, ShouldEqual, test.result)
 		}

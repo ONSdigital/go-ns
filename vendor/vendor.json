@@ -3,16 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "HGcaKsLnyiPHC1fYKvGTIH00Z4c=",
+			"checksumSHA1": "ubWg5ErV6hnoLoGFHiTxIiVmESo=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model",
-			"revision": "68099c8c0a883488fb056b2ad1500c4c478bf883",
-			"revisionTime": "2017-07-11T09:57:28Z"
+			"revision": "9c144b84e020782a54b29d74767bc9f712d4a1dd",
+			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
-			"checksumSHA1": "Xf6RqlcMdmIUjjgjrFfH2XXpcEA=",
+			"checksumSHA1": "2Ww7ArlxDH4Cs/1S01vx1heMAow=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model/datasetLandingPageStatic",
-			"revision": "f390250319d1524b758e8bccc351d6916cebd2c0",
-			"revisionTime": "2017-07-04T13:42:44Z"
+			"revision": "9c144b84e020782a54b29d74767bc9f712d4a1dd",
+			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
 			"checksumSHA1": "+Jp0tVXfQ1TM8T+oun82oJtME5U=",
@@ -63,34 +63,34 @@
 			"revisionTime": "2018-01-23T06:50:59Z"
 		},
 		{
-			"checksumSHA1": "WFvFdosCfgS3dIWJMV2GAOyPrq0=",
+			"checksumSHA1": "5paEOrPNmte9PRyvpBF8HTDjQD4=",
 			"path": "github.com/globalsign/mgo",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "EF0WffuSxDWU3AyNXm85SLT2Df4=",
+			"checksumSHA1": "zdy6XflmESAiFmyptSqpUMfXSyo=",
 			"path": "github.com/globalsign/mgo/bson",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
 			"checksumSHA1": "//bXQG4HblBwxHJDIW/PklXAxu0=",
 			"path": "github.com/globalsign/mgo/internal/json",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "zSNjAU41khuKovmSSkhVqXf5q4A=",
+			"checksumSHA1": "loubUcDO2QAStKIlVd7DqSeoEaw=",
 			"path": "github.com/globalsign/mgo/internal/sasl",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "YogZ7HaSnE0pxdiP48GdI1+CXeI=",
+			"checksumSHA1": "xjfEsfN7ho6dDOVeUQJhW4KzD2I=",
 			"path": "github.com/globalsign/mgo/internal/scram",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
 			"checksumSHA1": "bmfodlfB53b/p4GGAyV5Li6eVYA=",

@@ -39,6 +39,15 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	ctx := req.Context()
 
 	florenceToken := req.Header.Get(common.FlorenceHeaderKey)
+	if len(florenceToken) < 1 {
+		c, err := req.Cookie(common.FlorenceCookieKey)
+		if err != nil {
+			log.DebugR(req, err.Error(), nil)
+		} else {
+			florenceToken = c.Value
+		}
+	}
+
 	authToken := req.Header.Get(common.AuthHeaderKey)
 
 	isUserReq := len(florenceToken) > 0
