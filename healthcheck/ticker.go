@@ -12,6 +12,7 @@ type Ticker struct {
 	timeTicker *time.Ticker
 	asyncCheck chan bool
 	closing    chan bool
+	closed     chan bool
 }
 
 // NewTicker returns a new ticker that checks the given clients at intervals of the given duration
@@ -21,8 +22,10 @@ func NewTicker(duration, recoveryDuration time.Duration, clients ...Client) *Tic
 
 // NewTickerWithAlerts returns a new ticker that checks the given clients at intervals
 // - intervals vary in length (when healthy, use `duration`; at startup, or unhealthy state, use `recoveryDuration`)
-// - sends alerts of any change in health via the given channel (if non-nil) - with the new state (i.e. `true` if newly-healthy)
-// - healthchecks can be requested using requestCheckChan (sending `false` on this channel indicates that a failure has prompted this check)
+// - sends alerts of any change in health via the given channel (if non-nil) - with the new state (`true`:newly-healthy, `false`:newly-unhealthy)
+// - healthchecks can be requested using `requestCheckChan`
+//   - sending `false` on this channel indicates that a failure has prompted this check (fail fast)
+//   - sending `true` indicates that a success has happened (unlikely to indicate 100% health)
 // - healthchecks will only be run at a maximum of `recoveryDuration` frequency
 func NewTickerWithAlerts(
 	duration,
@@ -35,6 +38,7 @@ func NewTickerWithAlerts(
 	ticker := Ticker{
 		timeTicker: time.NewTicker(duration),
 		closing:    make(chan bool),
+		closed:     make(chan bool),
 	}
 
 	asyncCheck := make(chan bool)
@@ -61,6 +65,7 @@ func NewTickerWithAlerts(
 
 	// main goroutine to run MonitorExternal at intervals, and send any health state changes
 	go func() {
+		defer close(ticker.closed)
 		for {
 			// block until closing, or a check is due (either ticker chan) or requested
 			select {
@@ -132,4 +137,5 @@ func NewTickerWithAlerts(
 func (ticker *Ticker) Close() {
 	ticker.timeTicker.Stop()
 	close(ticker.closing)
+	<-ticker.closed
 }
