@@ -203,7 +203,8 @@ func TestError(t *testing.T) {
 	}
 
 	Convey("Error", t, func() {
-		Error(errors.New("test error"), nil)
+		logData := Data{ "message": "original message", "error": errors.New("original error")}
+		Error(errors.New("test error"), logData)
 		So(eventName, ShouldEqual, "error")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
@@ -214,7 +215,8 @@ func TestError(t *testing.T) {
 	})
 
 	Convey("ErrorCtx", t, func() {
-		ErrorCtx(context.Background(), errors.New("test error"), nil)
+		logData := Data{ "message": "original message", "error": errors.New("original error")}
+		ErrorCtx(context.Background(), errors.New("test error"), logData)
 		So(eventName, ShouldEqual, "error")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
@@ -223,7 +225,8 @@ func TestError(t *testing.T) {
 		So(eventData["error"], ShouldHaveSameTypeAs, errors.New(""))
 		So(eventData["error"].(error).Error(), ShouldEqual, "test error")
 
-		ErrorCtx(contextWithRequestHeader, errors.New("test error"), nil)
+		logData = Data{ "message": "original message", "error": errors.New("original error")}
+		ErrorCtx(contextWithRequestHeader, errors.New("test error"), logData)
 		So(eventName, ShouldEqual, "error")
 		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
@@ -234,7 +237,8 @@ func TestError(t *testing.T) {
 	})
 
 	Convey("ErrorC", t, func() {
-		ErrorC("correlation id", errors.New("test error"), nil)
+		logData := Data{ "message": "original message", "error": errors.New("original error")}
+		ErrorC("correlation id", errors.New("test error"), logData)
 		So(eventName, ShouldEqual, "error")
 		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
@@ -245,12 +249,13 @@ func TestError(t *testing.T) {
 	})
 
 	Convey("ErrorR", t, func() {
+		logData := Data{ "message": "original message", "error": errors.New("original error")}
 		req, err := http.NewRequest("GET", "/", nil)
 		So(err, ShouldBeNil)
 
 		req.Header.Set("X-Request-Id", "test-request-id")
 
-		ErrorR(req, errors.New("test error"), nil)
+		ErrorR(req, errors.New("test error"), logData)
 		So(eventName, ShouldEqual, "error")
 		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
@@ -276,7 +281,8 @@ func TestDebug(t *testing.T) {
 	}
 
 	Convey("Debug", t, func() {
-		Debug("test message", nil)
+		logData := Data{ "message": "original message"}
+		Debug("test message", logData)
 		So(eventName, ShouldEqual, "debug")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
@@ -284,13 +290,15 @@ func TestDebug(t *testing.T) {
 	})
 
 	Convey("DebugCtx", t, func() {
-		DebugCtx(context.Background(), "test message", nil)
+		logData := Data{ "message": "original message"}
+		DebugCtx(context.Background(), "test message", logData)
 		So(eventName, ShouldEqual, "debug")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 
-		DebugCtx(contextWithRequestHeader, "test message", nil)
+		logData = Data{ "message": "original message"}
+		DebugCtx(contextWithRequestHeader, "test message", logData)
 		So(eventName, ShouldEqual, "debug")
 		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
@@ -298,7 +306,8 @@ func TestDebug(t *testing.T) {
 	})
 
 	Convey("DebugC", t, func() {
-		DebugC("correlation id", "test message", nil)
+		logData := Data{ "message": "original message"}
+		DebugC("correlation id", "test message", logData)
 		So(eventName, ShouldEqual, "debug")
 		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
@@ -306,12 +315,13 @@ func TestDebug(t *testing.T) {
 	})
 
 	Convey("DebugR", t, func() {
+		logData := Data{ "message": "original message"}
 		req, err := http.NewRequest("GET", "/", nil)
 		So(err, ShouldBeNil)
 
 		req.Header.Set("X-Request-Id", "test-request-id")
 
-		DebugR(req, "test message", nil)
+		DebugR(req, "test message", logData)
 		So(eventName, ShouldEqual, "debug")
 		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
@@ -334,7 +344,8 @@ func TestTrace(t *testing.T) {
 	}
 
 	Convey("Trace", t, func() {
-		Trace("test message", nil)
+		logData := Data{ "message": "original message"}
+		Trace("test message", logData)
 		So(eventName, ShouldEqual, "trace")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
@@ -342,13 +353,15 @@ func TestTrace(t *testing.T) {
 	})
 
 	Convey("TraceCtx", t, func() {
-		TraceCtx(context.Background(), "test message", nil)
+		logData := Data{ "message": "original message"}
+		TraceCtx(context.Background(), "test message", logData)
 		So(eventName, ShouldEqual, "trace")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 
-		TraceCtx(contextWithRequestHeader, "test message", nil)
+		logData = Data{ "message": "original message"}
+		TraceCtx(contextWithRequestHeader, "test message", logData)
 		So(eventName, ShouldEqual, "trace")
 		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
@@ -356,7 +369,8 @@ func TestTrace(t *testing.T) {
 	})
 
 	Convey("TraceC", t, func() {
-		TraceC("correlation id", "test message", nil)
+		logData := Data{ "message": "original message"}
+		TraceC("correlation id", "test message", logData)
 		So(eventName, ShouldEqual, "trace")
 		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
@@ -364,12 +378,13 @@ func TestTrace(t *testing.T) {
 	})
 
 	Convey("TraceR", t, func() {
+		logData := Data{ "message": "original message"}
 		req, err := http.NewRequest("GET", "/", nil)
 		So(err, ShouldBeNil)
 
 		req.Header.Set("X-Request-Id", "test-request-id")
 
-		TraceR(req, "test message", nil)
+		TraceR(req, "test message", logData)
 		So(eventName, ShouldEqual, "trace")
 		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
@@ -392,7 +407,8 @@ func TestInfo(t *testing.T) {
 	}
 
 	Convey("Info", t, func() {
-		Info("test message", nil)
+		logData := Data{ "message": "original message"}
+		Info("test message", logData)
 		So(eventName, ShouldEqual, "info")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
@@ -400,13 +416,15 @@ func TestInfo(t *testing.T) {
 	})
 
 	Convey("InfoCtx", t, func() {
-		InfoCtx(context.Background(), "test message", nil)
+		logData := Data{ "message": "original message"}
+		InfoCtx(context.Background(), "test message", logData)
 		So(eventName, ShouldEqual, "info")
 		So(eventCorrelationKey, ShouldEqual, "")
 		So(eventData, ShouldContainKey, "message")
 		So(eventData["message"], ShouldEqual, "test message")
 
-		InfoCtx(contextWithRequestHeader, "test message", nil)
+		logData = Data{ "message": "original message"}
+		InfoCtx(contextWithRequestHeader, "test message", logData)
 		So(eventName, ShouldEqual, "info")
 		So(eventCorrelationKey, ShouldEqual, "request id")
 		So(eventData, ShouldContainKey, "message")
@@ -414,7 +432,8 @@ func TestInfo(t *testing.T) {
 	})
 
 	Convey("InfoC", t, func() {
-		InfoC("correlation id", "test message", nil)
+		logData := Data{ "message": "original message"}
+		InfoC("correlation id", "test message", logData)
 		So(eventName, ShouldEqual, "info")
 		So(eventCorrelationKey, ShouldEqual, "correlation id")
 		So(eventData, ShouldContainKey, "message")
@@ -422,12 +441,13 @@ func TestInfo(t *testing.T) {
 	})
 
 	Convey("InfoR", t, func() {
+		logData := Data{ "message": "original message"}
 		req, err := http.NewRequest("GET", "/", nil)
 		So(err, ShouldBeNil)
 
 		req.Header.Set("X-Request-Id", "test-request-id")
 
-		InfoR(req, "test message", nil)
+		InfoR(req, "test message", logData)
 		So(eventName, ShouldEqual, "info")
 		So(eventCorrelationKey, ShouldEqual, "test-request-id")
 		So(eventData, ShouldContainKey, "message")
