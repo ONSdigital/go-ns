@@ -175,7 +175,7 @@ func ErrorC(correlationKey string, err error, data Data) {
 	if data == nil {
 		data = Data{}
 	}
-	if _, ok := data["error"]; !ok {
+	if err != nil {
 		data["message"] = err.Error()
 		data["error"] = err
 	}
@@ -203,7 +203,7 @@ func DebugC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
-	if _, ok := data["message"]; !ok {
+	if len(message) > 0 {
 		data["message"] = message
 	}
 	Event("debug", correlationKey, data)
@@ -230,7 +230,7 @@ func TraceC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
-	if _, ok := data["message"]; !ok {
+	if len(message) > 0 {
 		data["message"] = message
 	}
 	Event("trace", correlationKey, data)
@@ -257,7 +257,7 @@ func InfoC(correlationKey string, message string, data Data) {
 	if data == nil {
 		data = Data{}
 	}
-	if _, ok := data["message"]; !ok {
+	if len(message) > 0 {
 		data["message"] = message
 	}
 	Event("info", correlationKey, data)
