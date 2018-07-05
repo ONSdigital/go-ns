@@ -30,6 +30,15 @@ type MockAuditor struct {
 	*audit.AuditorServiceMock
 }
 
+//NewExpectation is a constructor for creating a new Expected struct
+func NewExpectation(action string, result string, params common.Params) Expected {
+	return Expected{
+		Action: action,
+		Result: result,
+		Params: params,
+	}
+}
+
 //actualCalls convenience method for converting the call values to the right format.
 func (m *MockAuditor) actualCalls() []actual {
 	if len(m.RecordCalls()) == 0 {
