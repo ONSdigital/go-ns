@@ -19,7 +19,7 @@ type Model struct {
 	NationalStatistic bool             `json:"national_statistic"`
 	NextRelease       string           `json:"next_release"`
 	Publications      []Publication    `json:"publications"`
-	Publisher         Publisher        `json:"publisher"`
+	Publisher         *Publisher       `json:"publisher"`
 	QMI               Publication      `json:"qmi"`
 	RelatedDatasets   []RelatedDataset `json:"related_datasets"`
 	ReleaseFrequency  string           `json:"release_frequency"`
@@ -28,19 +28,16 @@ type Model struct {
 	Title             string           `json:"title"`
 	UnitOfMeasure     string           `json:"unit_of_measure"`
 	URI               string           `json:"uri"`
-}
-
-type ModelCollection struct {
-	Items []Model `json:"items"`
+	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
 }
 
 // Version represents a version within a dataset
 type Version struct {
-	Alerts        []Alert             `json:"alerts"`
+	Alerts        *[]Alert            `json:"alerts"`
 	CollectionID  string              `json:"collection_id"`
+	Dimensions    []Dimension         `json:"dimensions"`
 	Downloads     map[string]Download `json:"downloads"`
 	Edition       string              `json:"edition"`
-	Dimensions    []Dimension         `json:"dimensions"`
 	ID            string              `json:"id"`
 	InstanceID    string              `json:"instance_id"`
 	LatestChanges []Change            `json:"latest_changes"`
@@ -60,6 +57,13 @@ type Instance struct {
 type Metadata struct {
 	Version
 	Model
+}
+
+// DownloadList represents a list of objects of containing information on the downloadable files
+type DownloadList struct {
+	CSV  *Download `bson:"csv,omitempty" json:"csv,omitempty"`
+	CSVW *Download `bson:"csvw,omitempty" json:"csvw,omitempty"`
+	XLS  *Download `bson:"xls,omitempty" json:"xls,omitempty"`
 }
 
 // Download represents a version download from the dataset api
@@ -83,6 +87,12 @@ type Publisher struct {
 	URL  string `json:"href"`
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+// UsageNote represents a note containing extra information associated to the resource
+type UsageNote struct {
+	Title string `json:"title,omitempty"`
+	Note  string `json:"note,omitempty"`
 }
 
 // Links represent the Links within a dataset model
@@ -125,8 +135,8 @@ type Items []Dimension
 func (d Items) Len() int      { return len(d) }
 func (d Items) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 func (d Items) Less(i, j int) bool {
-	iRunes := []rune(d[i].Name)
-	jRunes := []rune(d[j].Name)
+	iRunes := []rune(d[i].ID)
+	jRunes := []rune(d[j].ID)
 
 	max := len(iRunes)
 	if max > len(jRunes) {
@@ -153,11 +163,13 @@ func (d Items) Less(i, j int) bool {
 	return false
 }
 
-// Dimension represents a response model for a dimension endpoint
+// Dimension represents a response model for a dimension listed
+// within the version or metadata endpoints
 type Dimension struct {
-	Name        string `json:"dimension"`
-	Links       Links  `json:"links"`
 	Description string `json:"description"`
+	HRef        string `json:"href"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
 	Label       string `json:"label"`
 }
 
