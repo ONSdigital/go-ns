@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
-	"reflect"
 )
 
 //ErrAudit is the test error returned from a MockAuditor if the audit action & result match error trigger criteria
