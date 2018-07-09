@@ -1,4 +1,4 @@
-package audit_mock
+package auditortest
 
 import (
 	"context"
