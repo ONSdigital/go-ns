@@ -1,6 +1,6 @@
 package common
 
-// Params key value pair for additional audit data not included in the event model.
+// Params represents a generic map of key value pairs
 type Params map[string]string
 
 // Copy preserves the original params value (key value pair)
