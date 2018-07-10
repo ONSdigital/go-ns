@@ -19,15 +19,23 @@ type NeoDB struct {
 	Pool DBPool
 }
 
-type QueryResult struct {
+type Row struct {
 	Data     []interface{}
 	Meta     map[string]interface{}
 	RowIndex int
 }
 
-type ResultExtractorClosure func(result *QueryResult) error
+type RowExtractorClosure func(result *Row) error
 
-func (n *NeoDB) Query(ctx context.Context, cypherQuery string, params map[string]interface{}, resultExtractor ResultExtractorClosure) error {
+func (n *NeoDB) QueryForResults(ctx context.Context, cypherQuery string, params map[string]interface{}, resultExtractor RowExtractorClosure) error {
+	return n.query(ctx, cypherQuery, params, resultExtractor, false)
+}
+
+func (n *NeoDB) QueryForResult(ctx context.Context, cypherQuery string, params map[string]interface{}, resultExtractor RowExtractorClosure) error {
+	return n.query(ctx, cypherQuery, params, resultExtractor, true)
+}
+
+func (n *NeoDB) query(ctx context.Context, cypherQuery string, params map[string]interface{}, resultExtractor RowExtractorClosure, singleResult bool) error {
 	conn, err := n.Pool.OpenPool()
 	if err != nil {
 		log.ErrorCtx(ctx, errors.WithMessage(err, "error opening neo4j connection"), nil)
@@ -41,26 +49,30 @@ func (n *NeoDB) Query(ctx context.Context, cypherQuery string, params map[string
 	}
 	defer rows.Close()
 
-	if err := n.ExtractResults(ctx, rows, resultExtractor); err != nil {
+	if err := n.extractResults(ctx, rows, resultExtractor, singleResult); err != nil {
 		return errors.WithMessage(err, "error extracting row data")
 	}
+
 	return nil
 }
 
-func (n *NeoDB) ExtractResults(ctx context.Context, rows bolt.Rows, resultExtractor ResultExtractorClosure) error {
+func (n *NeoDB) extractResults(ctx context.Context, rows bolt.Rows, resultExtractor RowExtractorClosure, singleResult bool) error {
 	index := 0
 	for {
 		data, meta, err := rows.NextNeo()
 		if err != nil {
 			if err == io.EOF {
-				log.InfoCtx(ctx, "ExtractResults: reached end of result rows", nil)
+				log.InfoCtx(ctx, "extractResults: reached end of result rows", nil)
 				return nil
 			} else {
 				log.ErrorCtx(ctx, errors.WithMessage(err, "row error, breaking loop"), nil)
 				return err
 			}
 		}
-		if err := resultExtractor(&QueryResult{Data: data, Meta: meta, RowIndex: index}); err != nil {
+		if singleResult && index > 0 {
+			return errors.New("ExtractResult: expected single result but was not")
+		}
+		if err := resultExtractor(&Row{Data: data, Meta: meta, RowIndex: index}); err != nil {
 			return err
 		}
 		index++
