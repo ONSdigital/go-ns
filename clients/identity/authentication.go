@@ -10,7 +10,10 @@ import (
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/pkg/errors"
 )
+
+var errUnableToIdentifyRequest = errors.New("unable to determine the user or service making the request")
 
 type tokenObject struct {
 	numberOfParts int
@@ -18,22 +21,24 @@ type tokenObject struct {
 	tokenPart     string
 }
 
-type IdentityClient common.APIClient
+// Client is an alias to a generic/common api client structure
+type Client common.APIClient
 
-type IdentityClienter interface {
+// Clienter provides an interface to checking identity of incoming request
+type Clienter interface {
 	CheckRequest(req *http.Request) (context.Context, int, error)
 }
 
 // NewAPIClient returns an IdentityClient
-func NewAPIClient(cli common.RCHTTPClienter, url string) (api *IdentityClient) {
-	return &IdentityClient{
+func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
+	return &Client{
 		HTTPClient: cli,
 		BaseURL:    url,
 	}
 }
 
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int, error) {
+func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) {
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
@@ -55,7 +60,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
-		return ctx, http.StatusUnauthorized, nil
+		return ctx, http.StatusUnauthorized, errors.WithMessage(errUnableToIdentifyRequest, "no headers set on request")
 	}
 
 	url := api.BaseURL + "/identity"
@@ -72,7 +77,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	outboundAuthReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	if isUserReq {
@@ -90,20 +95,18 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	// Check to see if the user is authorised
 	if resp.StatusCode != http.StatusOK {
-		logData["status"] = resp.StatusCode
-		log.DebugR(req, "unexpected status code returned from AuthAPI", logData)
-		return nil, resp.StatusCode, nil
+		return nil, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI")
 	}
 
 	identityResp, err := unmarshalIdentityResponse(resp)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	var userIdentity string

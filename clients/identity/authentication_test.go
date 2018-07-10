@@ -40,7 +40,7 @@ func TestHandler_NoAuth(t *testing.T) {
 
 			Convey("Then the downstream HTTP handler should not be called", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-				So(err, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "no headers set on request: "+errUnableToIdentifyRequest.Error())
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
@@ -112,7 +112,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			})
 
 			Convey("Then there is no error but the response code matches the identity service", func() {
-				So(err, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "unexpected status code returned from AuthAPI: "+errUnableToIdentifyRequest.Error())
 				So(status, ShouldEqual, http.StatusNotFound)
 				So(ctx, ShouldBeNil)
 			})
