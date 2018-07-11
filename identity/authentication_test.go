@@ -68,7 +68,7 @@ func TestCheck_emptyIdentity(t *testing.T) {
 
 		Convey("When the authentication handler is called", func() {
 			auditor := auditortest.New()
-			Check(auditor, "test-action", httpHandler)(responseRecorder, req)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
 			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
@@ -106,7 +106,7 @@ func TestCheck_identityProvided(t *testing.T) {
 
 		Convey("When the authentication handler is called", func() {
 			auditor := auditortest.New()
-			Check(auditor, "test-action", httpHandler)(responseRecorder, req)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
 			Convey("Then the response is true", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusOK)
@@ -142,7 +142,7 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 		Convey("When the authentication handler is called and fails to audit attempt successfully", func() {
 			auditor := auditortest.NewErroring(testAction, audit.Attempted)
-			Check(auditor, "test-action", httpHandler)(responseRecorder, req)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
 			Convey("Then a 500 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)
@@ -177,7 +177,7 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 		Convey("When the authentication handler is called and fails to audit attempt successfully", func() {
 			auditor := auditortest.NewErroring(testAction, audit.Unsuccessful)
-			Check(auditor, "test-action", httpHandler)(responseRecorder, req)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
 			Convey("Then a 500 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)

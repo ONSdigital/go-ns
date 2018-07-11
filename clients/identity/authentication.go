@@ -26,10 +26,10 @@ type Client common.APIClient
 
 // Clienter provides an interface to checking identity of incoming request
 type Clienter interface {
-	CheckRequest(req *http.Request) (context.Context, int, error)
+	CheckRequest(req *http.Request) (context.Context, int, authError, httpError)
 }
 
-// NewAPIClient returns an IdentityClient
+// NewAPIClient returns an Client
 func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
 	return &Client{
 		HTTPClient: cli,
@@ -37,8 +37,11 @@ func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
 	}
 }
 
+type authError error
+type httpError error
+
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) {
+func (api Client) CheckRequest(req *http.Request) (context.Context, int, authError, httpError) {
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
@@ -60,7 +63,7 @@ func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) 
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
-		return ctx, http.StatusUnauthorized, errors.WithMessage(errUnableToIdentifyRequest, "no headers set on request")
+		return ctx, http.StatusUnauthorized, errors.WithMessage(errUnableToIdentifyRequest, "no headers set on request"), nil
 	}
 
 	url := api.BaseURL + "/identity"
@@ -77,7 +80,7 @@ func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) 
 	outboundAuthReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, http.StatusInternalServerError, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	if isUserReq {
@@ -95,18 +98,18 @@ func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) 
 	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, http.StatusInternalServerError, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	// Check to see if the user is authorised
 	if resp.StatusCode != http.StatusOK {
-		return nil, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI")
+		return ctx, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI"), nil
 	}
 
 	identityResp, err := unmarshalIdentityResponse(resp)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, http.StatusInternalServerError, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	var userIdentity string
@@ -123,7 +126,7 @@ func (api Client) CheckRequest(req *http.Request) (context.Context, int, error) 
 	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
 	ctx = context.WithValue(ctx, common.CallerIdentityKey, identityResp.Identifier)
 
-	return ctx, http.StatusOK, nil
+	return ctx, http.StatusOK, nil, nil
 }
 
 func splitTokens(florenceToken, authToken string, logData log.Data) {
