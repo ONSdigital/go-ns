@@ -20,7 +20,7 @@ const (
 func TestCheck_nilIdentity(t *testing.T) {
 	Convey("Given a request with no identity provided in the request context", t, func() {
 
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017", nil)
 		So(err, ShouldBeNil)
 		responseRecorder := httptest.NewRecorder()
 
@@ -36,7 +36,7 @@ func TestCheck_nilIdentity(t *testing.T) {
 			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
 
-				auditParams := common.Params{"caller_identity": ""}
+				auditParams := common.Params{"dataset_id": "123", "edition": "2017"}
 				auditor.AssertRecordCalls(
 					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
 					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},
@@ -73,7 +73,7 @@ func TestCheck_emptyIdentity(t *testing.T) {
 			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
 
-				auditParams := common.Params{"caller_identity": ""}
+				auditParams := common.Params{}
 				auditor.AssertRecordCalls(
 					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
 					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},
@@ -146,7 +146,7 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 			Convey("Then a 500 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)
-				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal server error")
+				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal error")
 
 				auditParams := common.Params{"caller_identity": testCallerIdentity}
 				auditor.AssertRecordCalls(
@@ -181,9 +181,9 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 			Convey("Then a 500 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)
-				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal server error")
+				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal error")
 
-				auditParams := common.Params{"caller_identity": ""}
+				auditParams := common.Params{}
 				auditor.AssertRecordCalls(
 					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
 					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},

@@ -17,14 +17,13 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		callerIdentity := common.Caller(r.Context())
-		auditParams := common.Params{"caller_identity": callerIdentity}
+		auditParams := audit.GetParameters(ctx, r.URL.EscapedPath())
 		logData := audit.ToLogData(auditParams)
 
 		log.DebugR(r, "checking for an identity in request context", nil)
 
 		if err := auditor.Record(ctx, action, audit.Attempted, auditParams); err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
@@ -33,7 +32,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 			log.ErrorR(r, errors.New("no identity was found in the context of this request"), logData)
 
 			if auditErr := auditor.Record(ctx, action, audit.Unsuccessful, auditParams); auditErr != nil {
-				http.Error(w, "internal server error", http.StatusInternalServerError)
+				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
 			http.Error(w, "unauthenticated request", http.StatusUnauthorized)
