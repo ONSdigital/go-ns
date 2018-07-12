@@ -10,23 +10,13 @@ import (
 // pathIDs relate the possible string matches in path with the respective
 // parameter name as key values pairs
 var pathIDs = map[string]string{
-	"jobs":                  "job_id",
-	"datasets":              "dataset_id",
-	"editions":              "edition",
-	"versions":              "version",
-	"dimensions":            "dimension",
-	"options":               "option",
-	"instances":             "instance_id",
-	"inserted_observations": "inserted_observations",
-	"node_id":               "node_id",
-	"filters":               "filter_blueprint_id",
-	"filter-outputs":        "filter_output_id",
-	"hierarchies":           "instance_id",
-	// TODO add params for codelist API endpoints
+	"jobs":      "job_id",
+	"datasets":  "dataset_id",
+	"instances": "instance_id",
 }
 
 // GetParameters populates audit parameters with path variable values
-func GetParameters(ctx context.Context, path string) common.Params {
+func GetParameters(ctx context.Context, path string, vars map[string]string) common.Params {
 	auditParams := common.Params{}
 
 	callerIdentity := common.Caller(ctx)
@@ -34,16 +24,38 @@ func GetParameters(ctx context.Context, path string) common.Params {
 		auditParams["caller_identity"] = callerIdentity
 	}
 
-	splitPath := strings.Split(path, "/")
+	pathSegments := strings.Split(path, "/")
+	// Remove initial segment if empty
+	if pathSegments[0] == "" {
+		pathSegments = pathSegments[1:]
+	}
+	numberOfSegments := len(pathSegments)
 
-	for i, pathValue := range splitPath {
-		if i+1 >= len(splitPath) {
-			break
+	if pathSegments[0] == "hierarchies" {
+		if numberOfSegments > 1 {
+			auditParams["instance_id"] = pathSegments[1]
+
+			if numberOfSegments > 2 {
+				auditParams["dimension"] = pathSegments[2]
+
+				if numberOfSegments > 3 {
+					auditParams["code"] = pathSegments[3]
+				}
+			}
 		}
 
-		parameter, ok := pathIDs[pathValue]
-		if ok {
-			auditParams[parameter] = splitPath[i+1]
+		return auditParams
+	}
+
+	if pathSegments[0] == "search" {
+		pathSegments = pathSegments[1:]
+	}
+
+	for key, value := range vars {
+		if key == "id" {
+			auditParams[pathIDs[pathSegments[0]]] = value
+		} else {
+			auditParams[key] = value
 		}
 	}
 

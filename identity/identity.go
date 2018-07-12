@@ -20,17 +20,17 @@ func HandlerForHTTPClient(cli clientsidentity.Clienter) func(http.Handler) http.
 
 			log.DebugR(req, "identity middleware called", nil)
 
-			ctx, statusCode, authError, httpError := cli.CheckRequest(req)
+			ctx, statusCode, authFailure, err := cli.CheckRequest(req)
 			logData := log.Data{"auth_status_code": statusCode}
-			if httpError != nil {
-				log.ErrorR(req, httpError, logData)
+			if err != nil {
+				log.ErrorR(req, err, logData)
 
 				w.WriteHeader(statusCode)
 				return
 			}
 
-			if authError != nil {
-				log.ErrorR(req, authError, logData)
+			if authFailure != nil {
+				log.ErrorR(req, authFailure, logData)
 
 				w.WriteHeader(statusCode)
 				return

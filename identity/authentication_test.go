@@ -9,6 +9,7 @@ import (
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/audit/auditortest"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -19,9 +20,16 @@ const (
 
 func TestCheck_nilIdentity(t *testing.T) {
 	Convey("Given a request with no identity provided in the request context", t, func() {
-
-		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017/version/3", nil)
 		So(err, ShouldBeNil)
+
+		vars := map[string]string{
+			"id":      "123",
+			"edition": "2017",
+			"version": "3",
+		}
+
+		req = mux.SetURLVars(req, vars)
 		responseRecorder := httptest.NewRecorder()
 
 		handlerCalled := false
@@ -36,7 +44,7 @@ func TestCheck_nilIdentity(t *testing.T) {
 			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
 
-				auditParams := common.Params{"dataset_id": "123", "edition": "2017"}
+				auditParams := common.Params{"dataset_id": "123", "edition": "2017", "version": "3"}
 				auditor.AssertRecordCalls(
 					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
 					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},

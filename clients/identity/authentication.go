@@ -26,10 +26,10 @@ type Client common.APIClient
 
 // Clienter provides an interface to checking identity of incoming request
 type Clienter interface {
-	CheckRequest(req *http.Request) (context.Context, int, authError, httpError)
+	CheckRequest(req *http.Request) (context.Context, int, authFailure, error)
 }
 
-// NewAPIClient returns an Client
+// NewAPIClient returns a Client
 func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
 	return &Client{
 		HTTPClient: cli,
@@ -37,11 +37,12 @@ func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
 	}
 }
 
-type authError error
-type httpError error
+// authFailure is an alias to an error type, this represents the failure to
+// authenticate request over a generic error from a http or marshalling error
+type authFailure error
 
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api Client) CheckRequest(req *http.Request) (context.Context, int, authError, httpError) {
+func (api Client) CheckRequest(req *http.Request) (context.Context, int, authFailure, error) {
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()

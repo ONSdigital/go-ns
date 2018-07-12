@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
+	"github.com/gorilla/mux"
 )
 
 // Auditor is an alias for the auditor service
@@ -17,7 +18,8 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		auditParams := audit.GetParameters(ctx, r.URL.EscapedPath())
+		vars := mux.Vars(r)
+		auditParams := audit.GetParameters(ctx, r.URL.EscapedPath(), vars)
 		logData := audit.ToLogData(auditParams)
 
 		log.DebugR(r, "checking for an identity in request context", nil)
