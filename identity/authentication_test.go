@@ -6,15 +6,30 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ONSdigital/go-ns/audit"
+	"github.com/ONSdigital/go-ns/audit/auditortest"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
+)
+
+const (
+	testAction         = "test-action"
+	testCallerIdentity = "user@ons.gov.uk"
 )
 
 func TestCheck_nilIdentity(t *testing.T) {
 	Convey("Given a request with no identity provided in the request context", t, func() {
-
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017/version/3", nil)
 		So(err, ShouldBeNil)
+
+		vars := map[string]string{
+			"id":      "123",
+			"edition": "2017",
+			"version": "3",
+		}
+
+		req = mux.SetURLVars(req, vars)
 		responseRecorder := httptest.NewRecorder()
 
 		handlerCalled := false
@@ -23,11 +38,17 @@ func TestCheck_nilIdentity(t *testing.T) {
 		})
 
 		Convey("When the authentication handler is called", func() {
+			auditor := auditortest.New()
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
-			Check(httpHandler)(responseRecorder, req)
-
-			Convey("Then a 404 response is returned", func() {
+			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
+
+				auditParams := common.Params{"dataset_id": "123", "edition": "2017", "version": "3"}
+				auditor.AssertRecordCalls(
+					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
+					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},
+				)
 			})
 
 			Convey("Then the downstream HTTP handler is not called", func() {
@@ -54,11 +75,17 @@ func TestCheck_emptyIdentity(t *testing.T) {
 		})
 
 		Convey("When the authentication handler is called", func() {
+			auditor := auditortest.New()
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
-			Check(httpHandler)(responseRecorder, req)
-
-			Convey("Then a 404 response is returned", func() {
+			Convey("Then a 401 response is returned", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusUnauthorized)
+
+				auditParams := common.Params{}
+				auditor.AssertRecordCalls(
+					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
+					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},
+				)
 			})
 
 			Convey("Then the downstream HTTP handler is not called", func() {
@@ -74,7 +101,7 @@ func TestCheck_identityProvided(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
 
-		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "user@ons.gov.uk")
+		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
 		req = req.WithContext(ctx)
 
 		So(err, ShouldBeNil)
@@ -86,11 +113,16 @@ func TestCheck_identityProvided(t *testing.T) {
 		})
 
 		Convey("When the authentication handler is called", func() {
-
-			Check(httpHandler)(responseRecorder, req)
+			auditor := auditortest.New()
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
 
 			Convey("Then the response is true", func() {
 				So(responseRecorder.Code, ShouldEqual, http.StatusOK)
+
+				auditParams := common.Params{"caller_identity": testCallerIdentity}
+				auditor.AssertRecordCalls(
+					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
+				)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -100,11 +132,84 @@ func TestCheck_identityProvided(t *testing.T) {
 	})
 }
 
+func TestCheck_AuditFailure(t *testing.T) {
+	Convey("Given a request with an identity provided in the request context", t, func() {
+
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+
+		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
+		req = req.WithContext(ctx)
+
+		So(err, ShouldBeNil)
+		responseRecorder := httptest.NewRecorder()
+
+		handlerCalled := false
+		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		Convey("When the authentication handler is called and fails to audit attempt successfully", func() {
+			auditor := auditortest.NewErroring(testAction, audit.Attempted)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
+
+			Convey("Then a 500 response is returned", func() {
+				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)
+				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal error")
+
+				auditParams := common.Params{"caller_identity": testCallerIdentity}
+				auditor.AssertRecordCalls(
+					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
+				)
+			})
+
+			Convey("Then the downstream HTTP handler is not called", func() {
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given a request with an empty identity provided in the request context", t, func() {
+
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+
+		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "")
+		req = req.WithContext(ctx)
+
+		So(err, ShouldBeNil)
+		responseRecorder := httptest.NewRecorder()
+
+		handlerCalled := false
+		httpHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		Convey("When the authentication handler is called and fails to audit attempt successfully", func() {
+			auditor := auditortest.NewErroring(testAction, audit.Unsuccessful)
+			Check(auditor, testAction, httpHandler)(responseRecorder, req)
+
+			Convey("Then a 500 response is returned", func() {
+				So(responseRecorder.Code, ShouldEqual, http.StatusInternalServerError)
+				So(responseRecorder.Body.String(), ShouldContainSubstring, "internal error")
+
+				auditParams := common.Params{}
+				auditor.AssertRecordCalls(
+					auditortest.Expected{Action: testAction, Result: audit.Attempted, Params: auditParams},
+					auditortest.Expected{Action: testAction, Result: audit.Unsuccessful, Params: auditParams},
+				)
+			})
+
+			Convey("Then the downstream HTTP handler is not called", func() {
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestIsPresent_withIdentity(t *testing.T) {
 
 	Convey("Given a context with an identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "user@ons.gov.uk")
+		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, testCallerIdentity)
 
 		Convey("When IsCallerPresent is called with the context", func() {
 

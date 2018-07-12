@@ -10,7 +10,10 @@ import (
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/pkg/errors"
 )
+
+var errUnableToIdentifyRequest = errors.New("unable to determine the user or service making the request")
 
 type tokenObject struct {
 	numberOfParts int
@@ -18,22 +21,28 @@ type tokenObject struct {
 	tokenPart     string
 }
 
-type IdentityClient common.APIClient
+// Client is an alias to a generic/common api client structure
+type Client common.APIClient
 
-type IdentityClienter interface {
-	CheckRequest(req *http.Request) (context.Context, int, error)
+// Clienter provides an interface to checking identity of incoming request
+type Clienter interface {
+	CheckRequest(req *http.Request) (context.Context, int, authFailure, error)
 }
 
-// NewAPIClient returns an IdentityClient
-func NewAPIClient(cli common.RCHTTPClienter, url string) (api *IdentityClient) {
-	return &IdentityClient{
+// NewAPIClient returns a Client
+func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
+	return &Client{
 		HTTPClient: cli,
 		BaseURL:    url,
 	}
 }
 
+// authFailure is an alias to an error type, this represents the failure to
+// authenticate request over a generic error from a http or marshalling error
+type authFailure error
+
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int, error) {
+func (api Client) CheckRequest(req *http.Request) (context.Context, int, authFailure, error) {
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
@@ -55,7 +64,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
-		return ctx, http.StatusUnauthorized, nil
+		return ctx, http.StatusUnauthorized, errors.WithMessage(errUnableToIdentifyRequest, "no headers set on request"), nil
 	}
 
 	url := api.BaseURL + "/identity"
@@ -72,7 +81,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	outboundAuthReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	if isUserReq {
@@ -90,20 +99,18 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	// Check to see if the user is authorised
 	if resp.StatusCode != http.StatusOK {
-		logData["status"] = resp.StatusCode
-		log.DebugR(req, "unexpected status code returned from AuthAPI", logData)
-		return nil, resp.StatusCode, nil
+		return ctx, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI"), nil
 	}
 
 	identityResp, err := unmarshalIdentityResponse(resp)
 	if err != nil {
 		log.ErrorR(req, err, logData)
-		return nil, 0, err
+		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	var userIdentity string
@@ -120,7 +127,7 @@ func (api IdentityClient) CheckRequest(req *http.Request) (context.Context, int,
 	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
 	ctx = context.WithValue(ctx, common.CallerIdentityKey, identityResp.Identifier)
 
-	return ctx, http.StatusOK, nil
+	return ctx, http.StatusOK, nil, nil
 }
 
 func splitTokens(florenceToken, authToken string, logData log.Data) {
