@@ -377,9 +377,14 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version str
 	return nil
 }
 
+// GetMetadataURL returns the URL for the metadata of a given dataset id, edition and version
+func (c *Client) GetMetadataURL(id, edition, version string) string {
+	return fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.url, id, edition, version)
+}
+
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
 func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version string) (m Metadata, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.url, id, edition, version)
+	uri := c.GetMetadataURL(id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version metadata", service, uri)
 

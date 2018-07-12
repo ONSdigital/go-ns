@@ -31,13 +31,17 @@ type Model struct {
 	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
 }
 
+type ModelCollection struct {
+	Items []Model `json:"items"`
+}
+
 // Version represents a version within a dataset
 type Version struct {
 	Alerts        *[]Alert            `json:"alerts"`
 	CollectionID  string              `json:"collection_id"`
-	Dimensions    []Dimension         `json:"dimensions"`
 	Downloads     map[string]Download `json:"downloads"`
 	Edition       string              `json:"edition"`
+	Dimensions    []Dimension         `json:"dimensions"`
 	ID            string              `json:"id"`
 	InstanceID    string              `json:"instance_id"`
 	LatestChanges []Change            `json:"latest_changes"`
@@ -135,8 +139,8 @@ type Items []Dimension
 func (d Items) Len() int      { return len(d) }
 func (d Items) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 func (d Items) Less(i, j int) bool {
-	iRunes := []rune(d[i].ID)
-	jRunes := []rune(d[j].ID)
+	iRunes := []rune(d[i].Name)
+	jRunes := []rune(d[j].Name)
 
 	max := len(iRunes)
 	if max > len(jRunes) {
@@ -163,13 +167,11 @@ func (d Items) Less(i, j int) bool {
 	return false
 }
 
-// Dimension represents a response model for a dimension listed
-// within the version or metadata endpoints
+// Dimension represents a response model for a dimension endpoint
 type Dimension struct {
+	Name        string `json:"dimension"`
+	Links       Links  `json:"links"`
 	Description string `json:"description"`
-	HRef        string `json:"href"`
-	ID          string `json:"id"`
-	Name        string `json:"name"`
 	Label       string `json:"label"`
 }
 
