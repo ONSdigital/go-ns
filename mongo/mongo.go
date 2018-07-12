@@ -11,8 +11,8 @@ import (
 
 // keep these in sync with Timestamps tags below
 const (
-	lastUpdatedKey     = "last_updated"
-	uniqueTimestampKey = "unique_timestamp"
+	LastUpdatedKey     = "last_updated"
+	UniqueTimestampKey = "unique_timestamp"
 )
 
 // keep tags in sync with above const
@@ -104,14 +104,14 @@ func WithNamespacedUpdates(updateDoc bson.M, prefixes []string) (bson.M, error) 
 
 // WithLastUpdatedUpdate adds last_updated to updateDoc
 func WithLastUpdatedUpdate(updateDoc bson.M) (bson.M, error) {
-	return withCurrentDate(updateDoc, lastUpdatedKey, true)
+	return withCurrentDate(updateDoc, LastUpdatedKey, true)
 }
 
 // WithNamespacedLastUpdatedUpdate adds unique timestamp to updateDoc
 func WithNamespacedLastUpdatedUpdate(updateDoc bson.M, prefixes []string) (newUpdateDoc bson.M, err error) {
 	newUpdateDoc = updateDoc
 	for _, prefix := range prefixes {
-		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+lastUpdatedKey, true); err != nil {
+		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+LastUpdatedKey, true); err != nil {
 			return nil, err
 		}
 	}
@@ -120,14 +120,14 @@ func WithNamespacedLastUpdatedUpdate(updateDoc bson.M, prefixes []string) (newUp
 
 // WithUniqueTimestampUpdate adds unique timestamp to updateDoc
 func WithUniqueTimestampUpdate(updateDoc bson.M) (bson.M, error) {
-	return withCurrentDate(updateDoc, uniqueTimestampKey, bson.M{"$type": "timestamp"})
+	return withCurrentDate(updateDoc, UniqueTimestampKey, bson.M{"$type": "timestamp"})
 }
 
 // WithNamespacedUniqueTimestampUpdate adds unique timestamp to updateDoc
 func WithNamespacedUniqueTimestampUpdate(updateDoc bson.M, prefixes []string) (newUpdateDoc bson.M, err error) {
 	newUpdateDoc = updateDoc
 	for _, prefix := range prefixes {
-		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+uniqueTimestampKey, bson.M{"$type": "timestamp"}); err != nil {
+		if newUpdateDoc, err = withCurrentDate(newUpdateDoc, prefix+UniqueTimestampKey, bson.M{"$type": "timestamp"}); err != nil {
 			return nil, err
 		}
 	}
@@ -136,7 +136,7 @@ func WithNamespacedUniqueTimestampUpdate(updateDoc bson.M, prefixes []string) (n
 
 // WithUniqueTimestampQuery adds unique timestamp to queryDoc
 func WithUniqueTimestampQuery(queryDoc bson.M, timestamp bson.MongoTimestamp) bson.M {
-	queryDoc[uniqueTimestampKey] = timestamp
+	queryDoc[UniqueTimestampKey] = timestamp
 	return queryDoc
 }
 
@@ -144,7 +144,7 @@ func WithUniqueTimestampQuery(queryDoc bson.M, timestamp bson.MongoTimestamp) bs
 func WithNamespacedUniqueTimestampQuery(queryDoc bson.M, timestamps []bson.MongoTimestamp, prefixes []string) bson.M {
 	newQueryDoc := queryDoc
 	for idx, prefix := range prefixes {
-		newQueryDoc[prefix+uniqueTimestampKey] = timestamps[idx]
+		newQueryDoc[prefix+UniqueTimestampKey] = timestamps[idx]
 	}
 	return newQueryDoc
 }
