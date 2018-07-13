@@ -159,6 +159,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 		return c.backoff(doer, err, ctx, c.HTTPClient, req, errors.New("Bad server status"))
 	}
 
+	if c.ExponentialBackoff && resp.StatusCode == http.StatusConflict {
+		return c.backoff(doer, err, ctx, c.HTTPClient, req, errors.New("Conflict - request could not be completed due to a conflict with the current state of the target resource"))
+	}
+
 	return resp, err
 }
 
