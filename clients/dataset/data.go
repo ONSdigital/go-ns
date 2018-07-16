@@ -169,10 +169,11 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	Name        string `json:"dimension"`
+	Name        string `json:"name"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
 	Label       string `json:"label"`
+	URL         string `json:"href,omitempty"`
 }
 
 // Options represents a list of options from the dataset api
@@ -229,7 +230,7 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
-func (m Metadata) String() string {
+func (m Metadata) ToString() string {
 	var b bytes.Buffer
 
 	b.WriteString(fmt.Sprintf("Title: %s\n", m.Title))
