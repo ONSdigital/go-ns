@@ -221,6 +221,11 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(handlerReq.Context().Value(common.CallerIdentityKey), ShouldEqual, userIdentifier)
 				So(handlerReq.Context().Value(common.UserIdentityKey), ShouldEqual, userIdentifier)
 			})
+
+			Convey("Then the request body has not been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldBeNil)
+			})
 		})
 	})
 }
@@ -341,6 +346,11 @@ func TestHandler_authToken(t *testing.T) {
 				So(common.Caller(handlerReq.Context()), ShouldEqual, serviceIdentifier)
 				So(common.User(handlerReq.Context()), ShouldEqual, userIdentifier)
 			})
+
+			Convey("Then the request body has not been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldBeNil)
+			})
 		})
 	})
 }
@@ -400,6 +410,11 @@ func TestHandler_bothTokens(t *testing.T) {
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
 				So(handlerReq.Context().Value(common.UserIdentityKey), ShouldEqual, userIdentifier)
 				So(handlerReq.Context().Value(common.CallerIdentityKey), ShouldEqual, userIdentifier)
+			})
+
+			Convey("Then the request body has not been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldBeNil)
 			})
 		})
 	})

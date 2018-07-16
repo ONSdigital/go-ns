@@ -21,7 +21,28 @@ func TestDrainBody_WithRequestBody(t *testing.T) {
 
 			request.DrainBody(r)
 
-			Convey("The all bytes have been read from the body", func() {
+			Convey("Then all bytes have been read from the body", func() {
+				_, err = r.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
+		})
+	})
+}
+
+func TestDrainBody_WithEmptyRequestBody(t *testing.T) {
+
+	Convey("Given a request with an empty body", t, func() {
+
+		body := bytes.NewBuffer(make([]byte, 0))
+
+		r, err := http.NewRequest("GET", "/some/url", body)
+		So(err, ShouldBeNil)
+
+		Convey("When the DrainBody function is called", func() {
+
+			request.DrainBody(r)
+
+			Convey("Then the expected io.EOF is returned when reading the body", func() {
 				_, err = r.Body.Read(make([]byte, 1))
 				So(err, ShouldEqual, io.EOF)
 			})
