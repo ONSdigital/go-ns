@@ -6,11 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"bytes"
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/audit/auditortest"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
+	"io"
 )
 
 const (
@@ -20,7 +22,7 @@ const (
 
 func TestCheck_nilIdentity(t *testing.T) {
 	Convey("Given a request with no identity provided in the request context", t, func() {
-		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017/version/3", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/datasets/123/editions/2017/version/3", bytes.NewBufferString("some body content"))
 		So(err, ShouldBeNil)
 
 		vars := map[string]string{
@@ -54,6 +56,11 @@ func TestCheck_nilIdentity(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -61,7 +68,7 @@ func TestCheck_nilIdentity(t *testing.T) {
 func TestCheck_emptyIdentity(t *testing.T) {
 	Convey("Given a request with an empty identity provided in the request context", t, func() {
 
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
 		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "")
 		req = req.WithContext(ctx)
@@ -91,6 +98,11 @@ func TestCheck_emptyIdentity(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -99,7 +111,7 @@ func TestCheck_identityProvided(t *testing.T) {
 
 	Convey("Given a request with an identity provided in the request context", t, func() {
 
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
 		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
 		req = req.WithContext(ctx)
@@ -135,7 +147,7 @@ func TestCheck_identityProvided(t *testing.T) {
 func TestCheck_AuditFailure(t *testing.T) {
 	Convey("Given a request with an identity provided in the request context", t, func() {
 
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
 		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
 		req = req.WithContext(ctx)
@@ -165,12 +177,17 @@ func TestCheck_AuditFailure(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 
 	Convey("Given a request with an empty identity provided in the request context", t, func() {
 
-		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
+		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
 		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "")
 		req = req.WithContext(ctx)
@@ -200,6 +217,11 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
+			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
 			})
 		})
 	})
