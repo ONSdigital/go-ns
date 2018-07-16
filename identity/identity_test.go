@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
+	"io"
 )
 
 const (
@@ -30,7 +31,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 
 	Convey("Given a http request with no headers", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &commontest.RCHTTPClienterMock{}
@@ -54,6 +55,11 @@ func TestHandler_NoHeaders(t *testing.T) {
 			Convey("Then the http response should have a 401 status", func() {
 				So(responseRecorder.Result().StatusCode, ShouldEqual, http.StatusUnauthorized)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -62,7 +68,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns an error", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
 		}
@@ -99,6 +105,11 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -107,7 +118,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns a non-200 response", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
 		}
@@ -146,6 +157,11 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -154,7 +170,7 @@ func TestHandler_florenceToken(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns 200", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
 		}
@@ -213,7 +229,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 	Convey("Given a request with a florence token, and mock client that returns invalid response JSON", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey: {florenceToken},
 		}
@@ -258,6 +274,11 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			Convey("Then the downstream HTTP handler is not called", func() {
 				So(handlerCalled, ShouldBeFalse)
 			})
+
+			Convey("Then the request body has been drained", func() {
+				_, err := req.Body.Read(make([]byte, 1))
+				So(err, ShouldEqual, io.EOF)
+			})
 		})
 	})
 }
@@ -266,7 +287,7 @@ func TestHandler_authToken(t *testing.T) {
 
 	Convey("Given a request with an auth token, and mock client that returns 200", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.AuthHeaderKey: {upstreamAuthToken},
 			common.UserHeaderKey: {userIdentifier},
@@ -328,7 +349,7 @@ func TestHandler_bothTokens(t *testing.T) {
 
 	Convey("Given a request with both a florence token and service token", t, func() {
 
-		req := httptest.NewRequest("GET", url, nil)
+		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
 			common.FlorenceHeaderKey:    {florenceToken},
 			common.DeprecatedAuthHeader: {upstreamAuthToken},

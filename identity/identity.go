@@ -5,6 +5,7 @@ import (
 
 	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
 	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/go-ns/request"
 )
 
 // Handler controls the authenticating of a request
@@ -25,6 +26,7 @@ func HandlerForHTTPClient(cli clientsidentity.Clienter) func(http.Handler) http.
 			if err != nil {
 				log.ErrorR(req, err, logData)
 
+				request.DrainBody(req)
 				w.WriteHeader(statusCode)
 				return
 			}
@@ -32,6 +34,7 @@ func HandlerForHTTPClient(cli clientsidentity.Clienter) func(http.Handler) http.
 			if authFailure != nil {
 				log.ErrorR(req, authFailure, logData)
 
+				request.DrainBody(req)
 				w.WriteHeader(statusCode)
 				return
 			}

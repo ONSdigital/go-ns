@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/go-ns/request"
 	"github.com/gorilla/mux"
 )
 
@@ -26,6 +27,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 
 		if err := auditor.Record(ctx, action, audit.Attempted, auditParams); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
+			request.DrainBody(r)
 			return
 		}
 
@@ -35,10 +37,12 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 
 			if auditErr := auditor.Record(ctx, action, audit.Unsuccessful, auditParams); auditErr != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)
+				request.DrainBody(r)
 				return
 			}
-			http.Error(w, "unauthenticated request", http.StatusUnauthorized)
 
+			http.Error(w, "unauthenticated request", http.StatusUnauthorized)
+			request.DrainBody(r)
 			return
 		}
 
