@@ -95,8 +95,8 @@ type Publisher struct {
 
 // UsageNote represents a note containing extra information associated to the resource
 type UsageNote struct {
-	Title string `json:"title,omitempty"`
 	Note  string `json:"note,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 // Links represent the Links within a dataset model
