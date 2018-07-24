@@ -1,10 +1,13 @@
 package vault
 
 import (
+	"encoding/json"
 	"errors"
 
 	vaultapi "github.com/hashicorp/vault/api"
 )
+
+var ErrorKeyNotFound = errors.New("key not found")
 
 // VaultClient Used to read and write secrets from vault
 type VaultClient struct {
@@ -86,5 +89,49 @@ func (c *VaultClient) Write(path string, data map[string]interface{}) error {
 func (c *VaultClient) WriteKey(path, key, value string) error {
 	data := make(map[string]interface{})
 	data[key] = value
+	return c.Write(path, data)
+}
+
+// VRead reads a versioned secret from vault - cf Read, above -
+// returns the secret (map) and the version
+func (c *VaultClient) VRead(path string) (map[string]interface{}, int64, error) {
+	secret, err := c.Read(path)
+	if err != nil {
+		return nil, -1, err
+	}
+	if len(secret) == 0 {
+		// if there is no secret and no error return a empty map
+		return secret, -1, nil
+	}
+	verObj, ok := secret["metadata"].(map[string]interface{})["version"]
+	if !ok {
+		return nil, -1, errors.New("key version not found")
+	}
+	ver, err := verObj.(json.Number).Int64()
+	if err != nil {
+		return nil, -1, errors.New("key version failed to convert to number")
+	}
+	return secret["data"].(map[string]interface{}), ver, err
+}
+
+// VReadKey - cf Read but for versioned secret - return the value of the key and the version
+func (c *VaultClient) VReadKey(path, key string) (string, int64, error) {
+	data, ver, err := c.VRead(path)
+	if err != nil {
+		return "", -1, err
+	}
+	val, ok := data[key]
+	if !ok {
+		return "", -1, ErrorKeyNotFound
+	}
+	return val.(string), ver, nil
+}
+
+func (c *VaultClient) VWriteKey(path, key, value string) error {
+	data := map[string]interface{}{
+		"data": map[string]interface{}{
+			key: value,
+		},
+	}
 	return c.Write(path, data)
 }
