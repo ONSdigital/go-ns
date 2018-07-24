@@ -10,8 +10,6 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 )
 
-//go:generate moq -out generated_mocks.go -pkg audit . AuditorService OutboundProducer
-
 // List of audit messages
 const (
 	Attempted    = "attempted"

@@ -15,10 +15,10 @@
 			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
-			"checksumSHA1": "+Jp0tVXfQ1TM8T+oun82oJtME5U=",
+			"checksumSHA1": "K7wm03LN5CpmnuQPGfSmrx1hNtk=",
 			"path": "github.com/Shopify/sarama",
-			"revision": "2fd980e23bdcbb8edeb78fc704de0c39a6567ffc",
-			"revisionTime": "2017-06-30T17:40:37Z"
+			"revision": "35324cf48e33d8260e1c7c18854465a904ade249",
+			"revisionTime": "2018-05-30T15:11:20Z"
 		},
 		{
 			"checksumSHA1": "88PtOr8dvh0n877kqDsDVZ73MmY=",
@@ -135,10 +135,10 @@
 			"revisionTime": "2016-08-17T18:46:32Z"
 		},
 		{
-			"checksumSHA1": "hIbmXmNbwyP44fi1hh6zJrMcYws=",
+			"checksumSHA1": "Aw8z8w/d+EFt8XCUYPjzSe0bPrU=",
 			"path": "github.com/gorilla/mux",
-			"revision": "ac112f7d75a0714af1bd86ab17749b31f7809640",
-			"revisionTime": "2017-07-03T15:07:09Z"
+			"revision": "cb4698366aa625048f3b815af6a0dea8aef9280a",
+			"revisionTime": "2018-06-05T21:15:56Z"
 		},
 		{
 			"checksumSHA1": "Cz6S4ejgcxlJfzRb72YlOrFoCPQ=",

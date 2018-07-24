@@ -1,9 +1,10 @@
 package audit
 
 import (
+	"testing"
+
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 var (
