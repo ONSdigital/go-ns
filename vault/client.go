@@ -7,7 +7,13 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 )
 
-var ErrorKeyNotFound = errors.New("key not found")
+var (
+	ErrKeyNotFound      = errors.New("key not found")
+	ErrVersionNotFound  = errors.New("version not found")
+	ErrMetadataNotFound = errors.New("metadata not found")
+	ErrDataNotFound     = errors.New("data not found")
+	ErrVersionInvalid   = errors.New("version failed to convert to number")
+)
 
 // VaultClient Used to read and write secrets from vault
 type VaultClient struct {
@@ -103,15 +109,23 @@ func (c *VaultClient) VRead(path string) (map[string]interface{}, int64, error) 
 		// if there is no secret and no error return a empty map
 		return secret, -1, nil
 	}
-	verObj, ok := secret["metadata"].(map[string]interface{})["version"]
+	metadata, ok := secret["metadata"]
 	if !ok {
-		return nil, -1, errors.New("key version not found")
+		return nil, -1, ErrMetadataNotFound
+	}
+	verObj, ok := metadata.(map[string]interface{})["version"]
+	if !ok {
+		return nil, -1, ErrVersionNotFound
 	}
 	ver, err := verObj.(json.Number).Int64()
 	if err != nil {
-		return nil, -1, errors.New("key version failed to convert to number")
+		return nil, -1, ErrVersionInvalid
 	}
-	return secret["data"].(map[string]interface{}), ver, err
+	data, ok := secret["data"]
+	if !ok {
+		return nil, -1, ErrDataNotFound
+	}
+	return data.(map[string]interface{}), ver, err
 }
 
 // VReadKey - cf Read but for versioned secret - return the value of the key and the version
@@ -122,7 +136,7 @@ func (c *VaultClient) VReadKey(path, key string) (string, int64, error) {
 	}
 	val, ok := data[key]
 	if !ok {
-		return "", -1, ErrorKeyNotFound
+		return "", -1, ErrKeyNotFound
 	}
 	return val.(string), ver, nil
 }

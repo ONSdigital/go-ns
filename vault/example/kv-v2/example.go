@@ -43,7 +43,7 @@ func main() {
 
 	readVal, ver, err := client.VReadKey(path, key)
 	if err != nil {
-		if err == vault.ErrorKeyNotFound {
+		if err == vault.ErrKeyNotFound {
 			log.ErrorC("key not in vault", err, logData)
 		} else {
 			log.ErrorC("failed to read PK-Key from vault", err, logData)
