@@ -19,7 +19,7 @@ type Model struct {
 	NationalStatistic bool             `json:"national_statistic"`
 	NextRelease       string           `json:"next_release"`
 	Publications      []Publication    `json:"publications"`
-	Publisher         Publisher        `json:"publisher"`
+	Publisher         *Publisher       `json:"publisher"`
 	QMI               Publication      `json:"qmi"`
 	RelatedDatasets   []RelatedDataset `json:"related_datasets"`
 	ReleaseFrequency  string           `json:"release_frequency"`
@@ -28,6 +28,7 @@ type Model struct {
 	Title             string           `json:"title"`
 	UnitOfMeasure     string           `json:"unit_of_measure"`
 	URI               string           `json:"uri"`
+	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
 }
 
 type ModelCollection struct {
@@ -36,7 +37,7 @@ type ModelCollection struct {
 
 // Version represents a version within a dataset
 type Version struct {
-	Alerts        []Alert             `json:"alerts"`
+	Alerts        *[]Alert            `json:"alerts"`
 	CollectionID  string              `json:"collection_id"`
 	Downloads     map[string]Download `json:"downloads"`
 	Edition       string              `json:"edition"`
@@ -62,6 +63,13 @@ type Metadata struct {
 	Model
 }
 
+// DownloadList represents a list of objects of containing information on the downloadable files
+type DownloadList struct {
+	CSV  *Download `bson:"csv,omitempty" json:"csv,omitempty"`
+	CSVW *Download `bson:"csvw,omitempty" json:"csvw,omitempty"`
+	XLS  *Download `bson:"xls,omitempty" json:"xls,omitempty"`
+}
+
 // Download represents a version download from the dataset api
 type Download struct {
 	URL     string `json:"href"`
@@ -83,6 +91,12 @@ type Publisher struct {
 	URL  string `json:"href"`
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+// UsageNote represents a note containing extra information associated to the resource
+type UsageNote struct {
+	Note  string `json:"note,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 // Links represent the Links within a dataset model
@@ -155,10 +169,11 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	Name        string `json:"dimension"`
+	Name        string `json:"name"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
 	Label       string `json:"label"`
+	URL         string `json:"href,omitempty"`
 }
 
 // Options represents a list of options from the dataset api
@@ -215,7 +230,7 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
-func (m Metadata) String() string {
+func (m Metadata) ToString() string {
 	var b bytes.Buffer
 
 	b.WriteString(fmt.Sprintf("Title: %s\n", m.Title))
