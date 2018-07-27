@@ -169,7 +169,7 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	Name        string `json:"name"`
+	Name        string `json:"dimension"`
 	Links       Links  `json:"links"`
 	Description string `json:"description"`
 	Label       string `json:"label"`
