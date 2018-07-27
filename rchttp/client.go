@@ -234,7 +234,7 @@ func (c *Client) backoff(f func(...interface{}) (*http.Response, error), retryEr
 			err = args[0].(context.Context).Err()
 			return
 		}
-		if err == nil && resp.StatusCode < http.StatusInternalServerError {
+		if err == nil && resp.StatusCode < http.StatusInternalServerError && resp.StatusCode != http.StatusConflict {
 			return
 		}
 	}
