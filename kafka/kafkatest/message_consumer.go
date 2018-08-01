@@ -9,6 +9,7 @@ func NewMessageConsumer(messages chan kafka.Message) *MessageConsumer {
 	return &MessageConsumer{
 		messages: messages,
 		closer:   nil,
+		errors:   nil,
 	}
 }
 
@@ -16,6 +17,7 @@ func NewMessageConsumer(messages chan kafka.Message) *MessageConsumer {
 type MessageConsumer struct {
 	messages chan kafka.Message
 	closer   chan bool
+	errors   chan error
 }
 
 // Incoming returns the stored schema channel.
@@ -32,4 +34,9 @@ func (consumer *MessageConsumer) CommitAndRelease(m kafka.Message) {
 // Closer returns the stored closer channel.
 func (consumer *MessageConsumer) Closer() chan bool {
 	return consumer.closer
+}
+
+// Errors returns the stored errors channel.
+func (consumer *MessageConsumer) Errors() chan error {
+	return consumer.errors
 }
