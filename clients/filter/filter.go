@@ -382,8 +382,8 @@ func (c *Client) RemoveDimension(ctx context.Context, filterID, name string) (er
 		return
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	if resp.StatusCode != http.StatusNoContent {
+		err = &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
 		return
 	}
 
