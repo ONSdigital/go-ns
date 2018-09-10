@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "5kbwTr1nkUteRYoVY/ecO0Z0I4w=",
+			"path": "github.com/ONSdigital/dp-frontend-geography-controller/models",
+			"revision": "685d11f898cc71646756fdaa3326bbe9309972ef",
+			"revisionTime": "2018-09-04T16:06:57Z"
+		},
+		{
 			"checksumSHA1": "ubWg5ErV6hnoLoGFHiTxIiVmESo=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model",
 			"revision": "9c144b84e020782a54b29d74767bc9f712d4a1dd",
