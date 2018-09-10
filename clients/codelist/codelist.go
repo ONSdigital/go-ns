@@ -7,8 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/dp-frontend-geography-controller/models"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
-	"github.com/ONSdigital/go-ns/rhttp"
+	"github.com/ONSdigital/go-ns/rchttp"
 )
 
 const service = "code-list-api"
@@ -39,21 +40,21 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	cli *rhttp.Client
+	cli *rchttp.Client
 	url string
 }
 
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
 	return &Client{
-		cli: rhttp.DefaultClient,
+		cli: rchttp.DefaultClient,
 		url: codelistAPIURL,
 	}
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(c.url + "/healthcheck")
+	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
 	if err != nil {
 		return service, err
 	}
@@ -71,7 +72,7 @@ func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 
 	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
 		return
 	}
@@ -94,7 +95,7 @@ func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
-	resp, err := c.cli.Get(uri)
+	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
 		return nil, err
 	}
@@ -121,4 +122,45 @@ func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	}
 
 	return idNames, nil
+}
+
+//GetCodelistData reterns the geography codelists
+func (c *Client) GetCodelistData() (results models.CodeListResults, err error) {
+	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
+	resp, err := c.cli.Get(context.Background(), uri)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	var modelResults models.CodeListResults
+	err = json.Unmarshal(b, &modelResults)
+	if err != nil {
+		return
+	}
+	return modelResults, nil
+}
+
+//GetEditionslistData reterns the editions for a codelist
+func (c *Client) GetEditionslistData(url string) (results models.EditionsListResults, err error) {
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	var modelResults models.EditionsListResults
+	err = json.Unmarshal(b, &modelResults)
+	if err != nil {
+		return
+	}
+	return modelResults, nil
 }
