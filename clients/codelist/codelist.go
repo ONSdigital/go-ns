@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/dp-frontend-geography-controller/models"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/rchttp"
 )
@@ -124,8 +123,8 @@ func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	return idNames, nil
 }
 
-//GetCodelistData reterns the geography codelists
-func (c *Client) GetCodelistData() (results models.CodeListResults, err error) {
+//GetGeographyCodeLists returns the geography codelists
+func (c *Client) GetGeographyCodeLists() (results CodeListResults, err error) {
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
 	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
@@ -137,16 +136,17 @@ func (c *Client) GetCodelistData() (results models.CodeListResults, err error) {
 	if err != nil {
 		return
 	}
-	var modelResults models.CodeListResults
-	err = json.Unmarshal(b, &modelResults)
+
+	err = json.Unmarshal(b, &results)
 	if err != nil {
 		return
 	}
-	return modelResults, nil
+	return results, nil
 }
 
-//GetEditionslistData reterns the editions for a codelist
-func (c *Client) GetEditionslistData(url string) (results models.EditionsListResults, err error) {
+//GetCodeListEditions returns the editions for a codelist
+func (c *Client) GetCodeListEditions(codeListID string) (editions EditionsListResults, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
 	resp, err := c.cli.Get(context.Background(), url)
 	if err != nil {
 		return
@@ -157,10 +157,31 @@ func (c *Client) GetEditionslistData(url string) (results models.EditionsListRes
 	if err != nil {
 		return
 	}
-	var modelResults models.EditionsListResults
-	err = json.Unmarshal(b, &modelResults)
+
+	err = json.Unmarshal(b, &editions)
 	if err != nil {
 		return
 	}
-	return modelResults, nil
+	return editions, nil
+}
+
+//GetCodes returns the codes for a specific edition of a code list
+func (c *Client) GetCodes(codeListID string, edition string) (codes CodesResults, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &codes)
+	if err != nil {
+		return
+	}
+	return codes, nil
 }
