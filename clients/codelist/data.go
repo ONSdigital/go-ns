@@ -77,3 +77,34 @@ type CodeLinks struct {
 	Datasets  Link `json:"datasets"`
 	Self      Link `json:"self"`
 }
+
+// CodeResult represents a code list item
+type CodeResult struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
+type DatasetsResult struct {
+	Datasets []Dataset `json:"items"`
+	Count    int       `json:"total_count"`
+}
+
+type Dataset struct {
+	Links          DatasetLinks     `json:"links"`
+	DimensionLabal string           `json:"dimension_label"`
+	Editions       []DatasetEdition `json:"editions"`
+}
+
+type DatasetLinks struct {
+	Self Link `json:"self"`
+}
+
+type DatasetEdition struct {
+	Links DatasetEditionLink `json:"links"`
+}
+
+type DatasetEditionLink struct {
+	Self            Link `json:"self"`
+	DatasetDimenion Link `json:"dataset_dimension"`
+	LatestVersion   Link `json:"latest_version"`
+}
