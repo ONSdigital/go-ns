@@ -185,3 +185,46 @@ func (c *Client) GetCodes(codeListID string, edition string) (codes CodesResults
 	}
 	return codes, nil
 }
+
+// GetCodeByID returns informtion about a code
+func (c *Client) GetCodeByID(codeListID string, edition string, codeID string) (code CodeResult, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &code)
+	if err != nil {
+		return
+	}
+	return code, nil
+}
+
+func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID string) (datasets DatasetsResult, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &datasets)
+	if err != nil {
+		return
+	}
+	return datasets, nil
+}
