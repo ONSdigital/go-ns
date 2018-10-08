@@ -67,12 +67,13 @@ type Download struct {
 	Size    string `json:"size"`
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
+	Skipped bool   `json:"skipped,omitempty"`
 }
 
 // Event represents an event from a filter api response
 type Event struct {
-	Time    string `json:"time"`
-	Type    string `json:"type"`
+	Time string `json:"time"`
+	Type string `json:"type"`
 }
 
 // Preview represents a preview document returned from the filter api
