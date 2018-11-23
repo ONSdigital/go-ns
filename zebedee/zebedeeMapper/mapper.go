@@ -63,6 +63,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 	for i, d := range ds {
 		var dataset datasetLandingPageStatic.Dataset
 		for _, value := range d.Downloads {
+			dataset.URI = d.URI
 			dataset.Downloads = append(dataset.Downloads, datasetLandingPageStatic.Download{
 				URI:       value.File,
 				Extension: strings.TrimPrefix(filepath.Ext(value.File), "."),

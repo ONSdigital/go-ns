@@ -41,6 +41,13 @@ func TestUnitMapper(t *testing.T) {
 		So(sdlp.DatasetLandingPage.NextRelease, ShouldEqual, dlp.Description.NextRelease)
 
 		So(sdlp.Page.Breadcrumb[0].Title, ShouldEqual, bcs[0].Description.Title)
+
+		So(sdlp.DatasetLandingPage.Datasets, ShouldHaveLength, 1)
+		So(sdlp.DatasetLandingPage.Datasets[0].URI, ShouldEqual, "google.com")
+		So(sdlp.DatasetLandingPage.Datasets[0].Downloads, ShouldHaveLength, 1)
+		So(sdlp.DatasetLandingPage.Datasets[0].Downloads[0].URI, ShouldEqual, "helloworld.csv")
+		So(sdlp.DatasetLandingPage.Datasets[0].Downloads[0].Extension, ShouldEqual, "csv")
+		So(sdlp.DatasetLandingPage.Datasets[0].Downloads[0].Size, ShouldEqual, "452456")
 	})
 }
 
