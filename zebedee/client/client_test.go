@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -63,7 +64,7 @@ func TestUnitClient(t *testing.T) {
 	Convey("test getFileSize returns human readable filesize", t, func() {
 		fs, err := cli.GetFileSize("filesize")
 		So(err, ShouldBeNil)
-		So(fs.Size, ShouldEqual, "5242880")
+		So(fs.Size, ShouldEqual, 5242880)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
@@ -122,5 +123,16 @@ func parents(w http.ResponseWriter, req *http.Request) {
 }
 
 func filesize(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte(`{"fileSize":"5242880"}`))
+	zebedeeResponse := struct {
+		FileSize int `json:"fileSize"`
+	}{
+		FileSize: 5242880,
+	}
+
+	b, err := json.Marshal(zebedeeResponse)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write(b)
 }

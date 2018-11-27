@@ -175,23 +175,37 @@ func (c *ZebedeeClient) GetDataset(uri string) (data.Dataset, error) {
 		return d, err
 	}
 
+	downloads := make([]data.Download, 0)
+
 	for _, v := range d.Downloads {
 		fs, err := c.GetFileSize(uri + "/" + v.File)
 		if err != nil {
 			return d, err
 		}
 
-		v.Size = fs.Size
+		downloads = append(downloads, data.Download{
+			File: v.File,
+			Size: strconv.Itoa(fs.Size),
+		})
 	}
 
+	d.Downloads = downloads
+
+	supplementaryFiles := make([]data.SupplementaryFile, 0)
 	for _, v := range d.SupplementaryFiles {
 		fs, err := c.GetFileSize(uri + "/" + v.File)
 		if err != nil {
 			return d, err
 		}
 
-		v.Size = fs.Size
+		supplementaryFiles = append(supplementaryFiles, data.SupplementaryFile{
+			File:  v.File,
+			Title: v.Title,
+			Size:  strconv.Itoa(fs.Size),
+		})
 	}
+
+	d.SupplementaryFiles = supplementaryFiles
 
 	return d, nil
 }
