@@ -109,7 +109,7 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && common.IsCallerPresent(ctx) {
+	if next, ok := body["next"]; ok && (common.IsCallerPresent(ctx) || common.IsFlorenceIdentityPresent(ctx)) {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
