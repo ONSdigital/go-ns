@@ -303,10 +303,10 @@
 			"revisionTime": "2017-12-18T14:36:11Z"
 		},
 		{
-			"checksumSHA1": "Js/yx9fZ3+wH1wZpHNIxSTMIaCg=",
+			"checksumSHA1": "cIiyvAduLLFvu+tg1Qr5Jw3jeWo=",
 			"path": "github.com/jtolds/gls",
-			"revision": "77f18212c9c7edc9bd6a33d383a7b545ce62f064",
-			"revisionTime": "2017-05-03T22:40:06Z"
+			"revision": "b4936e06046bbecbb94cae9c18127ebe510a2cb9",
+			"revisionTime": "2018-11-10T20:28:10Z"
 		},
 		{
 			"checksumSHA1": "OBvAHqWjdI4NQVAqTkcQAdTuCFY=",
@@ -400,22 +400,22 @@
 			"revisionTime": "2017-05-04T20:50:21Z"
 		},
 		{
-			"checksumSHA1": "f4m09DHEetaanti/GqUJzyCBTaI=",
+			"checksumSHA1": "c71WVAQlpp3r4I+BtTxRz1Cq1Lw=",
 			"path": "github.com/smartystreets/goconvey/convey",
-			"revision": "9e8dc3f972df6c8fcc0375ef492c24d0bb204857",
-			"revisionTime": "2017-06-02T16:46:21Z"
+			"revision": "044398e4856c3a83fb98f9de0a8ed1c6495e2843",
+			"revisionTime": "2018-11-08T00:35:08Z"
 		},
 		{
-			"checksumSHA1": "9LakndErFi5uCXtY1KWl0iRnT4c=",
+			"checksumSHA1": "6Mgn4H/4vpqYGlaIKZ0UwOmJN0E=",
 			"path": "github.com/smartystreets/goconvey/convey/gotest",
-			"revision": "9e8dc3f972df6c8fcc0375ef492c24d0bb204857",
-			"revisionTime": "2017-06-02T16:46:21Z"
+			"revision": "044398e4856c3a83fb98f9de0a8ed1c6495e2843",
+			"revisionTime": "2018-11-08T00:35:08Z"
 		},
 		{
-			"checksumSHA1": "FWDhk37bhAwZ2363D/L2xePwR64=",
+			"checksumSHA1": "uTSA/KWQA01sKPYfmLyMPvXbYaA=",
 			"path": "github.com/smartystreets/goconvey/convey/reporting",
-			"revision": "9e8dc3f972df6c8fcc0375ef492c24d0bb204857",
-			"revisionTime": "2017-06-02T16:46:21Z"
+			"revision": "044398e4856c3a83fb98f9de0a8ed1c6495e2843",
+			"revisionTime": "2018-11-08T00:35:08Z"
 		},
 		{
 			"checksumSHA1": "m4QwaQdvaqDo6Fp4BoykRkEFQ8E=",
