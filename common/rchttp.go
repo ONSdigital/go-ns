@@ -1,11 +1,12 @@
 package common
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 //go:generate mockgen -destination mock_common/rchttp_client.go github.com/ONSdigital/go-ns/common RCHTTPClienter
