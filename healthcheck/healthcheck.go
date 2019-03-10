@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 // Client represents the methods required to healthcheck a client
@@ -58,7 +58,7 @@ func MonitorExternal(clients ...Client) {
 	for _, client := range clients {
 		go func(client Client) {
 			if name, err := client.Healthcheck(); err != nil {
-				log.ErrorC("unsuccessful healthcheck", err, log.Data{"external_service": name})
+				log.Event(nil, "unsuccessful healthcheck", log.Error(err), log.Data{"external_service": name})
 				errs <- externalError{name, err}
 			}
 			wg.Done()
@@ -104,11 +104,11 @@ func Do(w http.ResponseWriter, req *http.Request) {
 
 	healthStateJSON, err := json.Marshal(healthStateInfo)
 	if err != nil {
-		log.ErrorC("marshal json", err, log.Data{"struct": healthStateInfo})
+		log.Event(req.Context(), "error marshaling json", log.Error(err), log.Data{"struct": healthStateInfo})
 		return
 	}
 	if _, err = w.Write(healthStateJSON); err != nil {
-		log.ErrorC("writing json body", err, log.Data{"json": string(healthStateJSON)})
+		log.Event(req.Context(), "error writing json body", log.Error(err), log.Data{"json": string(healthStateJSON)})
 	}
 }
 
