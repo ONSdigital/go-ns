@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-func Create(proxyURL *url.URL, directorFunc func(*http.Request)) http.Handler {
+// Create creates a new reverse proxy
+func Create(proxyName string, proxyURL *url.URL, directorFunc func(*http.Request)) http.Handler {
 	proxy := httputil.NewSingleHostReverseProxy(proxyURL)
 	director := proxy.Director
 	proxy.Transport = &http.Transport{
@@ -23,6 +24,10 @@ func Create(proxyURL *url.URL, directorFunc func(*http.Request)) http.Handler {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	proxy.Director = func(req *http.Request) {
+		log.DebugR(req, "Proxying request", log.Data{
+			"destination": proxyURL,
+			"proxy_name":  proxyName,
+		})
 		director(req)
 		req.Host = proxyURL.Host
 		if directorFunc != nil {
