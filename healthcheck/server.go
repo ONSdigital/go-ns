@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/server"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 )
 
@@ -34,7 +34,7 @@ func NewServerWithAlerts(bindAddr string, duration, recoveryDuration time.Durati
 	httpServer.HandleOSSignals = false
 
 	go func() {
-		log.Debug("starting http server", log.Data{"bind_addr": bindAddr})
+		log.Event(nil, "starting http server", log.Data{"bind_addr": bindAddr})
 		if err := httpServer.ListenAndServe(); err != nil {
 			if errorChannel != nil {
 				errorChannel <- err

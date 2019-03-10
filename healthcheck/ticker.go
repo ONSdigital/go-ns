@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 // Ticker calls the health check monitor function at configured intervals.
@@ -79,15 +79,15 @@ func NewTickerWithAlerts(
 				if currentHealthOK != claimedNewHealthOK {
 					if !claimedNewHealthOK {
 						// fail fast if claimedNewHealthOK is bad
-						log.Debug("health state change - fail via request", logData)
+						log.Event(nil, "health state change - fail via request", logData)
 						stateChangeChan <- claimedNewHealthOK
 						currentHealthOK = claimedNewHealthOK
 					} else {
 						// recover slowly: only change state after successful MonitorExternal()
-						log.Debug("health state change - success claimed - will check", logData)
+						log.Event(nil, "health state change - success claimed - will check", logData)
 					}
 				} else {
-					log.Debug("healthcheck requested - no change in health", logData)
+					log.Event(nil, "healthcheck requested - no change in health", logData)
 				}
 				mutexCurrentHealthOK.Unlock()
 			}
@@ -98,7 +98,7 @@ func NewTickerWithAlerts(
 			// too soon for healthcheck?
 			if now.Before(lastCheckStarted.Add(recoveryDuration)) || now.Before(lastCheckCompleted.Add(recoveryDuration)) {
 				mutexChecking.Unlock()
-				log.Debug("too soon for healthcheck", log.Data{"last_check_start": lastCheckStarted, "last_check_ended": lastCheckCompleted})
+				log.Event(nil, "too soon for healthcheck", log.Data{"last_check_start": lastCheckStarted, "last_check_ended": lastCheckCompleted})
 
 			} else {
 
@@ -107,7 +107,7 @@ func NewTickerWithAlerts(
 				// run check in the background,  mutexChecking.Lock() applies
 				go func() {
 
-					log.Debug("conducting service healthcheck", nil)
+					log.Event(nil, "conducting service healthcheck", nil)
 					MonitorExternal(clients...)
 
 					lastCheckCompleted = time.Now()
@@ -119,7 +119,7 @@ func NewTickerWithAlerts(
 					mutexCurrentHealthOK.Lock()
 					defer mutexCurrentHealthOK.Unlock()
 					if currentHealthOK != newHealthOK {
-						log.Debug("health state change", log.Data{"prev_health": currentHealthOK, "new_health": newHealthOK})
+						log.Event(nil, "health state change", log.Data{"prev_health": currentHealthOK, "new_health": newHealthOK})
 						currentHealthOK = newHealthOK
 						if stateChangeChan != nil {
 							stateChangeChan <- newHealthOK
