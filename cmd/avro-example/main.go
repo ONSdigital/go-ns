@@ -6,43 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/ONSdigital/dp-import/events"
 	"github.com/ONSdigital/go-ns/avro"
 	"github.com/ONSdigital/go-ns/kafka"
 	"github.com/ONSdigital/go-ns/log"
 )
-
-// InputFileAvailableSchema schema
-var InputFileAvailableSchema = `{
-	"type": "record",
-	"name": "input-file-available",
-	"fields": [
-		{"name": "file_url", "type": "string"},
-		{"name": "instance_id", "type": "string"}
-	]
-}`
-
-type inputFileAvailable struct {
-	fileURL    string `avro:"file_url"`
-	InstanceID string `avro:"instance_id"`
-}
-
-// from dp-observation-importer
-var observationsInsertedSchema = `{
-  "type": "record",
-  "name": "import-observations-inserted",
-  "fields": [
-    {"name": "instance_id", "type": "string"},
-    {"name": "observations_inserted", "type": "int"}
-  ]
-}`
-
-// ObservationsInsertedEvent is the Avro schema for each observation batch inserted.
-var ObservationsInsertedEvent avro.Schema = avro.Schema{Definition: observationsInsertedSchema}
-
-type insertedObservationsMessage struct {
-	InstanceID           string `avro:"instance_id"`
-	ObservationsInserted int32  `avro:"observations_inserted"`
-}
 
 /*
 var TestNestedArraySchema = `{
@@ -91,15 +59,17 @@ type File struct {
 */
 
 func main() {
-	instance_id := flag.String("id", "21", "instance id")
-	producerTopic := flag.String("topic", "input-file-available", "producer topic")
-	fileURL := flag.String("s3", "s3://dp-dimension-extractor/OCIGrowth.csv", "s3 file")
-	insertedObservations := flag.Int("inserts", 2000, "inserted observations")
+	var (
+		instance_id          = flag.String("id", "21", "instance id")
+		producerTopic        = flag.String("topic", "input-file-available", "producer topic")
+		fileURL              = flag.String("s3", "s3://dp-dimension-extractor/OCIGrowth.csv", "s3 file")
+		insertedObservations = flag.Int("inserts", 2000, "inserted observations")
+		dimensionName        = flag.String("dimension", "dimName", "dimension name")
+		codeListID           = flag.String("codelistid", "codlistId", "code list ID")
+	)
 	flag.Parse()
 
 	brokers := []string{"localhost:9092"}
-	// inputFileAvailableProducer, err := kafka.NewProducer(brokers, "dimensions-extracted", int(2000000))
-	// inputFileAvailableProducer, err := kafka.NewProducer(brokers, "input-test-file", int(2000000))
 	producer, err := kafka.NewProducer(brokers, *producerTopic, int(2000000))
 	if err != nil {
 		panic(err)
@@ -109,20 +79,28 @@ func main() {
 	var producerMessage []byte
 
 	if *producerTopic == "input-file-available" {
-		schema = &avro.Schema{Definition: InputFileAvailableSchema}
-		producerMessage, err = schema.Marshal(&inputFileAvailable{
-			//fileURL:    "s3://dp-dimension-extractor/UKBAA01a.csv",
-			fileURL:    *fileURL,
+		schema = events.InputFileAvailableSchema
+		producerMessage, err = schema.Marshal(&events.InputFileAvailable{
+			URL:        *fileURL,
 			InstanceID: *instance_id,
 		})
 	} else if *producerTopic == "import-observations-inserted" {
-		schema = &avro.Schema{Definition: observationsInsertedSchema}
-		insertedObservationsMsg := insertedObservationsMessage{
+		schema = &events.ObservationsInsertedSchema
+		insertedObservationsMsg := events.ObservationsInserted{
 			InstanceID:           *instance_id,
 			ObservationsInserted: int32(*insertedObservations),
 		}
 		log.Debug("msg", log.Data{"iom": insertedObservationsMsg})
 		producerMessage, err = schema.Marshal(&insertedObservationsMsg)
+	} else if *producerTopic == "data-import-complete" {
+		schema = &events.DataImportCompleteSchema
+		dataImportCompleteMsg := events.DataImportComplete{
+			InstanceID:    *instance_id,
+			DimensionName: *dimensionName,
+			CodeListID:    *codeListID,
+		}
+		log.Debug("msg", log.Data{"dimp": dataImportCompleteMsg})
+		producerMessage, err = schema.Marshal(&dataImportCompleteMsg)
 	}
 
 	/* nestStruct := testNestedArray{
