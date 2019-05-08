@@ -1,7 +1,7 @@
 Health checks
 =============
 
-#### Add a health check to a service without a HTTP server
+#### Add a health check to a service without an existing HTTP server
 
 Create a health check server to check neo4j and the filter API every 30 seconds:
 ```
@@ -15,7 +15,8 @@ healthChecker := healthcheck.NewServer(
     errorChannel,
     filterAPIHealthChecker,
     elasticsearchChecker,
-    neoHealthChecker)
+    neoHealthChecker,
+)
 ```
 
 Make sure you call close on shutdown:

@@ -18,7 +18,7 @@ type Download struct {
 
 // FileSize represents a file size from zebedee
 type FileSize struct {
-	Size string `json:"fileSize"`
+	Size int `json:"fileSize"`
 }
 
 // PageTitle represents a page title from zebedee

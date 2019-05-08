@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -25,9 +26,10 @@ const (
 	LegacyUser           = "legacyUser"
 	BearerPrefix         = "Bearer "
 
-	UserIdentityKey   = ContextKey("User-Identity")
-	CallerIdentityKey = ContextKey("Caller-Identity")
-	RequestIdKey      = ContextKey("request-id")
+	UserIdentityKey     = ContextKey("User-Identity")
+	CallerIdentityKey   = ContextKey("Caller-Identity")
+	RequestIdKey        = ContextKey("request-id")
+	FlorenceIdentityKey = ContextKey("florence-id")
 )
 
 // CheckRequester is an interface to allow mocking of auth.CheckRequest
@@ -45,6 +47,12 @@ func IsUserPresent(ctx context.Context) bool {
 	userIdentity := ctx.Value(UserIdentityKey)
 	return userIdentity != nil && userIdentity != ""
 
+}
+
+// IsFlorenceIdentityPresent determines if a florence identity is present on the given context
+func IsFlorenceIdentityPresent(ctx context.Context) bool {
+	florenceID := ctx.Value(FlorenceIdentityKey)
+	return florenceID != nil && florenceID != ""
 }
 
 // AddUserHeader sets the given user ID on the given request
@@ -75,6 +83,18 @@ func User(ctx context.Context) string {
 // SetUser sets the user identity on the context
 func SetUser(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, UserIdentityKey, user)
+}
+
+// SetFlorenceIdentity sets the florence identity for authentication
+func SetFlorenceIdentity(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, FlorenceIdentityKey, user)
+}
+
+// SetFlorenceHeader sets a florence Header if the corresponding Identity key is in context
+func SetFlorenceHeader(ctx context.Context, r *http.Request) {
+	if IsFlorenceIdentityPresent(ctx) {
+		r.Header.Set(FlorenceHeaderKey, ctx.Value(FlorenceIdentityKey).(string))
+	}
 }
 
 // AddAuthHeaders sets authentication headers for request
@@ -134,12 +154,15 @@ func AddRequestIdHeader(r *http.Request, token string) {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var requestIDRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+var randMutex sync.Mutex
 
 // NewRequestID generates a random string of requested length
 func NewRequestID(size int) string {
 	b := make([]rune, size)
+	randMutex.Lock()
 	for i := range b {
 		b[i] = letters[requestIDRandom.Intn(len(letters))]
 	}
+	randMutex.Unlock()
 	return string(b)
 }

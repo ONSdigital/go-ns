@@ -1,13 +1,14 @@
 package codelist
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
-	"github.com/ONSdigital/go-ns/rhttp"
+	"github.com/ONSdigital/go-ns/rchttp"
 )
 
 const service = "code-list-api"
@@ -38,21 +39,21 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	cli *rhttp.Client
+	cli *rchttp.Client
 	url string
 }
 
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
 	return &Client{
-		cli: rhttp.DefaultClient,
+		cli: rchttp.DefaultClient,
 		url: codelistAPIURL,
 	}
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(c.url + "/healthcheck")
+	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
 	if err != nil {
 		return service, err
 	}
@@ -68,9 +69,9 @@ func (c *Client) Healthcheck() (string, error) {
 func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	clientlog.Do("retrieving codes from codelist", service, uri)
+	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
 
-	resp, err := c.cli.Get(uri)
+	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
 		return
 	}
@@ -93,7 +94,7 @@ func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
-	resp, err := c.cli.Get(uri)
+	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +121,110 @@ func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	}
 
 	return idNames, nil
+}
+
+//GetGeographyCodeLists returns the geography codelists
+func (c *Client) GetGeographyCodeLists() (results CodeListResults, err error) {
+	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
+	resp, err := c.cli.Get(context.Background(), uri)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &results)
+	if err != nil {
+		return
+	}
+	return results, nil
+}
+
+//GetCodeListEditions returns the editions for a codelist
+func (c *Client) GetCodeListEditions(codeListID string) (editions EditionsListResults, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &editions)
+	if err != nil {
+		return
+	}
+	return editions, nil
+}
+
+//GetCodes returns the codes for a specific edition of a code list
+func (c *Client) GetCodes(codeListID string, edition string) (codes CodesResults, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &codes)
+	if err != nil {
+		return
+	}
+	return codes, nil
+}
+
+// GetCodeByID returns informtion about a code
+func (c *Client) GetCodeByID(codeListID string, edition string, codeID string) (code CodeResult, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &code)
+	if err != nil {
+		return
+	}
+	return code, nil
+}
+
+func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID string) (datasets DatasetsResult, err error) {
+	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
+	resp, err := c.cli.Get(context.Background(), url)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &datasets)
+	if err != nil {
+		return
+	}
+	return datasets, nil
 }

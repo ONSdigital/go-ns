@@ -3,22 +3,28 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "HGcaKsLnyiPHC1fYKvGTIH00Z4c=",
+			"checksumSHA1": "5kbwTr1nkUteRYoVY/ecO0Z0I4w=",
+			"path": "github.com/ONSdigital/dp-frontend-geography-controller/models",
+			"revision": "685d11f898cc71646756fdaa3326bbe9309972ef",
+			"revisionTime": "2018-09-04T16:06:57Z"
+		},
+		{
+			"checksumSHA1": "ubWg5ErV6hnoLoGFHiTxIiVmESo=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model",
-			"revision": "68099c8c0a883488fb056b2ad1500c4c478bf883",
-			"revisionTime": "2017-07-11T09:57:28Z"
+			"revision": "9c144b84e020782a54b29d74767bc9f712d4a1dd",
+			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
-			"checksumSHA1": "Xf6RqlcMdmIUjjgjrFfH2XXpcEA=",
+			"checksumSHA1": "2Ww7ArlxDH4Cs/1S01vx1heMAow=",
 			"path": "github.com/ONSdigital/dp-frontend-models/model/datasetLandingPageStatic",
-			"revision": "f390250319d1524b758e8bccc351d6916cebd2c0",
-			"revisionTime": "2017-07-04T13:42:44Z"
+			"revision": "9c144b84e020782a54b29d74767bc9f712d4a1dd",
+			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
-			"checksumSHA1": "+Jp0tVXfQ1TM8T+oun82oJtME5U=",
+			"checksumSHA1": "K7wm03LN5CpmnuQPGfSmrx1hNtk=",
 			"path": "github.com/Shopify/sarama",
-			"revision": "2fd980e23bdcbb8edeb78fc704de0c39a6567ffc",
-			"revisionTime": "2017-06-30T17:40:37Z"
+			"revision": "35324cf48e33d8260e1c7c18854465a904ade249",
+			"revisionTime": "2018-05-30T15:11:20Z"
 		},
 		{
 			"checksumSHA1": "88PtOr8dvh0n877kqDsDVZ73MmY=",
@@ -63,64 +69,34 @@
 			"revisionTime": "2018-01-23T06:50:59Z"
 		},
 		{
-			"checksumSHA1": "Tsc4M+xTb2NgaCq3y8dbIcgBJ0A=",
-			"path": "github.com/gedge/mgo",
-			"revision": "a170908eafcff6f64b9ad83db3943fe6332d52a1",
-			"revisionTime": "2018-05-23T09:46:01Z"
-		},
-		{
-			"checksumSHA1": "SAegSFbBQ3lKgxV3opxcqTPwz+o=",
-			"path": "github.com/gedge/mgo/bson",
-			"revision": "a170908eafcff6f64b9ad83db3943fe6332d52a1",
-			"revisionTime": "2018-05-23T09:46:01Z"
-		},
-		{
-			"checksumSHA1": "+soDoin5Apt/Dyk73uC1trzHx5M=",
-			"path": "github.com/gedge/mgo/internal/json",
-			"revision": "a170908eafcff6f64b9ad83db3943fe6332d52a1",
-			"revisionTime": "2018-05-23T09:46:01Z"
-		},
-		{
-			"checksumSHA1": "PZU+CtYXLjDXogLC2nNePsLBlkU=",
-			"path": "github.com/gedge/mgo/internal/sasl",
-			"revision": "a170908eafcff6f64b9ad83db3943fe6332d52a1",
-			"revisionTime": "2018-05-23T09:46:01Z"
-		},
-		{
-			"checksumSHA1": "Uoi1jh9qrlyApl2Q5JgW7OW9wy4=",
-			"path": "github.com/gedge/mgo/internal/scram",
-			"revision": "a170908eafcff6f64b9ad83db3943fe6332d52a1",
-			"revisionTime": "2018-05-23T09:46:01Z"
-		},
-		{
-			"checksumSHA1": "WFvFdosCfgS3dIWJMV2GAOyPrq0=",
+			"checksumSHA1": "5paEOrPNmte9PRyvpBF8HTDjQD4=",
 			"path": "github.com/globalsign/mgo",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "EF0WffuSxDWU3AyNXm85SLT2Df4=",
+			"checksumSHA1": "zdy6XflmESAiFmyptSqpUMfXSyo=",
 			"path": "github.com/globalsign/mgo/bson",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
 			"checksumSHA1": "//bXQG4HblBwxHJDIW/PklXAxu0=",
 			"path": "github.com/globalsign/mgo/internal/json",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "zSNjAU41khuKovmSSkhVqXf5q4A=",
+			"checksumSHA1": "loubUcDO2QAStKIlVd7DqSeoEaw=",
 			"path": "github.com/globalsign/mgo/internal/sasl",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
-			"checksumSHA1": "YogZ7HaSnE0pxdiP48GdI1+CXeI=",
+			"checksumSHA1": "xjfEsfN7ho6dDOVeUQJhW4KzD2I=",
 			"path": "github.com/globalsign/mgo/internal/scram",
-			"revision": "efe0945164a7e582241f37ae8983c075f8f2e870",
-			"revisionTime": "2018-04-24T09:13:48Z"
+			"revision": "113d3961e7311526535a1ef7042196563d442761",
+			"revisionTime": "2018-06-15T13:49:36Z"
 		},
 		{
 			"checksumSHA1": "bmfodlfB53b/p4GGAyV5Li6eVYA=",
@@ -165,10 +141,10 @@
 			"revisionTime": "2016-08-17T18:46:32Z"
 		},
 		{
-			"checksumSHA1": "hIbmXmNbwyP44fi1hh6zJrMcYws=",
+			"checksumSHA1": "Aw8z8w/d+EFt8XCUYPjzSe0bPrU=",
 			"path": "github.com/gorilla/mux",
-			"revision": "ac112f7d75a0714af1bd86ab17749b31f7809640",
-			"revisionTime": "2017-07-03T15:07:09Z"
+			"revision": "cb4698366aa625048f3b815af6a0dea8aef9280a",
+			"revisionTime": "2018-06-05T21:15:56Z"
 		},
 		{
 			"checksumSHA1": "Cz6S4ejgcxlJfzRb72YlOrFoCPQ=",
@@ -327,10 +303,10 @@
 			"revisionTime": "2017-12-18T14:36:11Z"
 		},
 		{
-			"checksumSHA1": "Js/yx9fZ3+wH1wZpHNIxSTMIaCg=",
+			"checksumSHA1": "cIiyvAduLLFvu+tg1Qr5Jw3jeWo=",
 			"path": "github.com/jtolds/gls",
-			"revision": "77f18212c9c7edc9bd6a33d383a7b545ce62f064",
-			"revisionTime": "2017-05-03T22:40:06Z"
+			"revision": "b4936e06046bbecbb94cae9c18127ebe510a2cb9",
+			"revisionTime": "2018-11-10T20:28:10Z"
 		},
 		{
 			"checksumSHA1": "OBvAHqWjdI4NQVAqTkcQAdTuCFY=",

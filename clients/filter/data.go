@@ -37,7 +37,7 @@ type Model struct {
 	State       string              `json:"state"`
 	Dimensions  []ModelDimension    `json:"dimensions,omitempty"`
 	Downloads   map[string]Download `json:"downloads,omitempty"`
-	Events      map[string][]Event  `json:"events,omitempty"`
+	Events      []Event             `json:"events,omitempty"`
 	IsPublished bool                `json:"published"`
 }
 
@@ -67,13 +67,13 @@ type Download struct {
 	Size    string `json:"size"`
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
+	Skipped bool   `json:"skipped,omitempty"`
 }
 
 // Event represents an event from a filter api response
 type Event struct {
-	Time    string `json:"time"`
-	Type    string `json:"type"`
-	Message string `json:"message"`
+	Time string `json:"time"`
+	Type string `json:"type"`
 }
 
 // Preview represents a preview document returned from the filter api

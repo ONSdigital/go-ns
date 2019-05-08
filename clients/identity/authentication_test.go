@@ -28,7 +28,7 @@ const (
 
 func TestHandler_NoAuth(t *testing.T) {
 
-	Convey("Given a request with no auth info", t, func() {
+	Convey("Given a request with no auth headers", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
 		httpClient := &commontest.RCHTTPClienterMock{}
@@ -36,17 +36,19 @@ func TestHandler_NoAuth(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, responseCode, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the downstream HTTP handler should not be called", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 				So(err, ShouldBeNil)
+				So(authFailure.Error(), ShouldContainSubstring, "no headers set on request: "+errUnableToIdentifyRequest.Error())
+				So(ctx, ShouldNotBeNil)
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 
 			Convey("Then the returned code should be 401", func() {
-				So(responseCode, ShouldEqual, http.StatusUnauthorized)
+				So(status, ShouldEqual, http.StatusUnauthorized)
 			})
 		})
 	})
@@ -67,7 +69,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the identity service was called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -75,9 +77,12 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 			})
 
 			Convey("Then the error and no context is returned", func() {
+				So(authFailure, ShouldBeNil)
 				So(err, ShouldEqual, expectedError)
 				So(status, ShouldNotEqual, http.StatusOK)
-				So(ctx, ShouldBeNil)
+				So(ctx, ShouldNotBeNil)
+				So(common.IsUserPresent(ctx), ShouldBeFalse)
+				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 		})
 	})
@@ -104,7 +109,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the identity service is called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -112,9 +117,12 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 			})
 
 			Convey("Then there is no error but the response code matches the identity service", func() {
+				So(authFailure.Error(), ShouldContainSubstring, "unexpected status code returned from AuthAPI: "+errUnableToIdentifyRequest.Error())
 				So(err, ShouldBeNil)
 				So(status, ShouldEqual, http.StatusNotFound)
-				So(ctx, ShouldBeNil)
+				So(ctx, ShouldNotBeNil)
+				So(common.IsUserPresent(ctx), ShouldBeFalse)
+				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 		})
 	})
@@ -134,9 +142,10 @@ func TestHandler_florenceToken(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the identity service is called as expected", func() {
+				So(authFailure, ShouldBeNil)
 				So(err, ShouldBeNil)
 				So(status, ShouldEqual, http.StatusOK)
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -146,6 +155,7 @@ func TestHandler_florenceToken(t *testing.T) {
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
+				So(ctx, ShouldNotBeNil)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
@@ -161,9 +171,10 @@ func TestHandler_florenceToken(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the identity service is called as expected", func() {
+				So(authFailure, ShouldBeNil)
 				So(err, ShouldBeNil)
 				So(status, ShouldEqual, http.StatusOK)
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -173,6 +184,7 @@ func TestHandler_florenceToken(t *testing.T) {
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
+				So(ctx, ShouldNotBeNil)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
@@ -202,7 +214,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, _, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 
 			Convey("Then the identity service is called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -212,8 +224,13 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 			})
 
 			Convey("Then the response is set as expected", func() {
+				So(authFailure, ShouldBeNil)
 				So(err, ShouldNotBeNil)
-				So(ctx, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "invalid character 'i' looking for beginning of object key string")
+				So(status, ShouldEqual, http.StatusInternalServerError)
+				So(ctx, ShouldNotBeNil)
+				So(common.Caller(ctx), ShouldBeEmpty)
+				So(common.User(ctx), ShouldBeEmpty)
 			})
 		})
 	})
@@ -234,8 +251,9 @@ func TestHandler_authToken(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 			So(err, ShouldBeNil)
+			So(authFailure, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
 
 			Convey("Then the identity service is called as expected", func() {
@@ -249,6 +267,8 @@ func TestHandler_authToken(t *testing.T) {
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+				So(ctx, ShouldNotBeNil)
 				So(common.IsCallerPresent(ctx), ShouldBeTrue)
 				So(common.IsUserPresent(ctx), ShouldBeTrue)
 				So(common.Caller(ctx), ShouldEqual, callerIdentifier)
@@ -273,8 +293,9 @@ func TestHandler_bothTokens(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req)
 			So(err, ShouldBeNil)
+			So(authFailure, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
 
 			Convey("Then the identity service is called as expected - verifying florence, but ignoring auth header", func() {
@@ -286,6 +307,7 @@ func TestHandler_bothTokens(t *testing.T) {
 			})
 
 			Convey("Then the context returns with expected values", func() {
+				So(ctx, ShouldNotBeNil)
 				So(common.IsUserPresent(ctx), ShouldBeTrue)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)

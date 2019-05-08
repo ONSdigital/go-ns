@@ -2,6 +2,7 @@ package clientlog
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -12,11 +13,13 @@ import (
 )
 
 func TestUnitClientlog(t *testing.T) {
+	ctx := context.Background()
+
 	Convey("test ouput produced by client log package with no log.Data", t, func() {
 		log.Namespace = "dp-frontend-service"
 
 		output := captureOutput(func() {
-			Do("retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets")
+			Do(ctx, "retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets")
 		})
 
 		logContents := make(map[string]interface{})
@@ -25,7 +28,7 @@ func TestUnitClientlog(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		So(logContents["created"].(string), ShouldNotBeEmpty)
-		So(logContents["event"].(string), ShouldEqual, "trace")
+		So(logContents["event"].(string), ShouldEqual, "info")
 		So(logContents["namespace"].(string), ShouldEqual, "dp-frontend-service")
 
 		logData := logContents["data"].(map[string]interface{})
@@ -40,7 +43,7 @@ func TestUnitClientlog(t *testing.T) {
 		log.Namespace = "dp-frontend-service"
 
 		output := captureOutput(func() {
-			Do("retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets", log.Data{
+			Do(ctx, "retrieving datasets", "dp-backend-api", "http://localhost:22000/datasets", log.Data{
 				"method": "DELETE",
 				"value":  "abcdefg",
 			})
@@ -52,7 +55,7 @@ func TestUnitClientlog(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		So(logContents["created"].(string), ShouldNotBeEmpty)
-		So(logContents["event"].(string), ShouldEqual, "trace")
+		So(logContents["event"].(string), ShouldEqual, "info")
 		So(logContents["namespace"].(string), ShouldEqual, "dp-frontend-service")
 
 		logData := logContents["data"].(map[string]interface{})
