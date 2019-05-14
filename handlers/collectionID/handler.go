@@ -11,6 +11,11 @@ func Handler(h http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			collectionID := req.Header.Get(common.CollectionIDHeaderKey)
-			h.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID)))
+
+			if collectionID != "" {
+				req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+			}
+
+			h.ServeHTTP(w, req)
 		})
 	}
