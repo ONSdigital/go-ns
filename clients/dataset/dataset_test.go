@@ -4,17 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"testing"
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/ONSdigital/go-ns/common"
+	"io/ioutil"
+	"net/http"
+	"testing"
 )
 
 var ctx = context.Background()
-
 
 func TestClient_PutVersion(t *testing.T) {
 
