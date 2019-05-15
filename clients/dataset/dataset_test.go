@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"github.com/ONSdigital/go-ns/common"
 )
 
 var ctx = context.Background()
@@ -134,4 +135,60 @@ func TestClient_PutVersion(t *testing.T) {
 		})
 	})
 
+}
+
+func TestClient_IncludeCollectionID(t *testing.T) {
+
+	Convey("Given a valid request", t, func() {
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{}, nil
+			},
+		}
+
+		cli := Client{
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
+		}
+
+		Convey("when Collection-ID is present in the context", func() {
+			ctx = context.WithValue(ctx, common.CollectionIDHeaderKey, "I'm a collection ID")
+
+			Convey("and a request is made", func() {
+				_, _ = cli.GetDatasets(ctx)
+
+				Convey("then the Collection-ID is present in the request headers", func() {
+					collectionIDFromRequest := mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.CollectionIDHeaderKey)
+					So(collectionIDFromRequest, ShouldEqual, "I'm a collection ID")
+				})
+			})
+		})
+	})
+
+	Convey("Given a valid request", t, func() {
+		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{}, nil
+			},
+		}
+
+		cli := Client{
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
+		}
+
+		Convey("when Collection-ID is not present in the context", func() {
+			ctx = context.Background()
+
+			Convey("and a request is made", func() {
+				_, _ = cli.GetDatasets(ctx)
+
+				Convey("then no Collection-ID key is present in the request headers", func() {
+					for k, _ := range mockRCHTTPCli.DoCalls()[0].Req.Header {
+						So(k, ShouldNotEqual, "Collection-Id")
+					}
+				})
+			})
+		})
+	})
 }

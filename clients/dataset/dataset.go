@@ -522,8 +522,11 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 
 func setCollectionID(ctx context.Context, req *http.Request) *http.Request {
 
-	collectionID := ctx.Value(common.CollectionIDHeaderKey).(string)
-	if collectionID != "" {
+	var collectionID string
+	rawKeyValue := ctx.Value(common.CollectionIDHeaderKey)
+
+	if rawKeyValue != nil {  // avoid stringifying an empty interface
+		collectionID = rawKeyValue.(string)
 		req.Header.Set(common.CollectionIDHeaderKey, collectionID)
 	}
 
