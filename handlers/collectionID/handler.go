@@ -1,21 +1,44 @@
 package collectionID
 
 import (
-	"net/http"
 	"context"
+	"net/http"
+	"errors"
+
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/log"
 )
 
-// Handler is a wrapper which adds a CollectionID header if one does not yet exist
-func Handler(h http.Handler) http.Handler {
+// CheckHeader is a wrapper which adds a CollectionID from the request header to context if one does not yet exist
+func CheckHeader(h http.Handler) http.Handler {
 
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			collectionID := req.Header.Get(common.CollectionIDHeaderKey)
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-			if collectionID != "" {
-				req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+		collectionID := req.Header.Get(common.CollectionIDHeaderKey)
+
+		if collectionID == "" {
+			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+		}
+
+		h.ServeHTTP(w, req)
+	})
+}
+
+// CheckCookie is a wrapper which adds a CollectionID from the cookie to context if one does not yet exist
+func CheckCookie(h http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		collectionIDCookie, err := req.Cookie(common.CollectionIDCookieKey)
+		if err == nil {
+			collectionID := collectionIDCookie.String()
+			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+		} else {
+			if err != http.ErrNoCookie {
+				log.ErrorCtx(req.Context(), errors.New("Unexpected error while extracting correlation key from cookie."), nil)
 			}
+		}
 
-			h.ServeHTTP(w, req)
-		})
-	}
+		h.ServeHTTP(w, req)
+	})
+}
