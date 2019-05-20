@@ -35,7 +35,7 @@ func CheckCookie(h http.Handler) http.Handler {
 			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
 		} else {
 			if err != http.ErrNoCookie {
-				log.ErrorCtx(req.Context(), errors.New("Unexpected error while extracting correlation key from cookie."), nil)
+				log.ErrorCtx(req.Context(), errors.New("Unexpected error while extracting collection ID from cookie."), nil)
 			}
 		}
 
