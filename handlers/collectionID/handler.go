@@ -16,7 +16,7 @@ func CheckHeader(h http.Handler) http.Handler {
 
 		collectionID := req.Header.Get(common.CollectionIDHeaderKey)
 
-		if collectionID == "" {
+		if collectionID != "" {
 			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
 		}
 
