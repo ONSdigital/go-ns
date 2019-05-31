@@ -376,28 +376,34 @@
 			"revisionTime": "2018-02-27T22:34:04Z"
 		},
 		{
-			"checksumSHA1": "AikWjAOvWHSJ8G1iU+wNReZnyCk=",
+			"checksumSHA1": "8M5kk6pT2gknOtearzxw7gagVCM=",
 			"path": "github.com/smartystreets/assertions",
-			"revision": "4ea54c1f28ad3ae597e76607dea3871fa177e263",
-			"revisionTime": "2017-06-07T22:27:57Z"
+			"revision": "f487f9de1cd36ebab28235b9373028812fb47cbd",
+			"revisionTime": "2019-04-01T21:17:40Z"
 		},
 		{
-			"checksumSHA1": "Vzb+dEH/LTYbvr8RXHmt6xJHz04=",
+			"checksumSHA1": "a0CRqejGZH1LxO4G/DZsux7ULWA=",
+			"path": "github.com/smartystreets/assertions/internal/go-diff/diffmatchpatch",
+			"revision": "f487f9de1cd36ebab28235b9373028812fb47cbd",
+			"revisionTime": "2019-04-01T21:17:40Z"
+		},
+		{
+			"checksumSHA1": "v6W3GIQMzr3QSXB2NtBa9X7SwiI=",
 			"path": "github.com/smartystreets/assertions/internal/go-render/render",
-			"revision": "4ea54c1f28ad3ae597e76607dea3871fa177e263",
-			"revisionTime": "2017-06-07T22:27:57Z"
+			"revision": "f487f9de1cd36ebab28235b9373028812fb47cbd",
+			"revisionTime": "2019-04-01T21:17:40Z"
 		},
 		{
 			"checksumSHA1": "r6FauVdOTFnwYQgrKGFuWUbIAJE=",
 			"path": "github.com/smartystreets/assertions/internal/oglematchers",
-			"revision": "4ea54c1f28ad3ae597e76607dea3871fa177e263",
-			"revisionTime": "2017-06-07T22:27:57Z"
+			"revision": "f487f9de1cd36ebab28235b9373028812fb47cbd",
+			"revisionTime": "2019-04-01T21:17:40Z"
 		},
 		{
-			"checksumSHA1": "iy7TNc01LWFOGwRwD6v0iDRqtLU=",
+			"checksumSHA1": "+FDdVX1IlqzH3tSuA95LH2XZoOU=",
 			"path": "github.com/smartystreets/go-aws-auth",
-			"revision": "8ef1316913ee4f44bc48c2456e44a5c1c68ea53b",
-			"revisionTime": "2017-05-04T20:50:21Z"
+			"revision": "0c1422d1fdb9fef5a1ad5b2e13ac663467eb767e",
+			"revisionTime": "2018-05-15T14:38:44Z"
 		},
 		{
 			"checksumSHA1": "fzTuiT5s2hzKZ/EYS9zMx8ztsXE=",
