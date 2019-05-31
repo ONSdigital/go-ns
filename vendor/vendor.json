@@ -21,6 +21,12 @@
 			"revisionTime": "2018-05-22T08:49:30Z"
 		},
 		{
+			"checksumSHA1": "7ktFjGIGhu47N6olqwLqilyjXNw=",
+			"path": "github.com/ONSdigital/dp-import/events",
+			"revision": "b345af2359643b6cac37f1a80faaf55e0c70785c",
+			"revisionTime": "2019-01-11T11:21:29Z"
+		},
+		{
 			"checksumSHA1": "K7wm03LN5CpmnuQPGfSmrx1hNtk=",
 			"path": "github.com/Shopify/sarama",
 			"revision": "35324cf48e33d8260e1c7c18854465a904ade249",
