@@ -127,7 +127,7 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 func (c *Client) GetByPath(ctx context.Context, path string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
 
-	clientlog.Do(ctx, "retrieving data from database", service, uri)
+	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
