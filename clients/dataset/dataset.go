@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
@@ -124,9 +125,9 @@ func (c *Client) Get(ctx context.Context, id string) (m Model, err error) {
 
 // GetByPath returns dataset level information for a given dataset path
 func (c *Client) GetByPath(ctx context.Context, path string) (m Model, err error) {
-	uri := fmt.Sprintf("%s/%s", c.url, path)
+	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
 
-	clientlog.Do(ctx, "retrieving dataset", service, uri)
+	clientlog.Do(ctx, "retrieving data from database", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
