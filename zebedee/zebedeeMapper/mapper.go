@@ -27,6 +27,10 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 		sdlp.DatasetLandingPage.Related.Datasets = append(sdlp.DatasetLandingPage.Related.Datasets, model.Related(d))
 	}
 
+	for _, d := range dlp.RelatedFilterableDatasets {
+		sdlp.DatasetLandingPage.Related.FilterableDatasets = append(sdlp.DatasetLandingPage.Related.FilterableDatasets, model.Related(d))
+	}
+
 	for _, d := range dlp.RelatedDocuments {
 		sdlp.DatasetLandingPage.Related.Publications = append(sdlp.DatasetLandingPage.Related.Publications, model.Related(d))
 	}

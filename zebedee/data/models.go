@@ -62,6 +62,7 @@ type DatasetLandingPage struct {
 	Section                   Section     `json:"section"`
 	Datasets                  []Related   `json:"datasets"`
 	RelatedLinks              []Related   `json:"links"`
+	RelatedFilterableDatasets []Related   `json:"relatedFilterableDatasets"`
 	RelatedDatasets           []Related   `json:"relatedDatasets"`
 	RelatedDocuments          []Related   `json:"relatedDocuments"`
 	RelatedMethodology        []Related   `json:"relatedMethodology"`
