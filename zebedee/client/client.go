@@ -84,7 +84,7 @@ func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, path string) 
 	if err != nil {
 		return data.DatasetLandingPage{}, err
 	}
-	fmt.Printf(string(b), "\n")
+
 	var dlp data.DatasetLandingPage
 	if err = json.Unmarshal(b, &dlp); err != nil {
 		return dlp, err
@@ -121,7 +121,6 @@ func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, path string) 
 }
 
 func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
-	fmt.Println(c.zebedeeURL + path)
 	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
 	if err != nil {
 		return nil, err
