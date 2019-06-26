@@ -2,8 +2,8 @@ package collectionID
 
 import (
 	"context"
-	"net/http"
 	"errors"
+	"net/http"
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
@@ -31,7 +31,7 @@ func CheckCookie(h http.Handler) http.Handler {
 
 		collectionIDCookie, err := req.Cookie(common.CollectionIDCookieKey)
 		if err == nil {
-			collectionID := collectionIDCookie.String()
+			collectionID := collectionIDCookie.Value
 			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
 		} else {
 			if err != http.ErrNoCookie {
