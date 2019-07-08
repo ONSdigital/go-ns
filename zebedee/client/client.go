@@ -128,8 +128,8 @@ func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
 		return nil, err
 	}
 
-	if ctx.Value("X-Florence-Token") != nil {
-		accessToken, ok := ctx.Value("X-Florence-Token").(string)
+	if ctx.Value(common.AccessTokenHeaderKey) != nil {
+		accessToken, ok := ctx.Value(common.AccessTokenHeaderKey).(string)
 		if !ok {
 			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
 		}
@@ -244,8 +244,8 @@ func (c *ZebedeeClient) GetPageTitle(ctx context.Context, uri string) (data.Page
 
 func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) string {
 	var url string
-	if ctx.Value("Collection-Id") != nil {
-		collectionID, ok := ctx.Value("Collection-Id").(string)
+	if ctx.Value(common.CollectionIDHeaderKey) != nil {
+		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
 			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
 		}
