@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 )
@@ -127,7 +129,10 @@ func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
 	}
 
 	if ctx.Value("X-Florence-Token") != nil {
-		accessToken := ctx.Value("X-Florence-Token").(string)
+		accessToken, ok := ctx.Value("X-Florence-Token").(string)
+		if !ok {
+			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
+		}
 		req.Header.Set(common.FlorenceHeaderKey, accessToken)
 	}
 
@@ -240,7 +245,10 @@ func (c *ZebedeeClient) GetPageTitle(ctx context.Context, uri string) (data.Page
 func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) string {
 	var url string
 	if ctx.Value("Collection-Id") != nil {
-		collectionID := ctx.Value("Collection-Id").(string)
+		collectionID, ok := ctx.Value("Collection-Id").(string)
+		if !ok {
+			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
+		}
 		url = "/data/" + collectionID
 	}
 	url = url + path
