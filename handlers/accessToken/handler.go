@@ -9,8 +9,8 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 )
 
-// CheckHeader is a wrapper which adds a accessToken from the request header to context if one does not yet exist
-func CheckHeader(h http.Handler) http.Handler {
+// CheckHeaderValueAndForwardWithRequestContext is a wrapper which adds a accessToken from the request header to context if one does not yet exist
+func CheckHeaderValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
@@ -24,8 +24,8 @@ func CheckHeader(h http.Handler) http.Handler {
 	})
 }
 
-// CheckCookie is a wrapper which adds a accessToken from the cookie to context if one does not yet exist
-func CheckCookie(h http.Handler) http.Handler {
+// CheckCookieValueAndForwardWithRequestContext is a wrapper which adds a accessToken from the cookie to context if one does not yet exist
+func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
