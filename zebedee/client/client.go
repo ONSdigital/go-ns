@@ -131,7 +131,7 @@ func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
 	if ctx.Value(common.AccessTokenHeaderKey) != nil {
 		accessToken, ok := ctx.Value(common.AccessTokenHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
+			log.ErrorCtx(ctx, errors.New("error casting access token cookie to string"), nil)
 		}
 		req.Header.Set(common.FlorenceHeaderKey, accessToken)
 	}
@@ -247,7 +247,7 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) strin
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting access token to string"), nil)
+			log.ErrorCtx(ctx, errors.New("error casting collection ID cookie to string"), nil)
 		}
 		url = "/data/" + collectionID
 	}
