@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -21,16 +22,18 @@ func TestUnitClient(t *testing.T) {
 
 	cli := NewZebedeeClient(fmt.Sprintf("http://localhost:%d", port))
 
-	Convey("test Get()", t, func() {
+	ctx := context.WithValue(context.Background(), "X-Florence-Token", "test-access-token")
+
+	Convey("test get()", t, func() {
 		Convey("test get sucessfully returns response from zebedee", func() {
-			b, err := cli.Get("/data?uri=foo")
+			b, err := cli.get(ctx, "/data?uri=foo")
 			So(err, ShouldBeNil)
 
 			So(string(b), ShouldEqual, `{}`)
 		})
 
 		Convey("test error returned if requesting invalid zebedee url", func() {
-			b, err := cli.Get("/invalid")
+			b, err := cli.get(ctx, "/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
@@ -38,40 +41,43 @@ func TestUnitClient(t *testing.T) {
 		})
 	})
 
-	Convey("test GetLanding", t, func() {
-		Convey("test getLanding sucessfully returns a landing model", func() {
-			m, err := cli.GetDatasetLandingPage("/data?uri=labor")
-			So(err, ShouldBeNil)
-			So(m, ShouldNotBeEmpty)
-			So(m.Type, ShouldEqual, "dataset_landing_page")
-		})
-
-		Convey("test error returned if requesting invalid zebedee url", func() {
-			_, err := cli.GetDatasetLandingPage("/invalid")
-			So(err, ShouldNotBeNil)
-			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
-		})
+	Convey("test getLanding sucessfully returns a landing model", t, func() {
+		m, err := cli.GetDatasetLandingPage(ctx, "labour")
+		So(err, ShouldBeNil)
+		So(m, ShouldNotBeEmpty)
+		So(m.Type, ShouldEqual, "dataset_landing_page")
 	})
 
 	Convey("test get dataset details", t, func() {
-		d, err := cli.GetDataset("12345")
+		d, err := cli.GetDataset(ctx, "12345")
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs, err := cli.GetFileSize("filesize")
+		fs, err := cli.GetFileSize(ctx, "filesize")
 		So(err, ShouldBeNil)
 		So(fs.Size, ShouldEqual, 5242880)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle("pageTitle")
+		t, err := cli.GetPageTitle(ctx, "pageTitle")
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
+	})
+
+	Convey("test createRequestURL", t, func() {
+		Convey("test collection ID is added to URL when collection ID is present in context", func() {
+			ctx := context.WithValue(ctx, "Collection-Id", "test1234567")
+			url := cli.createRequestURL(ctx, "/data/uri?=/test/path/123")
+			So(url, ShouldEqual, "/data/test1234567/data/uri?=/test/path/123")
+		})
+		Convey("test collection ID is not added to URL when collection ID is not present in context", func() {
+			url := cli.createRequestURL(ctx, "/data/uri?=/test/path/123")
+			So(url, ShouldEqual, "/data/uri?=/test/path/123")
+		})
 	})
 }
 
@@ -103,7 +109,7 @@ func d(w http.ResponseWriter, req *http.Request) {
 	switch uri {
 	case "foo":
 		w.Write([]byte(`{}`))
-	case "labor":
+	case "labour":
 		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
 	case "12345":
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
