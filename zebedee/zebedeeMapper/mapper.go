@@ -51,6 +51,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 	sdlp.ContactDetails = model.ContactDetails(dlp.Description.Contact)
 	sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 	sdlp.DatasetLandingPage.NextRelease = dlp.Description.NextRelease
+	sdlp.DatasetLandingPage.DatasetID = dlp.Description.DatasetID
 	sdlp.DatasetLandingPage.Notes = dlp.Section.Markdown
 
 	for _, bc := range bcs {
