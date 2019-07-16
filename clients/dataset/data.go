@@ -113,6 +113,7 @@ type Links struct {
 	Options       Link `json:"options,omitempty"`
 	Version       Link `json:"version,omitempty"`
 	Code          Link `json:"code,omitempty"`
+	Taxonomy      Link `json:"taxonomy,omitempty"`
 }
 
 // Link represents a single link within a dataset model
