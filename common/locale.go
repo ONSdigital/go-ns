@@ -1,38 +1,43 @@
 package common
 
 import (
-	"context"
 	"net/http"
 	"strings"
 )
 
-// LocaleCode the locale code to use to determine the language to use
-const LocaleCode = ContextKey("LocaleCode")
+//LangEN is a reference to the english short-form localeCode "en"
+const LangEN = "en"
+
+//LangCY is a reference to the english short-form localeCode "cy"
+const LangCY = "cy"
 
 // SetLocaleCode sets the Locale code used to set the language
-func SetLocaleCode(req *http.Request) context.Context {
-	lang := ExtractLangFromSubDomain(req)
+func SetLocaleCode(req *http.Request) *http.Request {
+	localeCode := ExtractLangFromSubDomain(req)
 
+	// Language is overridden by cookie 'lang' here if present.
 	if c, err := req.Cookie("lang"); err == nil && len(c.Value) > 0 {
-		lang = ExtractLangFromCookie(c)
+		localeCode = ExtractLangFromCookie(c)
 	}
+	req.Header.Set("LocaleCode", localeCode)
 
-	return context.WithValue(req.Context(), LocaleCode, lang)
+	return req
 }
 
 // ExtractLangFromSubDomain returns a language based on subdomain
 func ExtractLangFromSubDomain(req *http.Request) string {
-	lang := "en"
-	if strings.Split(req.Host, ".")[0] == "cy" {
-		lang = "cy"
-	} else {
-		lang = "en"
+	args := strings.Split(req.Host, ".")
+	if len(args) == 0 {
+		// Defaulting to "en" (LangEN) if no arguments
+		return LangEN
 	}
-	return lang
+	if strings.Split(req.Host, ".")[0] == LangCY {
+		return LangCY
+	}
+	return "LangEN"
 }
 
 // ExtractLangFromCookie returns a language based on the lang cookie
 func ExtractLangFromCookie(c *http.Cookie) string {
-	lang := c.Value
-	return lang
+	return c.Value
 }
