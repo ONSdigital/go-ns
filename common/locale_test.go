@@ -60,7 +60,7 @@ func TestSetLocaleCode(t *testing.T) {
 			})
 
 		})
-		Convey("and given a cookie containing 'cy' lang", t, func() {
+		Convey("and given a cookie containing 'cy' lang", func() {
 			cookie := http.Cookie{Name: "lang", Value: LangCY}
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)

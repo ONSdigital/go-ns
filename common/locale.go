@@ -34,7 +34,7 @@ func ExtractLangFromSubDomain(req *http.Request) string {
 	if strings.Split(req.Host, ".")[0] == LangCY {
 		return LangCY
 	}
-	return "LangEN"
+	return LangEN
 }
 
 // ExtractLangFromCookie returns a language based on the lang cookie
