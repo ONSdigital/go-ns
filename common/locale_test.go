@@ -3,7 +3,6 @@ package common
 import (
 	"net/http"
 	"testing"
-	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -34,7 +33,7 @@ func TestExtractLangFromSubDomain(t *testing.T) {
 func TestExtractLangFromCookie(t *testing.T) {
 
 	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", func() {
-		cookie := http.Cookie{"lang", "cy", "/", "http://cy.localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=cy", []string{"lang=cy"}}
+		cookie := http.Cookie{Name: "lang", Value: "cy"}
 		lang := "cy"
 		languageToUse := ExtractLangFromCookie(&cookie)
 
@@ -43,7 +42,7 @@ func TestExtractLangFromCookie(t *testing.T) {
 		})
 	})
 	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", func() {
-		cookie := http.Cookie{"lang", "en", "/", "http://localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=en", []string{"lang=en"}}
+		cookie := http.Cookie{Name: "lang", Value: "en"}
 		lang := "en"
 		languageToUse := ExtractLangFromCookie(&cookie)
 
@@ -58,7 +57,7 @@ func TestSetLocaleCode(t *testing.T) {
 	Convey("Given a request on cy domain", t, func() {
 		req, _ := http.NewRequest("GET", "http://cy.localhost:21800/jobs", nil)
 		Convey(" And given a cookie containing 'en' lang", t, func() {
-			cookie := http.Cookie{"lang", "en", "/", "http://cy.localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=en", []string{"lang=en"}}
+			cookie := http.Cookie{Name: "lang", Value: "en"}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
@@ -68,7 +67,7 @@ func TestSetLocaleCode(t *testing.T) {
 
 		})
 		Convey("and given a cookie containing 'cy' lang", t, func() {
-			cookie := http.Cookie{"lang", "cy", "/", "http://cy.localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=cy", []string{"lang=cy"}}
+			cookie := http.Cookie{Name: "lang", Value: "cy"}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
 			Convey("Then lang returns a string 'cy'", func() {
@@ -80,7 +79,7 @@ func TestSetLocaleCode(t *testing.T) {
 	Convey("Given a request on no subdomain", t, func() {
 		req, _ := http.NewRequest("GET", "http://localhost:21800/jobs", nil)
 		Convey(" And given a cookie containing 'en' lang", t, func() {
-			cookie := http.Cookie{"lang", "en", "/", "http://localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=en", []string{"lang=en"}}
+			cookie := http.Cookie{Name: "lang", Value: "en"}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
@@ -89,7 +88,7 @@ func TestSetLocaleCode(t *testing.T) {
 
 		})
 		Convey("and given a cookie containing 'cy' lang", t, func() {
-			cookie := http.Cookie{"lang", "cy", "/", "http://localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=cy", []string{"lang=cy"}}
+			cookie := http.Cookie{Name: "lang", Value: "cy"}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
 			Convey("Then lang returns a string 'cy'", func() {
