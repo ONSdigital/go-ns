@@ -9,7 +9,7 @@ import (
 
 func TestExtractLangFromSubDomain(t *testing.T) {
 
-	Convey("Given a request when ExtractLangFromSubDomain is called and subdomain cy. is used", func() {
+	Convey("Given a request when ExtractLangFromSubDomain is called and subdomain cy. is used", t, func() {
 		req, _ := http.NewRequest("GET", "http://cy.localhost:21800/jobs", nil)
 		lang := "cy"
 		languageToUse := ExtractLangFromSubDomain(req)
@@ -18,7 +18,7 @@ func TestExtractLangFromSubDomain(t *testing.T) {
 			So(languageToUse, ShouldEqual, lang)
 		})
 	})
-	Convey("Given a request when ExtractLangFromSubDomain is called and no subdomain is used", func() {
+	Convey("Given a request when ExtractLangFromSubDomain is called and no subdomain is used", t, func() {
 		req, _ := http.NewRequest("GET", "http://localhost:21800/jobs", nil)
 
 		lang := "en"
@@ -32,7 +32,7 @@ func TestExtractLangFromSubDomain(t *testing.T) {
 
 func TestExtractLangFromCookie(t *testing.T) {
 
-	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", func() {
+	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", t, func() {
 		cookie := http.Cookie{Name: "lang", Value: "cy"}
 		lang := "cy"
 		languageToUse := ExtractLangFromCookie(&cookie)
@@ -41,7 +41,7 @@ func TestExtractLangFromCookie(t *testing.T) {
 			So(languageToUse, ShouldEqual, lang)
 		})
 	})
-	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", func() {
+	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", t, func() {
 		cookie := http.Cookie{Name: "lang", Value: "en"}
 		lang := "en"
 		languageToUse := ExtractLangFromCookie(&cookie)
