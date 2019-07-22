@@ -39,5 +39,9 @@ func ExtractLangFromSubDomain(req *http.Request) string {
 
 // ExtractLangFromCookie returns a language based on the lang cookie
 func ExtractLangFromCookie(c *http.Cookie) string {
-	return c.Value
+	if c.Value == LangCY || c.Value == LangEN {
+		return c.Value
+	}
+	return LangEN
+
 }
