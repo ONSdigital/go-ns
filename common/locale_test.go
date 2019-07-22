@@ -61,14 +61,19 @@ func TestSetLocaleCode(t *testing.T) {
 			cookie := http.Cookie{"lang", "en", "/", "http://cy.localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=en", []string{"lang=en"}}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			Convey("Then lang returns a string 'en'", func() {
+
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			})
 
 		})
 		Convey("and given a cookie containing 'cy' lang", t, func() {
 			cookie := http.Cookie{"lang", "cy", "/", "http://cy.localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=cy", []string{"lang=cy"}}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
+			Convey("Then lang returns a string 'cy'", func() {
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
+			})
 		})
 	})
 
@@ -78,14 +83,18 @@ func TestSetLocaleCode(t *testing.T) {
 			cookie := http.Cookie{"lang", "en", "/", "http://localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=en", []string{"lang=en"}}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			Convey("Then lang returns a string 'en'", func() {
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			})
 
 		})
 		Convey("and given a cookie containing 'cy' lang", t, func() {
 			cookie := http.Cookie{"lang", "cy", "/", "http://localhost", time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 0, 1).Format(time.UnixDate), 0, false, true, "lang=cy", []string{"lang=cy"}}
 			req.AddCookie(&cookie)
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
+			Convey("Then lang returns a string 'cy'", func() {
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
+			})
 		})
 	})
 
@@ -93,8 +102,9 @@ func TestSetLocaleCode(t *testing.T) {
 		req, _ := http.NewRequest("GET", "http://cy.localhost:21800/jobs", nil)
 		Convey(" And no cookie set", t, func() {
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
-
+			Convey("Then lang returns a string 'cy'", func() {
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "cy")
+			})
 		})
 	})
 
@@ -102,7 +112,9 @@ func TestSetLocaleCode(t *testing.T) {
 		req, _ := http.NewRequest("GET", "http://localhost:21800/jobs", nil)
 		Convey(" And no cookie set", t, func() {
 			ctx := SetLocaleCode(req)
-			So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			Convey("Then lang returns a string 'en'", func() {
+				So(ctx.Value(ContextKey("LocaleCode")).(string), ShouldEqual, "en")
+			})
 		})
 	})
 
