@@ -5,21 +5,23 @@ import (
 	"strings"
 )
 
-//LangEN is a reference to the english short-form localeCode "en"
-const LangEN = "en"
+const (
+	LangEN = "en"
+	LangCY = "cy"
 
-//LangCY is a reference to the english short-form localeCode "cy"
-const LangCY = "cy"
+	LocaleCookieKey = "lang"
+	LocaleHeaderKey = "LocaleCode"
+)
 
 // SetLocaleCode sets the Locale code used to set the language
 func SetLocaleCode(req *http.Request) *http.Request {
 	localeCode := ExtractLangFromSubDomain(req)
 
 	// Language is overridden by cookie 'lang' here if present.
-	if c, err := req.Cookie("lang"); err == nil && len(c.Value) > 0 {
+	if c, err := req.Cookie(LocaleCookieKey); err == nil && len(c.Value) > 0 {
 		localeCode = ExtractLangFromCookie(c)
 	}
-	req.Header.Set("LocaleCode", localeCode)
+	req.Header.Set(LocaleHeaderKey, localeCode)
 
 	return req
 }
