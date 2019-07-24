@@ -14,7 +14,7 @@ import (
 type StaticDatasetLandingPage datasetLandingPageStatic.Page
 
 // MapZebedeeDatasetLandingPageToFrontendModel maps a zebedee response struct into a frontend model to be used for rendering
-func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bcs []data.Breadcrumb, ds []data.Dataset) StaticDatasetLandingPage {
+func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bcs []data.Breadcrumb, ds []data.Dataset, localeCode string) StaticDatasetLandingPage {
 
 	var sdlp StaticDatasetLandingPage
 
@@ -22,6 +22,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 	sdlp.URI = dlp.URI
 	sdlp.Metadata.Title = dlp.Description.Title
 	sdlp.Metadata.Description = dlp.Description.Summary
+	sdlp.Language = localeCode
 
 	for _, d := range dlp.RelatedDatasets {
 		sdlp.DatasetLandingPage.Related.Datasets = append(sdlp.DatasetLandingPage.Related.Datasets, model.Related(d))
