@@ -9,12 +9,11 @@ const (
 	LangEN = "en"
 	LangCY = "cy"
 
+	DefaultLang = LangEN
+
 	LocaleCookieKey = "lang"
 	LocaleHeaderKey = "LocaleCode"
 )
-
-// DefaultLang is the desired langauge to default to if requested language is unavailable
-const DefaultLang = LangEN
 
 // SetLocaleCode sets the Locale code used to set the language
 func SetLocaleCode(req *http.Request) *http.Request {
@@ -22,7 +21,7 @@ func SetLocaleCode(req *http.Request) *http.Request {
 
 	// Language is overridden by cookie 'lang' here if present.
 	if c, err := req.Cookie(LocaleCookieKey); err == nil && len(c.Value) > 0 {
-		localeCode = ExtractLangFromCookie(c)
+		localeCode = GetLangFromCookieOrDefault(c)
 	}
 	req.Header.Set(LocaleHeaderKey, localeCode)
 
