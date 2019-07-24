@@ -78,6 +78,17 @@ func TestUnitClient(t *testing.T) {
 			url := cli.createRequestURL(ctx, "/data/uri?=/test/path/123")
 			So(url, ShouldEqual, "/data/uri?=/test/path/123")
 		})
+		Convey("test lang query parameter is added to URL when locale code is present in context", func() {
+			ctx := context.WithValue(ctx, "LocaleCode", "cy")
+			url := cli.createRequestURL(ctx, "/data/uri?=/test/path/123")
+			So(url, ShouldEqual, "/data/uri?=/test/path/123&lang=cy")
+		})
+		Convey("test collection ID and lang query parameter are added to URL when collection ID and locale code are present in context", func() {
+			ctx := context.WithValue(ctx, "Collection-Id", "test1234567")
+			ctx = context.WithValue(ctx, "LocaleCode", "cy")
+			url := cli.createRequestURL(ctx, "/data/uri?=/test/path/123")
+			So(url, ShouldEqual, "/data/test1234567/data/uri?=/test/path/123&lang=cy")
+		})
 	})
 }
 
