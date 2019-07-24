@@ -7,19 +7,19 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestExtractLangFromSubDomain(t *testing.T) {
+func TestGetLangFromSubDomain(t *testing.T) {
 
-	Convey("Given a request when ExtractLangFromSubDomain is called and subdomain cy. is used", t, func() {
+	Convey("Given a request when GetLangFromSubDomain is called and subdomain cy. is used", t, func() {
 		req, _ := http.NewRequest("GET", "http://cy.localhost:21800/jobs", nil)
-		languageToUse := ExtractLangFromSubDomain(req)
+		languageToUse := GetLangFromSubDomain(req)
 
 		Convey("Then the language 'cy' is returned in a string", func() {
 			So(languageToUse, ShouldEqual, LangCY)
 		})
 	})
-	Convey("Given a request when ExtractLangFromSubDomain is called and no subdomain is used", t, func() {
+	Convey("Given a request when GetLangFromSubDomain is called and no subdomain is used", t, func() {
 		req, _ := http.NewRequest("GET", "http://localhost:21800/jobs", nil)
-		languageToUse := ExtractLangFromSubDomain(req)
+		languageToUse := GetLangFromSubDomain(req)
 
 		Convey("Then the language 'en' is returned in a string", func() {
 			So(languageToUse, ShouldEqual, LangEN)
@@ -27,19 +27,19 @@ func TestExtractLangFromSubDomain(t *testing.T) {
 	})
 }
 
-func TestExtractLangFromCookie(t *testing.T) {
+func TestGetLangFromCookieOrDefault(t *testing.T) {
 
-	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", t, func() {
+	Convey("Given a cookie with lang set to 'cy' when GetLangFromCookieOrDefault is called", t, func() {
 		cookie := http.Cookie{Name: "lang", Value: LangCY}
-		languageToUse := ExtractLangFromCookie(&cookie)
+		languageToUse := GetLangFromCookieOrDefault(&cookie)
 
 		Convey("Then lang returns a string 'cy'", func() {
 			So(languageToUse, ShouldEqual, LangCY)
 		})
 	})
-	Convey("Given a cookie with lang set to 'cy' when ExtractLangFromCookie is called", t, func() {
+	Convey("Given a cookie with lang set to 'cy' when GetLangFromCookieOrDefault is called", t, func() {
 		cookie := http.Cookie{Name: "lang", Value: LangEN}
-		languageToUse := ExtractLangFromCookie(&cookie)
+		languageToUse := GetLangFromCookieOrDefault(&cookie)
 
 		Convey("Then lang returns a string 'en'", func() {
 			So(languageToUse, ShouldEqual, LangEN)
