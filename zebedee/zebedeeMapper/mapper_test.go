@@ -12,8 +12,9 @@ func TestUnitMapper(t *testing.T) {
 		dlp := getTestDatasetLandingPage()
 		bcs := getTestBreadcrumbs()
 		ds := getTestDatsets()
+		lang := "cy"
 
-		sdlp := MapZebedeeDatasetLandingPageToFrontendModel(dlp, bcs, ds)
+		sdlp := MapZebedeeDatasetLandingPageToFrontendModel(dlp, bcs, ds, lang)
 		So(sdlp, ShouldNotBeEmpty)
 
 		So(sdlp.Type, ShouldEqual, dlp.Type)
