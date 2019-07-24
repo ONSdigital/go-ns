@@ -244,6 +244,8 @@ func (c *ZebedeeClient) GetPageTitle(ctx context.Context, uri string) (data.Page
 
 func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) string {
 	var url string
+
+	// Check if collection ID is set in context
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
@@ -251,6 +253,17 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) strin
 		}
 		url = "/data/" + collectionID
 	}
+
 	url = url + path
+
+	// Check if locale code is set in context and add lang query param to url
+	if ctx.Value(common.LocaleHeaderKey) != nil {
+		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
+		if !ok {
+			log.ErrorCtx(ctx, errors.New("error casting locale code to string"), nil)
+		}
+		url = url + "&lang=" + localeCode
+	}
+
 	return url
 }
