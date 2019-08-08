@@ -37,10 +37,7 @@ func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 	})
 }
 
-// addUserAccessTokenToRequestContext add the user florence access token to the request context. TODO TECHNICAL DEBT:
-//
-// There is inconsistency around which content key is used to store/retrieve the token. As a temp fix we are adding the
-// same value with both keys. To fix this properly we need to pick 1 context key and update all uses to use the same one.
+// addUserAccessTokenToRequestContext add the user florence access token to the request context.
 func addUserAccessTokenToRequestContext(userAccessToken string, req *http.Request) *http.Request {
 	return req.WithContext(context.WithValue(req.Context(), common.FlorenceIdentityKey, userAccessToken))
 }
