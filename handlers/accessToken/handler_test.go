@@ -2,11 +2,12 @@ package accessToken
 
 import (
 	"context"
-	"github.com/ONSdigital/go-ns/common"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/ONSdigital/go-ns/common"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 const testToken = "666"
@@ -24,7 +25,7 @@ func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 	Convey("given the request with a florence access token header ", t, func() {
 		r := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		r.Header.Set(common.AccessTokenHeaderKey, testToken)
+		r.Header.Set(common.FlorenceHeaderKey, testToken)
 		w := httptest.NewRecorder()
 
 		mockHandler := &mockHandler{
@@ -38,12 +39,6 @@ func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 
 			Convey("then the wrapped handle is called 1 time", func() {
 				So(mockHandler.invocations, ShouldEqual, 1)
-			})
-
-			Convey("and the request context contains a value for key X-Florence-Token", func() {
-				headerVal, ok := mockHandler.ctx.Value(common.AccessTokenHeaderKey).(string)
-				So(ok, ShouldBeTrue)
-				So(headerVal, ShouldEqual, testToken)
 			})
 
 			Convey("and the request context contains a value for key florence-id", func() {
@@ -71,11 +66,6 @@ func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 				So(mockHandler.invocations, ShouldEqual, 1)
 			})
 
-			Convey("and the request context does not contain a value for key X-Florence-Token", func() {
-				headerVal := mockHandler.ctx.Value(common.AccessTokenHeaderKey)
-				So(headerVal, ShouldBeNil)
-			})
-
 			Convey("and the request context contains a value for key florence-id", func() {
 				xFlorenceToken := mockHandler.ctx.Value(common.FlorenceIdentityKey)
 				So(xFlorenceToken, ShouldBeNil)
@@ -87,7 +77,7 @@ func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 func TestCheckCookieValueAndForwardWithRequestContext(t *testing.T) {
 	Convey("given the request contain a cookie for a florence access token header ", t, func() {
 		r := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		r.AddCookie(&http.Cookie{Name: common.AccessTokenCookieKey, Value: testToken})
+		r.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: testToken})
 
 		w := httptest.NewRecorder()
 
@@ -102,12 +92,6 @@ func TestCheckCookieValueAndForwardWithRequestContext(t *testing.T) {
 
 			Convey("then the wrapped handle is called 1 time", func() {
 				So(mockHandler.invocations, ShouldEqual, 1)
-			})
-
-			Convey("and the request context contains a value for key X-Florence-Token", func() {
-				headerVal, ok := mockHandler.ctx.Value(common.AccessTokenHeaderKey).(string)
-				So(ok, ShouldBeTrue)
-				So(headerVal, ShouldEqual, testToken)
 			})
 
 			Convey("and the request context contains a value for key florence-id", func() {
@@ -133,11 +117,6 @@ func TestCheckCookieValueAndForwardWithRequestContext(t *testing.T) {
 
 			Convey("then the wrapped handle is called 1 time", func() {
 				So(mockHandler.invocations, ShouldEqual, 1)
-			})
-
-			Convey("and the request context does not contain value for key X-Florence-Token", func() {
-				headerVal := mockHandler.ctx.Value(common.AccessTokenHeaderKey)
-				So(headerVal, ShouldBeNil)
 			})
 
 			Convey("and the request context does not contain value for key florence-id", func() {
