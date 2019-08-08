@@ -14,6 +14,8 @@ const (
 	LocaleCookieKey = "lang"
 	LocaleHeaderKey = "LocaleCode"
 )
+var SupportedLanguages = [2]string{LangEN, LangCY}
+
 
 // SetLocaleCode sets the Locale code used to set the language
 func SetLocaleCode(req *http.Request) *http.Request {
