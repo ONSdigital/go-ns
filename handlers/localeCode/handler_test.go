@@ -2,7 +2,6 @@ package localeCode
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,7 +43,6 @@ func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 
 			Convey("and the request context contains a value for key localeCode", func() {
 				localeCode, ok := mockHandler.ctx.Value(common.LocaleHeaderKey).(string)
-				fmt.Println("LOCALE CODE >>>>", localeCode)
 				So(ok, ShouldBeTrue)
 				So(localeCode, ShouldEqual, testLocale)
 			})
@@ -74,7 +72,6 @@ func TestCheckCookieValueAndForwardWithRequestContext(t *testing.T) {
 
 			Convey("and the request context contains a value for key localeCode", func() {
 				localeCode, ok := mockHandler.ctx.Value(common.LocaleHeaderKey).(string)
-				fmt.Println("LOCALE CODE >>>>", localeCode)
 				So(ok, ShouldBeTrue)
 				So(localeCode, ShouldEqual, testLocale)
 			})

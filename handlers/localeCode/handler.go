@@ -33,7 +33,7 @@ func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 			req = req.WithContext(context.WithValue(req.Context(), common.LocaleHeaderKey, localeCode))
 		} else {
 			if err != http.ErrNoCookie {
-				log.ErrorCtx(req.Context(), errors.New("unexpected error while extracting collection ID from cookie"), nil)
+				log.ErrorCtx(req.Context(), errors.New("unexpected error while extracting language from cookie"), nil)
 			}
 		}
 
