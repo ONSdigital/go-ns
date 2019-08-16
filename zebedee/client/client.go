@@ -128,8 +128,8 @@ func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
 		return nil, err
 	}
 
-	if ctx.Value(common.AccessTokenHeaderKey) != nil {
-		accessToken, ok := ctx.Value(common.AccessTokenHeaderKey).(string)
+	if ctx.Value(common.FlorenceIdentityKey) != nil {
+		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
 		if !ok {
 			log.ErrorCtx(ctx, errors.New("error casting access token cookie to string"), nil)
 		}
