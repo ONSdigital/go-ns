@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 )
 
 // healthcheckClient is an implementation of Client that can be used to call the healthcheck endpoint of any service
 type healthcheckClient struct {
-	client  common.RCHTTPClienter
+	client  rchttp.Clienter
 	url     string
 	service string
 }
@@ -33,7 +32,7 @@ type errorResponse struct {
 
 // NewClient creates a new Client for a service with the given name, healthcheck endpoint (url) and HttpClient,
 // reporting on any response status code != 200.
-func NewClient(service string, url string, client common.RCHTTPClienter) *healthcheckClient {
+func NewClient(service string, url string, client rchttp.Clienter) *healthcheckClient {
 	return &healthcheckClient{
 		client:  client,
 		url:     url,
