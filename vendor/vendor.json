@@ -21,6 +21,12 @@
 			"revisionTime": "2019-06-12T09:32:01Z"
 		},
 		{
+			"checksumSHA1": "8xu5NNiSDqiklwPxw545JpBX9g8=",
+			"path": "github.com/ONSdigital/dp-rchttp",
+			"revision": "a0a2529a81d239799f959205695b68160a99d6cb",
+			"revisionTime": "2019-08-30T11:25:54Z"
+		},
+		{
 			"checksumSHA1": "K7wm03LN5CpmnuQPGfSmrx1hNtk=",
 			"path": "github.com/Shopify/sarama",
 			"revision": "35324cf48e33d8260e1c7c18854465a904ade249",
