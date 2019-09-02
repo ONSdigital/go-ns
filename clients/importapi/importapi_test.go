@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -30,7 +30,7 @@ func getMockImportAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPR
 		w.WriteHeader(mockedHTTPResponse.StatusCode)
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
-	return NewAPIClient(client, ts.URL, "auth1212")
+	return NewAPIClient(client, ts.URL)
 }
 
 func TestGetImportJob(t *testing.T) {

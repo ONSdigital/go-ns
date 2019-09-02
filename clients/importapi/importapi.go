@@ -10,29 +10,24 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
+
+
 )
 
 const service = "import-api"
 
-// Clienter defines that interface for a client of the ImportAPI
-type Clienter interface {
-	GetImportJob(ctx context.Context, importJobID string) (ImportJob, bool, error)
-	UpdateImportJobState(ctx context.Context, jobID string, newState string) error
-}
-
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
-	client common.RCHTTPClienter
+	client rchttp.Clienter
 	url    string
 }
 
 // NewAPIClient creates a new API Client with initial rchttp client (optional), given url, auth token
-func NewAPIClient(client common.RCHTTPClienter, apiURL, serviceToken string) *Client {
+func NewAPIClient(client rchttp.Clienter, apiURL string) *Client {
 	return &Client{
-		client: rchttp.ClientWithServiceToken(client, serviceToken),
+		client: client,
 		url:    apiURL,
 	}
 }
@@ -163,7 +158,7 @@ func (api *Client) putJSON(ctx context.Context, path string, attempts int, paylo
 	return callJSONAPI(ctx, api.client, "PUT", path, payload)
 }
 
-func callJSONAPI(ctx context.Context, client common.RCHTTPClienter, method, path string, payload interface{}) ([]byte, int, error) {
+func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path string, payload interface{}) ([]byte, int, error) {
 
 	logData := log.Data{"url": path, "method": method}
 
