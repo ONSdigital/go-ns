@@ -6,6 +6,7 @@ import (
 	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/request"
+	"github.com/ONSdigital/go-ns/common"
 )
 
 // Handler controls the authenticating of a request
@@ -15,13 +16,25 @@ func Handler(zebedeeURL string) func(http.Handler) http.Handler {
 }
 
 // HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
-func HandlerForHTTPClient(cli clientsidentity.Clienter) func(http.Handler) http.Handler {
+func HandlerForHTTPClient(cli *clientsidentity.Client) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
 			log.DebugR(req, "identity middleware called", nil)
 
-			ctx, statusCode, authFailure, err := cli.CheckRequest(req)
+			florenceToken := req.Header.Get(common.FlorenceHeaderKey)
+			if len(florenceToken) < 1 {
+				c, err := req.Cookie(common.FlorenceCookieKey)
+				if err != nil {
+					log.DebugR(req, err.Error(), nil)
+				} else {
+					florenceToken = c.Value
+				}
+			}
+
+			authToken := req.Header.Get(common.AuthHeaderKey)
+
+			ctx, statusCode, authFailure, err := cli.CheckRequest(req, florenceToken, authToken)
 			logData := log.Data{"auth_status_code": statusCode}
 			if err != nil {
 				log.ErrorR(req, err, logData)
