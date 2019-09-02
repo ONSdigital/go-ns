@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/ONSdigital/go-ns/healthcheck"
+	"github.com/ONSdigital/dp-rchttp"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -17,7 +17,7 @@ func TestHealthcheckClientWithoutError(t *testing.T) {
 	url := "http://foo/bar"
 
 	Convey("Given a healthcheck client with mocked HttpClient", t, func() {
-		mock := &commontest.RCHTTPClienterMock{
+		mock := &rchttp.ClienterMock{
 			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
 				return &http.Response{StatusCode: http.StatusOK}, nil
 			},
@@ -45,7 +45,7 @@ func TestHealthcheckClientReportsError(t *testing.T) {
 	service := "myService"
 
 	Convey("Given a healthcheck client with mocked HttpClient returning a 500 error", t, func() {
-		mock := &commontest.RCHTTPClienterMock{
+		mock := &rchttp.ClienterMock{
 			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
 				return &http.Response{StatusCode: http.StatusInternalServerError}, nil
 			},
@@ -73,7 +73,7 @@ func TestHealthcheckClientReturnsError(t *testing.T) {
 
 	Convey("Given a healthcheck client with mocked HttpClient returning a connection error", t, func() {
 		mockErr := errors.New("This is an error")
-		mock := &commontest.RCHTTPClienterMock{
+		mock := &rchttp.ClienterMock{
 			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
 				return &http.Response{StatusCode: http.StatusInternalServerError}, mockErr
 			},

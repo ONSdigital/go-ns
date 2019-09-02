@@ -9,8 +9,9 @@ import (
 
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 	"github.com/pkg/errors"
+	"github.com/ONSdigital/go-ns/clients"
 )
 
 var errUnableToIdentifyRequest = errors.New("unable to determine the user or service making the request")
@@ -22,7 +23,7 @@ type tokenObject struct {
 }
 
 // Client is an alias to a generic/common api client structure
-type Client common.APIClient
+type Client clients.APIClient
 
 // Clienter provides an interface to checking identity of incoming request
 type Clienter interface {
@@ -30,7 +31,7 @@ type Clienter interface {
 }
 
 // NewAPIClient returns a Client
-func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
+func NewAPIClient(cli rchttp.Clienter, url string) (api *Client) {
 	return &Client{
 		HTTPClient: cli,
 		BaseURL:    url,
@@ -42,22 +43,10 @@ func NewAPIClient(cli common.RCHTTPClienter, url string) (api *Client) {
 type authFailure error
 
 // CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api Client) CheckRequest(req *http.Request) (context.Context, int, authFailure, error) {
+func (api Client) CheckRequest(req *http.Request, florenceToken, authToken string) (context.Context, int, authFailure, error) {
 	log.DebugR(req, "CheckRequest called", nil)
 
 	ctx := req.Context()
-
-	florenceToken := req.Header.Get(common.FlorenceHeaderKey)
-	if len(florenceToken) < 1 {
-		c, err := req.Cookie(common.FlorenceCookieKey)
-		if err != nil {
-			log.DebugR(req, err.Error(), nil)
-		} else {
-			florenceToken = c.Value
-		}
-	}
-
-	authToken := req.Header.Get(common.AuthHeaderKey)
 
 	isUserReq := len(florenceToken) > 0
 	isServiceReq := len(authToken) > 0

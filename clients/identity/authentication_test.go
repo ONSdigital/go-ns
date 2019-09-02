@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/ONSdigital/dp-rchttp"
 )
 
 const (
@@ -31,12 +32,12 @@ func TestHandler_NoAuth(t *testing.T) {
 	Convey("Given a request with no auth headers", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		httpClient := &commontest.RCHTTPClienterMock{}
+		httpClient := &rchttp.ClienterMock{}
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, "", "")
 
 			Convey("Then the downstream HTTP handler should not be called", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
@@ -59,9 +60,6 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 	Convey("Given a request with a florence token, and a mock client that returns an error", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
 
 		expectedError := errors.New("broken")
 		httpClient := getClientReturningError(expectedError)
@@ -69,7 +67,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, "")
 
 			Convey("Then the identity service was called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -93,12 +91,8 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns a non-200 response", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
@@ -109,7 +103,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, "")
 
 			Convey("Then the identity service is called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -133,16 +127,13 @@ func TestHandler_florenceToken(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns 200", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
 
 		httpClient := getClientReturningIdentifier(userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, "")
 
 			Convey("Then the identity service is called as expected", func() {
 				So(authFailure, ShouldBeNil)
@@ -164,14 +155,13 @@ func TestHandler_florenceToken(t *testing.T) {
 
 	Convey("Given a request with a florence token as a cookie, and mock client that returns 200", t, func() {
 		req := httptest.NewRequest("GET", url, nil)
-		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: florenceToken})
 
 		httpClient := getClientReturningIdentifier(userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, "")
 
 			Convey("Then the identity service is called as expected", func() {
 				So(authFailure, ShouldBeNil)
@@ -197,9 +187,6 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns invalid response JSON", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
 
 		httpClient := &commontest.RCHTTPClienterMock{
 			SetAuthTokenFunc: func(string) {},
@@ -214,7 +201,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, "")
 
 			Convey("Then the identity service is called as expected", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
@@ -242,7 +229,6 @@ func TestHandler_authToken(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
-			common.AuthHeaderKey: {callerAuthToken},
 			common.UserHeaderKey: {userIdentifier},
 		}
 
@@ -251,7 +237,7 @@ func TestHandler_authToken(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, "", callerAuthToken)
 			So(err, ShouldBeNil)
 			So(authFailure, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
@@ -293,7 +279,7 @@ func TestHandler_bothTokens(t *testing.T) {
 
 		Convey("When CheckRequest is called", func() {
 
-			ctx, status, authFailure, err := idClient.CheckRequest(req)
+			ctx, status, authFailure, err := idClient.CheckRequest(req, florenceToken, callerAuthToken)
 			So(err, ShouldBeNil)
 			So(authFailure, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
@@ -379,9 +365,8 @@ func TestSplitTokens(t *testing.T) {
 
 }
 
-func getClientReturningIdentifier(id string) *commontest.RCHTTPClienterMock {
-	return &commontest.RCHTTPClienterMock{
-		SetAuthTokenFunc: func(string) {},
+func getClientReturningIdentifier(id string) *rchttp.ClienterMock {
+	return &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			response := &common.IdentityResponse{Identifier: id}
 			body, _ := json.Marshal(response)
@@ -394,7 +379,6 @@ func getClientReturningIdentifier(id string) *commontest.RCHTTPClienterMock {
 }
 func getClientReturningError(err error) *commontest.RCHTTPClienterMock {
 	return &commontest.RCHTTPClienterMock{
-		SetAuthTokenFunc: func(string) {},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return nil, err
 		},
