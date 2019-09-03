@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/go-ns/log"
 
 	"github.com/ONSdigital/go-ns/common"
 )
@@ -95,7 +95,7 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, authToken stri
 	var importJob ImportJob
 	path := api.url + "/jobs/" + importJobID
 
-	jsonBody, httpCode, err := api.getJSON(ctx, path, authToken,0, nil)
+	jsonBody, httpCode, err := api.getJSON(ctx, path, authToken, 0, nil)
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
