@@ -13,7 +13,7 @@ import (
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/dp-rchttp"
 
-
+	"github.com/ONSdigital/go-ns/common"
 )
 
 const service = "import-api"
@@ -24,7 +24,7 @@ type Client struct {
 	url    string
 }
 
-// NewAPIClient creates a new API Client with initial rchttp client (optional), given url, auth token
+// NewAPIClient creates a new API Client
 func NewAPIClient(client rchttp.Clienter, apiURL string) *Client {
 	return &Client{
 		client: client,
@@ -91,11 +91,11 @@ type InstanceLink struct {
 }
 
 // GetImportJob asks the Import API for the details for an Import job
-func (api *Client) GetImportJob(ctx context.Context, importJobID string) (ImportJob, bool, error) {
+func (api *Client) GetImportJob(ctx context.Context, importJobID, authToken string) (ImportJob, bool, error) {
 	var importJob ImportJob
 	path := api.url + "/jobs/" + importJobID
 
-	jsonBody, httpCode, err := api.getJSON(ctx, path, 0, nil)
+	jsonBody, httpCode, err := api.getJSON(ctx, path, authToken,0, nil)
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
@@ -128,11 +128,11 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID string) (Import
 }
 
 // UpdateImportJobState tells the Import API that the state has changed of an Import job
-func (api *Client) UpdateImportJobState(ctx context.Context, jobID string, newState string) error {
+func (api *Client) UpdateImportJobState(ctx context.Context, jobID, authToken string, newState string) error {
 	path := api.url + "/jobs/" + jobID
 	jsonUpload := []byte(`{"state":"` + newState + `"}`)
 
-	jsonResult, httpCode, err := api.putJSON(ctx, path, 0, jsonUpload)
+	jsonResult, httpCode, err := api.putJSON(ctx, path, authToken, 0, jsonUpload)
 	logData := log.Data{
 		"path":        path,
 		"importJobID": jobID,
@@ -150,15 +150,15 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID string, newSt
 	return nil
 }
 
-func (api *Client) getJSON(ctx context.Context, path string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "GET", path, vars)
+func (api *Client) getJSON(ctx context.Context, path, authToken string, attempts int, vars url.Values) ([]byte, int, error) {
+	return callJSONAPI(ctx, api.client, "GET", path, authToken, vars)
 }
 
-func (api *Client) putJSON(ctx context.Context, path string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "PUT", path, payload)
+func (api *Client) putJSON(ctx context.Context, path, authToken string, attempts int, payload []byte) ([]byte, int, error) {
+	return callJSONAPI(ctx, api.client, "PUT", path, authToken, payload)
 }
 
-func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path string, payload interface{}) ([]byte, int, error) {
+func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, authToken string, payload interface{}) ([]byte, int, error) {
 
 	logData := log.Data{"url": path, "method": method}
 
@@ -188,6 +188,11 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path strin
 	if err != nil {
 		log.ErrorC("Failed to create request for API", err, logData)
 		return nil, 0, err
+	}
+
+	// add a service auth token to request where one has been provided
+	if len(authToken) > 0 {
+		common.AddServiceTokenHeader(req, authToken)
 	}
 
 	resp, err := client.Do(ctx, req)
