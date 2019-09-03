@@ -11,9 +11,8 @@ import (
 	"net/url"
 
 	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/log"
-
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/log"
 )
 
 const service = "import-api"
