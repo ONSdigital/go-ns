@@ -13,7 +13,6 @@ import (
 	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 )
 
@@ -86,10 +85,7 @@ func (c *Client) Get(ctx context.Context, id, authToken string) (m Model, err er
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -139,10 +135,7 @@ func (c *Client) GetByPath(ctx context.Context, path, authToken string) (m Model
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -192,10 +185,7 @@ func (c *Client) GetDatasets(ctx context.Context, authToken string) (m ModelColl
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -234,10 +224,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition, authToken s
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -284,10 +271,7 @@ func (c *Client) GetEditions(ctx context.Context, id, authToken string) (m []Edi
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -344,15 +328,9 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, authToken, downlo
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
-	if len(downloadServiceToken) > 0 {
-		log.Info("adding provided download service token header to request", nil)
-		common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
-	}
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -392,15 +370,9 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version, authToken
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
-	if len(downloadServiceToken) > 0 {
-		log.Info("adding provided download service token header to request", nil)
-		common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
-	}
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -435,10 +407,7 @@ func (c *Client) GetInstance(ctx context.Context, instanceID, authToken string) 
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -477,10 +446,7 @@ func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version, au
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -513,10 +479,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, a
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -551,10 +514,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version, authTo
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -594,10 +554,7 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 
 	req = setCollectionID(ctx, req)
 
-	if len(authToken) > 0 {
-		log.Info("adding provided auth token header to request", nil)
-		common.AddServiceTokenHeader(req, authToken)
-	}
+	common.AddServiceTokenHeader(req, authToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
