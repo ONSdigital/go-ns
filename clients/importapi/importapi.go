@@ -190,10 +190,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 
 	// add a service token to request where one has been provided
-	if len(serviceToken) > 0 {
-		log.Info("adding provided service token header to request", nil)
-		common.AddServiceTokenHeader(req, serviceToken)
-	}
+	common.AddServiceTokenHeader(req, serviceToken)
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
