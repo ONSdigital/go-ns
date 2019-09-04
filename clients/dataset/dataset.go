@@ -520,6 +520,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version, authTo
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -530,7 +531,6 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version, authTo
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	if err = json.Unmarshal(b, &m); err != nil {
 		return
@@ -588,7 +588,6 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
-		defer resp.Body.Close()
 		e.body = string(b)
 	}
 	return
