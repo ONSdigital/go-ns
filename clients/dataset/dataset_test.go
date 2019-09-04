@@ -15,14 +15,16 @@ import (
 
 var ctx = context.Background()
 
-const authToken = "auth token"
+const authToken = "iamatoken"
 
 func TestClient_PutVersion(t *testing.T) {
 
 	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedVersion Version) {
 		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
-
+		So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+authToken)
+		
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
+
 		var actualVersion Version
 		json.Unmarshal(actualBody, &actualVersion)
 		So(actualVersion, ShouldResemble, expectedVersion)
