@@ -588,6 +588,7 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
+		defer resp.Body.Close()
 		e.body = string(b)
 	}
 	return
