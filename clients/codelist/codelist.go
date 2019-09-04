@@ -4,14 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	rchttp "github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/go-ns/common"
+	"io"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/ONSdigital/go-ns/clients/clientlog"
-	"github.com/ONSdigital/go-ns/rchttp"
 )
 
+//go:generate moq -out codelisttest/genrated_client_mock.go -pkg codelisttest . Storer
+
 const service = "code-list-api"
+
+var _ error = ErrInvalidCodelistAPIResponse{}
+
+// Client is a codelist api client which can be used to make requests to the server
+type Client struct {
+	cli rchttp.Clienter
+	url string
+}
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
 // with a valid status
@@ -35,18 +46,10 @@ func (e ErrInvalidCodelistAPIResponse) Code() int {
 	return e.actualCode
 }
 
-var _ error = ErrInvalidCodelistAPIResponse{}
-
-// Client is a codelist api client which can be used to make requests to the server
-type Client struct {
-	cli *rchttp.Client
-	url string
-}
-
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
 	return &Client{
-		cli: rchttp.DefaultClient,
+		cli: rchttp.NewClient(),
 		url: codelistAPIURL,
 	}
 }
@@ -65,8 +68,45 @@ func (c *Client) Healthcheck() (string, error) {
 	return service, nil
 }
 
+func (c *Client) doWithAuthToken(ctx context.Context, method string, uri string, authToken string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, uri, body)
+	if err != nil {
+		return nil, err
+	}
+
+	common.AddServiceTokenHeader(req, authToken)
+	return c.cli.Do(ctx, req)
+}
+
 // GetValues returns dimension values from the codelist api
-func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
+func (c *Client) GetValues(ctx context.Context, authToken string, id string) (DimensionValues, error) {
+	var vals DimensionValues
+	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+
+	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
+
+	resp, err := c.doWithAuthToken(ctx, "GET", uri, authToken, nil)
+	if err != nil {
+		return vals, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return vals, err
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return vals, err
+	}
+
+	err = json.Unmarshal(b, &vals)
+	return vals, err
+}
+
+// GetValues returns dimension values from the codelist api
+/*func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
 	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
@@ -89,7 +129,7 @@ func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
 
 	err = json.Unmarshal(b, &vals)
 	return
-}
+}*/
 
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
