@@ -9,6 +9,8 @@ import (
 	"os"
 	"testing"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
+
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
@@ -19,21 +21,22 @@ func TestUnitClient(t *testing.T) {
 	go mockZebedeeServer(portChan)
 
 	port := <-portChan
+	//rchttpCli := rchttp.NewClient()
+	cli := NewZebedeeClient(rchttp.NewClient(), fmt.Sprintf("http://localhost:%d", port))
 
-	cli := NewZebedeeClient(fmt.Sprintf("http://localhost:%d", port))
-
-	ctx := context.WithValue(context.Background(), "X-Florence-Token", "test-access-token")
+	testAccessToken := "test-access-token"
+	ctx := context.Background()
 
 	Convey("test get()", t, func() {
 		Convey("test get sucessfully returns response from zebedee", func() {
-			b, err := cli.get(ctx, "/data?uri=foo")
+			b, err := cli.get(ctx, testAccessToken, "/data?uri=foo")
 			So(err, ShouldBeNil)
 
 			So(string(b), ShouldEqual, `{}`)
 		})
 
 		Convey("test error returned if requesting invalid zebedee url", func() {
-			b, err := cli.get(ctx, "/invalid")
+			b, err := cli.get(ctx, testAccessToken, "/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
@@ -42,27 +45,27 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getLanding sucessfully returns a landing model", t, func() {
-		m, err := cli.GetDatasetLandingPage(ctx, "labour")
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "labour")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Type, ShouldEqual, "dataset_landing_page")
 	})
 
 	Convey("test get dataset details", t, func() {
-		d, err := cli.GetDataset(ctx, "12345")
+		d, err := cli.GetDataset(ctx, testAccessToken, "12345")
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs, err := cli.GetFileSize(ctx, "filesize")
+		fs, err := cli.GetFileSize(ctx, testAccessToken, "filesize")
 		So(err, ShouldBeNil)
 		So(fs.Size, ShouldEqual, 5242880)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle(ctx, "pageTitle")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, "pageTitle")
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
