@@ -97,6 +97,13 @@ func SetFlorenceHeader(ctx context.Context, r *http.Request) {
 	}
 }
 
+// AddFlorenceHeader sets the given user access token (florence token) token on the given request
+func AddFlorenceHeader(r *http.Request, userAccessToken string) {
+	if len(userAccessToken) > 0 {
+		r.Header.Add(FlorenceHeaderKey, userAccessToken)
+	}
+}
+
 // AddAuthHeaders sets authentication headers for request
 func AddAuthHeaders(ctx context.Context, r *http.Request, serviceToken string) {
 	if IsUserPresent(ctx) {
