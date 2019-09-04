@@ -332,7 +332,7 @@ func (c *Client) GetEditions(ctx context.Context, id, authToken string) (m []Edi
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, id, edition, authToken, downloadServicetoken string) (m []Version, err error) {
+func (c *Client) GetVersions(ctx context.Context, id, edition, authToken, downloadServiceToken string) (m []Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
@@ -349,9 +349,9 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, authToken, downlo
 		common.AddServiceTokenHeader(req, authToken)
 	}
 
-	if len(downloadServicetoken) > 0 {
+	if len(downloadServiceToken) > 0 {
 		log.Info("adding provided download service token header to request", nil)
-		common.AddDownloadServiceTokenHeader(req, downloadServicetoken)
+		common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 	}
 
 	resp, err := c.cli.Do(ctx, req)
@@ -380,7 +380,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, authToken, downlo
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, id, edition, version, authToken, downloadServicetoken string) (m Version, err error) {
+func (c *Client) GetVersion(ctx context.Context, id, edition, version, authToken, downloadServiceToken string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -397,9 +397,9 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version, authToken
 		common.AddServiceTokenHeader(req, authToken)
 	}
 
-	if len(downloadServicetoken) > 0 {
+	if len(downloadServiceToken) > 0 {
 		log.Info("adding provided download service token header to request", nil)
-		common.AddDownloadServiceTokenHeader(req, downloadServicetoken)
+		common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 	}
 
 	resp, err := c.cli.Do(ctx, req)
