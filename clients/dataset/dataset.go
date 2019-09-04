@@ -91,6 +91,7 @@ func (c *Client) Get(ctx context.Context, id, authToken string) (m Model, err er
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -101,7 +102,6 @@ func (c *Client) Get(ctx context.Context, id, authToken string) (m Model, err er
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	var body map[string]interface{}
 	if err = json.Unmarshal(b, &body); err != nil {
