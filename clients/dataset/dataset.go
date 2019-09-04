@@ -74,7 +74,7 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, id, authToken, downloadServiceToken string) (m Model, err error) {
+func (c *Client) Get(ctx context.Context, id, authToken string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
@@ -89,11 +89,6 @@ func (c *Client) Get(ctx context.Context, id, authToken, downloadServiceToken st
 	if len(authToken) > 0 {
 		log.Info("adding provided auth token header to request", nil)
 		common.AddServiceTokenHeader(req, authToken)
-	}
-
-	if len(downloadServiceToken) > 0 {
-		log.Info("adding provided download service token header to request", nil)
-		common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 	}
 
 	resp, err := c.cli.Do(ctx, req)
