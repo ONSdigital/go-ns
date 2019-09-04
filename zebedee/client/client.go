@@ -13,16 +13,16 @@ import (
 	"sync"
 	"time"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rhttp"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 )
 
 // ZebedeeClient represents a zebedee client
 type ZebedeeClient struct {
 	zebedeeURL string
-	client     *rhttp.Client
+	client     rchttp.Clienter
 }
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
@@ -45,13 +45,12 @@ var _ error = ErrInvalidZebedeeResponse{}
 // NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
 // environment variable to modify default client timeout as zebedee can often be slow
 // to respond
-func NewZebedeeClient(url string) *ZebedeeClient {
+func NewZebedeeClient(client rchttp.Clienter, url string) *ZebedeeClient {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
-	cli := rhttp.DefaultClient
-	cli.HTTPClient.Timeout = time.Duration(timeout) * time.Second
+	cli := rchttp.ClientWithTimeout(client, time.Duration(timeout)*time.Second)
 
 	return &ZebedeeClient{
 		zebedeeURL: url,
@@ -60,13 +59,14 @@ func NewZebedeeClient(url string) *ZebedeeClient {
 }
 
 // Get returns a response for the requested uri in zebedee
-func (c *ZebedeeClient) Get(ctx context.Context, path string) ([]byte, error) {
-	return c.get(ctx, path)
+func (c *ZebedeeClient) Get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
+	return c.get(ctx, userAccessToken, path)
 }
 
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *ZebedeeClient) Healthcheck() (string, error) {
-	resp, err := c.client.Get(c.zebedeeURL + "/healthcheck")
+	ctx := context.Background()
+	resp, err := c.client.Get(ctx, c.zebedeeURL+"/healthcheck")
 	if err != nil {
 		return "zebedee", err
 	}
@@ -80,9 +80,9 @@ func (c *ZebedeeClient) Healthcheck() (string, error) {
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
-func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, path string) (data.DatasetLandingPage, error) {
+func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
 	reqURL := c.createRequestURL(ctx, "/data?uri="+path)
-	b, err := c.get(ctx, reqURL)
+	b, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return data.DatasetLandingPage{}, err
 	}
@@ -112,7 +112,7 @@ func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, path string) 
 					<-sem
 					wg.Done()
 				}()
-				t, _ := c.GetPageTitle(ctx, e.URI)
+				t, _ := c.GetPageTitle(ctx, userAccessToken, e.URI)
 				element[i].Title = t.Title
 			}(i, e, element)
 		}
@@ -122,21 +122,15 @@ func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, path string) 
 	return dlp, nil
 }
 
-func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
+func (c *ZebedeeClient) get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if ctx.Value(common.FlorenceIdentityKey) != nil {
-		accessToken, ok := ctx.Value(common.FlorenceIdentityKey).(string)
-		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting access token cookie to string"), nil)
-		}
-		req.Header.Set(common.FlorenceHeaderKey, accessToken)
-	}
+	common.AddFlorenceHeader(req, userAccessToken)
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +145,8 @@ func (c *ZebedeeClient) get(ctx context.Context, path string) ([]byte, error) {
 }
 
 // GetBreadcrumb returns a Breadcrumb
-func (c *ZebedeeClient) GetBreadcrumb(ctx context.Context, uri string) ([]data.Breadcrumb, error) {
-	b, err := c.get(ctx, "/parents?uri="+uri)
+func (c *ZebedeeClient) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]data.Breadcrumb, error) {
+	b, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +160,8 @@ func (c *ZebedeeClient) GetBreadcrumb(ctx context.Context, uri string) ([]data.B
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c *ZebedeeClient) GetDataset(ctx context.Context, uri string) (data.Dataset, error) {
-	b, err := c.get(ctx, "/data?uri="+uri)
+func (c *ZebedeeClient) GetDataset(ctx context.Context, userAccessToken, uri string) (data.Dataset, error) {
+	b, err := c.get(ctx, userAccessToken, "/data?uri="+uri)
 	if err != nil {
 		return data.Dataset{}, err
 	}
@@ -180,7 +174,7 @@ func (c *ZebedeeClient) GetDataset(ctx context.Context, uri string) (data.Datase
 	downloads := make([]data.Download, 0)
 
 	for _, v := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, uri+"/"+v.File)
+		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
 		if err != nil {
 			return d, err
 		}
@@ -195,7 +189,7 @@ func (c *ZebedeeClient) GetDataset(ctx context.Context, uri string) (data.Datase
 
 	supplementaryFiles := make([]data.SupplementaryFile, 0)
 	for _, v := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, uri+"/"+v.File)
+		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
 		if err != nil {
 			return d, err
 		}
@@ -213,8 +207,8 @@ func (c *ZebedeeClient) GetDataset(ctx context.Context, uri string) (data.Datase
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c *ZebedeeClient) GetFileSize(ctx context.Context, uri string) (data.FileSize, error) {
-	b, err := c.get(ctx, "/filesize?uri="+uri)
+func (c *ZebedeeClient) GetFileSize(ctx context.Context, userAccessToken, uri string) (data.FileSize, error) {
+	b, err := c.get(ctx, userAccessToken, "/filesize?uri="+uri)
 	if err != nil {
 		return data.FileSize{}, err
 	}
@@ -228,8 +222,8 @@ func (c *ZebedeeClient) GetFileSize(ctx context.Context, uri string) (data.FileS
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c *ZebedeeClient) GetPageTitle(ctx context.Context, uri string) (data.PageTitle, error) {
-	b, err := c.get(ctx, "/data?uri="+uri+"&title")
+func (c *ZebedeeClient) GetPageTitle(ctx context.Context, userAccessToken, uri string) (data.PageTitle, error) {
+	b, err := c.get(ctx, userAccessToken, "/data?uri="+uri+"&title")
 	if err != nil {
 		return data.PageTitle{}, err
 	}
