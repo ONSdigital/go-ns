@@ -51,7 +51,7 @@ type Client struct {
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
 func NewAPIClient(datasetAPIURL string) *Client {
 	return &Client{
-		cli: &rchttp.Client{},
+		cli: rchttp.NewClient(),
 		url: datasetAPIURL,
 	}
 }
