@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	testAuthToken   = "666"
-	testHost        = "http://localhost:8080"
-	dimensionValues = DimensionValues{
+	testServiceAuthToken = "666"
+	testHost             = "http://localhost:8080"
+	dimensionValues      = DimensionValues{
 		Items: []Item{
 			{
 				ID:    "123",
@@ -39,7 +39,7 @@ func TestClient_GetValues(t *testing.T) {
 		clienter := getClienterMock(resp, nil)
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		actual, err := codelistClient.GetValues(nil, testAuthToken, "999")
+		actual, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
 
 		So(err, ShouldBeNil)
 		So(actual, ShouldResemble, dimensionValues)
@@ -51,7 +51,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
 		So(req.Method, ShouldEqual, "GET")
 		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 
@@ -62,7 +62,7 @@ func TestClient_GetValues(t *testing.T) {
 
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		actual, err := codelistClient.GetValues(nil, testAuthToken, "999")
+		actual, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(actual, ShouldResemble, DimensionValues{})
@@ -74,7 +74,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
 		So(req.Method, ShouldEqual, "GET")
 		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 	})
 
 	Convey("should return expected error for non 200 response status", t, func() {
@@ -87,7 +87,7 @@ func TestClient_GetValues(t *testing.T) {
 		expectedURI := fmt.Sprintf("%s/code-lists/%s/codes", testHost, "999")
 		expectedErr := &ErrInvalidCodelistAPIResponse{http.StatusOK, 500, expectedURI}
 
-		dimensionValues, err := codelistClient.GetValues(nil, testAuthToken, "999")
+		dimensionValues, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(dimensionValues, ShouldResemble, DimensionValues{})
@@ -99,7 +99,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
 		So(req.Method, ShouldEqual, "GET")
 		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 
@@ -110,7 +110,7 @@ func TestClient_GetValues(t *testing.T) {
 		clienter := getClienterMock(resp, nil)
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		dimensionValues, err := codelistClient.GetValues(nil, testAuthToken, "999")
+		dimensionValues, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(dimensionValues, ShouldResemble, DimensionValues{})
@@ -122,7 +122,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
 		So(req.Method, ShouldEqual, "GET")
 		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 }
@@ -137,7 +137,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -153,7 +153,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(req.URL.Host, ShouldEqual, "localhost:8080")
 				So(req.Method, ShouldEqual, "GET")
 				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 			})
 		})
 	})
@@ -167,7 +167,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -183,7 +183,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(req.URL.Host, ShouldEqual, "localhost:8080")
 				So(req.Method, ShouldEqual, "GET")
 				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -204,7 +204,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -220,7 +220,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(req.URL.Host, ShouldEqual, "localhost:8080")
 				So(req.Method, ShouldEqual, "GET")
 				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -238,7 +238,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
 
 			Convey("then the expected ID Name map is returned", func() {
 				expected := map[string]string{"123": "Schwifty"}
@@ -255,12 +255,28 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(req.URL.Host, ShouldEqual, "localhost:8080")
 				So(req.Method, ShouldEqual, "GET")
 				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 			})
 
 			Convey("and the response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
+		})
+	})
+}
+
+func TestClient_GetGeographyCodeLists(t *testing.T) {
+	Convey("given clienter.Do returns an error", t, func() {
+		expectedErr := errors.New("Master! Master! Obey your Master!")
+		clienter := getClienterMock(nil, expectedErr)
+
+		codelistclient := &Client{
+			url: testHost,
+			cli: clienter,
+		}
+
+		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
+			codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
 		})
 	})
 }
