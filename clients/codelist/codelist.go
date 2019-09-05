@@ -106,6 +106,10 @@ func (c *Client) GetIDNameMap(ctx context.Context, id string, serviceAuthToken s
 	}
 	defer closeResponseBody(ctx, resp)
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -135,6 +139,10 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 	}
 	defer closeResponseBody(ctx, resp)
 
+	if resp.StatusCode != http.StatusOK {
+		return results, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return results, err
@@ -146,27 +154,6 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 	}
 	return results, nil
 }
-
-/*//GetGeographyCodeLists returns the geography codelists
-func (c *Client) GetGeographyCodeLists() (results CodeListResults, err error) {
-	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
-	resp, err := c.cli.Get(context.Background(), uri)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(b, &results)
-	if err != nil {
-		return
-	}
-	return results, nil
-}*/
 
 //GetCodeListEditions returns the editions for a codelist
 func (c *Client) GetCodeListEditions(codeListID string) (editions EditionsListResults, err error) {
