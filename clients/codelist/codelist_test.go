@@ -127,6 +127,144 @@ func TestClient_GetValues(t *testing.T) {
 	})
 }
 
+func TestClient_GetIDNameMap(t *testing.T) {
+
+	Convey("give client.Do returns an error", t, func() {
+		expectedErr := errors.New("bork")
+
+		clienter := getClienterMock(nil, expectedErr)
+
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when codelistClient.GetIDNameMap is called", func() {
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+
+			Convey("then the expected error is returned", func() {
+				So(actual, ShouldBeNil)
+				So(err, ShouldResemble, expectedErr)
+			})
+
+			Convey("and client.Do should be called 1 time with the expected parameters", func() {
+				calls := clienter.DoCalls()
+				So(calls, ShouldHaveLength, 1)
+
+				req := calls[0].Req
+				So(req.URL.Path, ShouldEqual, "/code-lists/666/codes")
+				So(req.URL.Host, ShouldEqual, "localhost:8080")
+				So(req.Method, ShouldEqual, "GET")
+				So(req.Body, ShouldBeNil)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+			})
+		})
+	})
+
+	Convey("given ioutil.ReadAll returns an error", t, func() {
+		expectedErr := errors.New("I wander out where you can't see Inside my shell, I wait and bleed")
+		body := httpmocks.NewReadCloserMock(nil, expectedErr)
+		resp := httpmocks.NewResponseMock(body, 200)
+		clienter := getClienterMock(resp, nil)
+
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when codelistClient.GetIDNameMap is called", func() {
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+
+			Convey("then the expected error is returned", func() {
+				So(actual, ShouldBeNil)
+				So(err, ShouldEqual, expectedErr)
+			})
+
+			Convey("and client.Do should be called 1 time with the expected parameters", func() {
+				calls := clienter.DoCalls()
+				So(calls, ShouldHaveLength, 1)
+
+				req := calls[0].Req
+				So(req.URL.Path, ShouldEqual, "/code-lists/666/codes")
+				So(req.URL.Host, ShouldEqual, "localhost:8080")
+				So(req.Method, ShouldEqual, "GET")
+				So(req.Body, ShouldBeNil)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+			})
+
+			Convey("and the response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("given unmarshalling the response body returns error", t, func() {
+		// return bytes incompatible with the expected return type
+		b := httpmocks.GetEntityBytes(t, []int{1, 2, 3, 4, 5, 6})
+
+		body := httpmocks.NewReadCloserMock(b, nil)
+		resp := httpmocks.NewResponseMock(body, 200)
+
+		clienter := getClienterMock(resp, nil)
+
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when codelistClient.GetIDNameMap is called", func() {
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+
+			Convey("then the expected error is returned", func() {
+				So(actual, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and client.Do should be called 1 time with the expected parameters", func() {
+				calls := clienter.DoCalls()
+				So(calls, ShouldHaveLength, 1)
+
+				req := calls[0].Req
+				So(req.URL.Path, ShouldEqual, "/code-lists/666/codes")
+				So(req.URL.Host, ShouldEqual, "localhost:8080")
+				So(req.Method, ShouldEqual, "GET")
+				So(req.Body, ShouldBeNil)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+			})
+
+			Convey("and the response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("given a successful http response is returned", t, func() {
+		b := httpmocks.GetEntityBytes(t, dimensionValues)
+		body := httpmocks.NewReadCloserMock(b, nil)
+		resp := httpmocks.NewResponseMock(body, 200)
+		clienter := getClienterMock(resp, nil)
+
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when codelistClient.GetIDNameMap is called", func() {
+			actual, err := codelistclient.GetIDNameMap(nil, "666", testAuthToken)
+
+			Convey("then the expected ID Name map is returned", func() {
+				expected := map[string]string{"123": "Schwifty"}
+				So(actual, ShouldResemble, expected)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called 1 time with the expected parameters", func() {
+				calls := clienter.DoCalls()
+				So(calls, ShouldHaveLength, 1)
+
+				req := calls[0].Req
+				So(req.URL.Path, ShouldEqual, "/code-lists/666/codes")
+				So(req.URL.Host, ShouldEqual, "localhost:8080")
+				So(req.Method, ShouldEqual, "GET")
+				So(req.Body, ShouldBeNil)
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testAuthToken)
+			})
+
+			Convey("and the response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
+		})
+	})
+}
+
 func getClienterMock(resp *http.Response, err error) *rchttp.ClienterMock {
 	return &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {

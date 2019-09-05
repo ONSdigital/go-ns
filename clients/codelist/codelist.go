@@ -7,6 +7,7 @@ import (
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/log.go/log"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -106,7 +107,40 @@ func (c *Client) GetValues(ctx context.Context, authToken string, id string) (Di
 }
 
 // GetIDNameMap returns dimension values in the form of an id name map
-func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
+func (c *Client) GetIDNameMap(ctx context.Context, id string, authToken string) (map[string]string, error) {
+	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+
+	resp, err := c.doWithAuthToken(ctx, "GET", uri, authToken, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Event(ctx, "error closing codelistClient.GetIDNameMap response body", log.Error(err))
+		}
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var vals DimensionValues
+	if err = json.Unmarshal(body, &vals); err != nil {
+		return nil, err
+	}
+
+	idNames := make(map[string]string)
+	for _, val := range vals.Items {
+		idNames[val.ID] = val.Label
+	}
+
+	return idNames, nil
+}
+
+// GetIDNameMap returns dimension values in the form of an id name map
+/*func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 	resp, err := c.cli.Get(context.Background(), uri)
 	if err != nil {
@@ -135,7 +169,7 @@ func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	}
 
 	return idNames, nil
-}
+}*/
 
 //GetGeographyCodeLists returns the geography codelists
 func (c *Client) GetGeographyCodeLists() (results CodeListResults, err error) {
