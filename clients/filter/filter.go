@@ -97,6 +97,8 @@ func (c *Client) GetOutput(ctx context.Context, filterOutputID string, authToken
 		return
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 		return
@@ -106,7 +108,6 @@ func (c *Client) GetOutput(ctx context.Context, filterOutputID string, authToken
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -124,12 +125,13 @@ func (c *Client) GetDimension(ctx context.Context, filterID, name string, authTo
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
 	}
+
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -142,7 +144,6 @@ func (c *Client) GetDimension(ctx context.Context, filterID, name string, authTo
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	if err = json.Unmarshal(b, &dim); err != nil {
 		return
@@ -163,12 +164,13 @@ func (c *Client) GetDimensions(ctx context.Context, filterID string, authToken s
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
 	}
+
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -179,7 +181,6 @@ func (c *Client) GetDimensions(ctx context.Context, filterID string, authToken s
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &dims)
 	return
@@ -197,12 +198,13 @@ func (c *Client) GetDimensionOptions(ctx context.Context, filterID, name string,
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return
 	}
+
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -215,7 +217,6 @@ func (c *Client) GetDimensionOptions(ctx context.Context, filterID, name string,
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &opts)
 	return
@@ -243,7 +244,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do(ctx, "attemping to create filter blueprint", service, uri, log.Data{
+	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,
 		"edition":   edition,
@@ -263,10 +264,11 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 		return "", err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusCreated {
 		return "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
-	defer resp.Body.Close()
 
 	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -310,11 +312,12 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool, au
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return m, ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
-	defer resp.Body.Close()
 	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -343,7 +346,6 @@ func (c *Client) AddDimensionValue(ctx context.Context, filterID, name, value st
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -371,7 +373,6 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value
 	})
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -399,7 +400,6 @@ func (c *Client) RemoveDimension(ctx context.Context, filterID, name string, aut
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -428,7 +428,6 @@ func (c *Client) AddDimension(ctx context.Context, id, name string, authToken st
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -502,7 +501,6 @@ func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, 
 	}
 
 	common.AddServiceTokenHeader(req, authToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
