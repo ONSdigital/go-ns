@@ -105,32 +105,6 @@ func (c *Client) GetValues(ctx context.Context, authToken string, id string) (Di
 	return vals, err
 }
 
-// GetValues returns dimension values from the codelist api
-/*func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
-
-	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
-
-	resp, err := c.cli.Get(context.Background(), uri)
-	if err != nil {
-		return
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	err = json.Unmarshal(b, &vals)
-	return
-}*/
-
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
