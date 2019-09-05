@@ -1,8 +1,13 @@
-package clients
+package common
+
+import (
+	"net/http"
+)
 
 // AuthToken defines common behaviour for authentication tokens
 type AuthToken interface {
 	GetValue() string
+	SetAsRequestHeader(req *http.Request)
 }
 
 // UserAuthToken is a type representing user authentication tokens
@@ -35,6 +40,13 @@ func (token *UserAuthToken) GetValue() string {
 	return token.value
 }
 
+// SetAsRequestHeader set the user auth token as a request header. Do nothing If the token is nil or empty or if the request is nil.
+func (token *UserAuthToken) SetAsRequestHeader(req *http.Request) {
+	if req != nil && token != nil && len(token.GetValue()) > 0 {
+		req.Header.Set(FlorenceHeaderKey, token.GetValue())
+	}
+}
+
 // NewServiceAuthToken returns a ServiceAuthToken from the token string provided. If the string is empty then nil is returned
 func NewServiceAuthToken(token string) *ServiceAuthToken {
 	var authToken *ServiceAuthToken
@@ -53,4 +65,11 @@ func (token *ServiceAuthToken) GetValue() string {
 		return ""
 	}
 	return token.value
+}
+
+// SetAsRequestHeader set the service auth token as a request header. Do nothing If the token is nil or empty or if the request is nil.
+func (token *ServiceAuthToken) SetAsRequestHeader(req *http.Request) {
+	if req != nil && token != nil && len(token.GetValue()) > 0 {
+		req.Header.Set(AuthHeaderKey, BearerPrefix+token.GetValue())
+	}
 }
