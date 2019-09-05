@@ -10,7 +10,7 @@ import (
 
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 )
 
 const (
@@ -53,7 +53,7 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	cli common.RCHTTPClienter
+	cli rchttp.Clienter
 	url string
 }
 
