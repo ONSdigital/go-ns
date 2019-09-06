@@ -48,7 +48,7 @@ func TestClient_GetRoot(t *testing.T) {
 		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
 		So(err, ShouldNotBeNil)
 	})
-	Convey("When a filter-instance is returned", t, func() {
+	Convey("When a hierarchy-instance is returned", t, func() {
 		mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
 		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
 		So(err, ShouldBeNil)
@@ -73,7 +73,7 @@ func TestClient_GetChild(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When a filter-instance is returned", t, func() {
+	Convey("When a hierarchy-instance is returned", t, func() {
 		mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
 		_, err := mockedAPI.GetChild(ctx, instanceID, name, code)
 		So(err, ShouldBeNil)
@@ -95,7 +95,7 @@ func TestClient_GetHierarchy(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When a filter-instance is returned", t, func() {
+	Convey("When a hierarchy-instance is returned", t, func() {
 		mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
 		_, err := mockedAPI.getHierarchy(path, ctx)
 		So(err, ShouldBeNil)
