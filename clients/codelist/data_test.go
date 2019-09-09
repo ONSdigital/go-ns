@@ -80,3 +80,9 @@ var codesResults = CodesResults{
 		},
 	},
 }
+
+// CodeResult example entity use by unit tests.
+var codeResult = CodeResult{
+	ID:    "1",
+	Label: "Foo Bar",
+}

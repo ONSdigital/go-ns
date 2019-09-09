@@ -212,24 +212,31 @@ func (c *Client) GetCodes(ctx context.Context, serviceAuthToken string, codeList
 }
 
 // GetCodeByID returns information about a code
-func (c *Client) GetCodeByID(codeListID string, edition string, codeID string) (code CodeResult, err error) {
+func (c *Client) GetCodeByID(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
+	var code CodeResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return code, err
 	}
 
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return code, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return code, err
 	}
 
 	err = json.Unmarshal(b, &code)
 	if err != nil {
-		return
+		return code, err
 	}
+
 	return code, nil
 }
 
