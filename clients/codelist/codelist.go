@@ -13,8 +13,6 @@ import (
 	"net/http"
 )
 
-//go:generate moq -out codelisttest/genrated_client_mock.go -pkg codelisttest . Storer
-
 const service = "code-list-api"
 
 var _ error = ErrInvalidCodelistAPIResponse{}
@@ -76,7 +74,7 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 
 	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
 
-	resp, err := c.doWithAuthToken(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
 	if err != nil {
 		return vals, err
 	}
@@ -100,7 +98,7 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 func (c *Client) GetIDNameMap(ctx context.Context, id string, serviceAuthToken string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	resp, err := c.doWithAuthToken(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +131,7 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
 	var results CodeListResults
 
-	resp, err := c.doWithAuthToken(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
 	if err != nil {
 		return results, err
 	}
@@ -156,24 +154,32 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 }
 
 //GetCodeListEditions returns the editions for a codelist
-func (c *Client) GetCodeListEditions(codeListID string) (editions EditionsListResults, err error) {
+func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
 	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
-	resp, err := c.cli.Get(context.Background(), url)
+	var editionsList EditionsListResults
+
+	resp, err := c.doServiceRequest(ctx, "GET", url, serviceAuthToken, nil)
 	if err != nil {
-		return
+		return editionsList, err
 	}
-	defer resp.Body.Close()
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != 200 {
+		return editionsList, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return editionsList, err
 	}
 
-	err = json.Unmarshal(b, &editions)
+	err = json.Unmarshal(b, &editionsList)
 	if err != nil {
-		return
+		return editionsList, err
 	}
-	return editions, nil
+
+	return editionsList, nil
 }
 
 //GetCodes returns the codes for a specific edition of a code list
@@ -241,7 +247,7 @@ func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID str
 	return datasets, nil
 }
 
-func (c *Client) doWithAuthToken(ctx context.Context, method string, uri string, serviceAuthToken string, body io.Reader) (*http.Response, error) {
+func (c *Client) doServiceRequest(ctx context.Context, method string, uri string, serviceAuthToken string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err
@@ -252,6 +258,10 @@ func (c *Client) doWithAuthToken(ctx context.Context, method string, uri string,
 }
 
 func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+
 	if err := resp.Body.Close(); err != nil {
 		log.Event(ctx, "error closing http response body", log.Error(err))
 	}

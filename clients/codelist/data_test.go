@@ -32,3 +32,22 @@ var testDimensionValues = DimensionValues{
 	},
 	NumberOfResults: 1,
 }
+
+var editionsListResults = EditionsListResults{
+	TotalCount: 1,
+	Offset:     0,
+	Limit:      1,
+	Count:      1,
+	Items: []EditionsList{
+		{
+			Edition: "foo",
+			Label:   "bar",
+			Links: EditionsListLink{
+				Self: &Link{
+					Href: "/foo/bar",
+					ID:   "1234567890",
+				},
+			},
+		},
+	},
+}
