@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rhttp"
 )
 
 const service = "renderer"
@@ -32,21 +32,21 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	client *rhttp.Client
+	client rchttp.Clienter
 	url    string
 }
 
 // New creates an instance of renderer with a default client
 func New(url string) *Renderer {
 	return &Renderer{
-		client: rhttp.DefaultClient,
+		client: rchttp.NewClient(),
 		url:    url,
 	}
 }
 
 // Healthcheck calls the healthcheck endpoint on the renderer and returns any errors
 func (r *Renderer) Healthcheck() (string, error) {
-	resp, err := r.client.Get(r.url + "/healthcheck")
+	resp, err := r.client.Get(context.Background(), r.url+"/healthcheck")
 	if err != nil {
 		return service, err
 	}
@@ -79,7 +79,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := r.client.Do(req)
+	resp, err := r.client.Do(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
