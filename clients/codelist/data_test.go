@@ -33,6 +33,7 @@ var testDimensionValues = DimensionValues{
 	NumberOfResults: 1,
 }
 
+// EditionsListResults example entity used by unit tests.
 var editionsListResults = EditionsListResults{
 	TotalCount: 1,
 	Offset:     0,
@@ -46,6 +47,34 @@ var editionsListResults = EditionsListResults{
 				Self: &Link{
 					Href: "/foo/bar",
 					ID:   "1234567890",
+				},
+			},
+		},
+	},
+}
+
+// CodesResults example entity used by unit tests.
+var codesResults = CodesResults{
+	TotalCount: 1,
+	Count:      1,
+	Offset:     0,
+	Limit:      1,
+	Items: []Item{
+		{
+			ID:    "foo",
+			Label: "bar",
+			Links: CodeLinks{
+				Self: Link{
+					ID:   "1",
+					Href: "/foo/bar",
+				},
+				Datasets: Link{
+					ID:   "2",
+					Href: "/datasets/foo/bar",
+				},
+				CodeLists: Link{
+					ID:   "3",
+					Href: "/codelists/foo/bar",
 				},
 			},
 		},

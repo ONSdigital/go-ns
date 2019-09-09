@@ -74,7 +74,7 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 
 	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
 
-	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
 		return vals, err
 	}
@@ -98,7 +98,7 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 func (c *Client) GetIDNameMap(ctx context.Context, id string, serviceAuthToken string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
 	var results CodeListResults
 
-	resp, err := c.doServiceRequest(ctx, "GET", uri, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
 		return results, err
 	}
@@ -158,7 +158,7 @@ func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken strin
 	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
 	var editionsList EditionsListResults
 
-	resp, err := c.doServiceRequest(ctx, "GET", url, serviceAuthToken, nil)
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
 		return editionsList, err
 	}
@@ -183,27 +183,35 @@ func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken strin
 }
 
 //GetCodes returns the codes for a specific edition of a code list
-func (c *Client) GetCodes(codeListID string, edition string) (codes CodesResults, err error) {
+func (c *Client) GetCodes(ctx context.Context, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
+	var codes CodesResults
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return codes, err
 	}
-	defer resp.Body.Close()
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return codes, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return codes, err
 	}
 
 	err = json.Unmarshal(b, &codes)
 	if err != nil {
-		return
+		return codes, err
 	}
+
 	return codes, nil
 }
 
-// GetCodeByID returns informtion about a code
+// GetCodeByID returns information about a code
 func (c *Client) GetCodeByID(codeListID string, edition string, codeID string) (code CodeResult, err error) {
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
 	resp, err := c.cli.Get(context.Background(), url)
@@ -247,7 +255,9 @@ func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID str
 	return datasets, nil
 }
 
-func (c *Client) doServiceRequest(ctx context.Context, method string, uri string, serviceAuthToken string, body io.Reader) (*http.Response, error) {
+// doServiceRequest executes clienter.Do setting the service authentication token as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doServiceRequest(ctx context.Context, serviceAuthToken string, method string, uri string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err
