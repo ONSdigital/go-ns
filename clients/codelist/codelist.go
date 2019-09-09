@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	"io"
@@ -72,7 +71,11 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 	var vals DimensionValues
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
+	log.Event(ctx, "retrieving codes from codelist", log.Data{
+		"method":  "GET",
+		"uri":     uri,
+		"service": service,
+	})
 
 	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
@@ -241,23 +244,29 @@ func (c *Client) GetCodeByID(ctx context.Context, serviceAuthToken string, codeL
 }
 
 // GetDatasetsByCode todo
-func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID string) (datasets DatasetsResult, err error) {
+func (c *Client) GetDatasetsByCode(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
+	var datasets DatasetsResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doServiceRequest(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return datasets, err
 	}
 
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return datasets, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return datasets, err
 	}
 
 	err = json.Unmarshal(b, &datasets)
 	if err != nil {
-		return
+		return datasets, err
 	}
 	return datasets, nil
 }

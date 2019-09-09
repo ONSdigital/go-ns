@@ -81,8 +81,41 @@ var codesResults = CodesResults{
 	},
 }
 
-// CodeResult example entity use by unit tests.
+// CodeResult example entity used by unit tests.
 var codeResult = CodeResult{
 	ID:    "1",
 	Label: "Foo Bar",
+}
+
+// DatasetsResult example used by unit tests.
+var datasetsResult = DatasetsResult{
+	Count: 1,
+	Datasets: []Dataset{
+		{
+			Links: DatasetLinks{
+				Self: Link{
+					ID:   "1",
+					Href: "/datasets/foo/bar",
+				},
+			},
+			Editions: []DatasetEdition{
+				{
+					Links: DatasetEditionLink{
+						Self: Link{
+							ID:   "1",
+							Href: "/datasets/foo/bar",
+						},
+						DatasetDimenion: Link{
+							ID:   "1",
+							Href: "/datasets/foo/bar",
+						},
+						LatestVersion: Link{
+							ID:   "1",
+							Href: "/datasets/foo/bar",
+						},
+					},
+				},
+			},
+		},
+	},
 }
