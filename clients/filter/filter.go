@@ -62,6 +62,13 @@ func New(filterAPIURL string) *Client {
 	}
 }
 
+// CloseResponseBody closes the response body and logs an error if unsuccessful
+func CloseResponseBody(ctx context.Context, resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+	}
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
@@ -97,7 +104,7 @@ func (c *Client) GetOutput(ctx context.Context, filterOutputID string, serviceAu
 		return
 	}
 
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -131,7 +138,7 @@ func (c *Client) GetDimension(ctx context.Context, filterID, name string, servic
 		return
 	}
 
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -170,7 +177,7 @@ func (c *Client) GetDimensions(ctx context.Context, filterID string, serviceAuth
 		return
 	}
 
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -204,7 +211,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, filterID, name string,
 		return
 	}
 
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -264,7 +271,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 		return "", err
 	}
 
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -312,7 +319,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool, se
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return m, ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -469,7 +476,7 @@ func (c *Client) GetJobState(ctx context.Context, filterID string, serviceAuthTo
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -544,7 +551,7 @@ func (c *Client) GetPreview(ctx context.Context, filterOutputID string, serviceA
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer CloseResponseBody(ctx, resp)
 
 	err = json.Unmarshal(b, &p)
 	return
