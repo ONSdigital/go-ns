@@ -17,6 +17,8 @@ var ctx = context.Background()
 
 const authToken = "iamatoken"
 
+
+
 func TestClient_PutVersion(t *testing.T) {
 
 	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedVersion Version) {
@@ -146,7 +148,7 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	Convey("Given a valid request", t, func() {
 		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, nil
+				return &http.Response{Body: ioutil.NopCloser(nil)}, nil
 			},
 		}
 
@@ -172,7 +174,7 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	Convey("Given a valid request", t, func() {
 		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, nil
+				return &http.Response{Body: ioutil.NopCloser(nil)}, nil
 			},
 		}
 
