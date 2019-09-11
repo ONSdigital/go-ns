@@ -225,7 +225,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -237,11 +237,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -260,7 +256,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -272,11 +268,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -286,7 +278,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 	})
 
 	Convey("given ioutil.ReadAll returns an error", t, func() {
-		expectedErr := errors.New("I wander out where you can't see Inside my shell, I wait and bleed")
+		expectedErr := errors.New("i wander out where you can't see inside my shell i wait and bleed")
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
@@ -294,7 +286,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -306,11 +298,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -331,7 +319,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -343,11 +331,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -365,7 +349,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, "666", testServiceAuthToken)
+			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
 
 			Convey("then the expected ID Name map is returned", func() {
 				expected := map[string]string{"123": "Schwifty"}
@@ -378,11 +362,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -419,12 +399,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.RawQuery, ShouldEqual, query)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -459,12 +434,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.RawQuery, ShouldEqual, query)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -474,7 +444,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 	})
 
 	Convey("given ioutil.ReadAll returns an error", t, func() {
-		expectedErr := errors.New("Peace sells, but who's buying?")
+		expectedErr := errors.New("peace sells but who buying")
 		body := httpmocks.NewReadCloserMock([]byte{}, expectedErr)
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
@@ -497,12 +467,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.RawQuery, ShouldEqual, query)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -536,12 +501,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.RawQuery, ShouldEqual, query)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -574,12 +534,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.RawQuery, ShouldEqual, query)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -594,7 +549,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 	host := "localhost:8080"
 
 	Convey("given clienter.Do returns an error", t, func() {
-		expectedErr := errors.New("Smashing through the boundaries, Lunacy has found me, Cannot stop the battery")
+		expectedErr := errors.New("smashing through the boundaries lunacy has found me cannot stop the battery")
 		clienter := getClienterMock(nil, expectedErr)
 
 		codelistclient := &Client{
@@ -615,11 +570,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -653,11 +604,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -667,7 +614,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 	})
 
 	Convey("given ioutil.ReadAll returns an error", t, func() {
-		expectedErr := errors.New("Have you run your fingers down the wall, And have you felt your neck skin crawl, When you're searching for the light?")
+		expectedErr := errors.New("have you run your fingers down the wall and have you felt your neck skin crawl when youre searching for the light")
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
@@ -685,11 +632,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the expected error is returned", func() {
@@ -723,11 +666,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the expected error is returned", func() {
@@ -760,11 +699,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("then the expected value is returned", func() {
@@ -784,7 +719,7 @@ func TestClient_GetCodes(t *testing.T) {
 	host := "localhost:8080"
 
 	Convey("given clienter.Do returns an error", t, func() {
-		expectedErr := errors.New("Generals gathered in their masses, Just like witches at black masses")
+		expectedErr := errors.New("generals gathered in their masses, just like witches at black masses")
 		clienter := getClienterMock(nil, expectedErr)
 
 		codelistclient := &Client{
@@ -805,11 +740,7 @@ func TestClient_GetCodes(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -841,11 +772,7 @@ func TestClient_GetCodes(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -855,7 +782,7 @@ func TestClient_GetCodes(t *testing.T) {
 	})
 
 	Convey("given ioutil.ReadAll returns an error", t, func() {
-		expectedErr := errors.New("Exit, light, Enter, night, Take my hand, We're off to never-never land")
+		expectedErr := errors.New("exit light enter night take my hand we're off to never-never land")
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
@@ -878,11 +805,7 @@ func TestClient_GetCodes(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -916,11 +839,7 @@ func TestClient_GetCodes(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -953,11 +872,7 @@ func TestClient_GetCodes(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -972,7 +887,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 	host := "localhost:8080"
 
 	Convey("given clienter.Do returns an error", t, func() {
-		expectedErr := errors.New("Quoth the Raven 'Nevermore'.")
+		expectedErr := errors.New("quoth the raven 'nevermore'")
 		clienter := getClienterMock(nil, expectedErr)
 
 		codelistclient := &Client{
@@ -993,11 +908,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -1031,11 +942,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1045,7 +952,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 	})
 
 	Convey("given ioutil.ReadAll returns an error", t, func() {
-		expectedErr := errors.New("“I know what you're thinking. Did he fire six shots or only five?")
+		expectedErr := errors.New("i know what you're thinking did he fire six shots or only five")
 
 		body := httpmocks.NewReadCloserMock([]byte{}, expectedErr)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
@@ -1069,11 +976,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1107,11 +1010,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1144,11 +1043,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1163,7 +1058,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 	host := "localhost:8080"
 
 	Convey("given clienter.Do returns an error", t, func() {
-		expectedErr := errors.New("Murders in the Rue Morgue")
+		expectedErr := errors.New("murders in the rue morgue")
 		clienter := getClienterMock(nil, expectedErr)
 
 		codelistclient := &Client{
@@ -1184,11 +1079,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 		})
 	})
@@ -1222,11 +1113,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1259,11 +1146,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1297,11 +1180,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1334,11 +1213,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.URL.Path, ShouldEqual, uri)
-				So(req.URL.Host, ShouldEqual, host)
-				So(req.Method, ShouldEqual, "GET")
-				So(req.Body, ShouldBeNil)
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				assertClienterDoCalls(req, uri, host)
 			})
 
 			Convey("and the response body is closed", func() {
@@ -1355,4 +1230,12 @@ func getClienterMock(resp *http.Response, err error) *rchttp.ClienterMock {
 			return resp, err
 		},
 	}
+}
+
+func assertClienterDoCalls(actual *http.Request, uri string, host string) {
+	So(actual.URL.Path, ShouldEqual, uri)
+	So(actual.URL.Host, ShouldEqual, host)
+	So(actual.Method, ShouldEqual, "GET")
+	So(actual.Body, ShouldBeNil)
+	So(actual.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
 }
