@@ -141,6 +141,7 @@ func (c *Client) GetByPath(ctx context.Context, path, serviceToken string) (m Mo
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -151,7 +152,6 @@ func (c *Client) GetByPath(ctx context.Context, path, serviceToken string) (m Mo
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	var body map[string]interface{}
 	if err = json.Unmarshal(b, &body); err != nil {
@@ -191,6 +191,7 @@ func (c *Client) GetDatasets(ctx context.Context, serviceToken string) (m ModelC
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -201,7 +202,6 @@ func (c *Client) GetDatasets(ctx context.Context, serviceToken string) (m ModelC
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	var body map[string]interface{}
 	if err = json.Unmarshal(b, &body); err != nil {
@@ -230,6 +230,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition, serviceToke
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -240,7 +241,6 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition, serviceToke
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	var body map[string]interface{}
 	if err = json.Unmarshal(b, &body); err != nil {
@@ -277,6 +277,7 @@ func (c *Client) GetEditions(ctx context.Context, id, serviceToken string) (m []
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -287,7 +288,6 @@ func (c *Client) GetEditions(ctx context.Context, id, serviceToken string) (m []
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	var body map[string]interface{}
 	if err = json.Unmarshal(b, &body); err != nil {
@@ -336,6 +336,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, serviceToken, dow
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -346,7 +347,6 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, serviceToken, dow
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	versions := struct {
 		Items []Version `json:"items"`
@@ -378,6 +378,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version, serviceTo
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -388,7 +389,6 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version, serviceTo
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -413,6 +413,7 @@ func (c *Client) GetInstance(ctx context.Context, instanceID, serviceToken strin
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -423,7 +424,6 @@ func (c *Client) GetInstance(ctx context.Context, instanceID, serviceToken strin
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -486,6 +486,8 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, s
 		return
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
 		return
@@ -495,7 +497,6 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, s
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
 	return
@@ -560,6 +561,7 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -570,7 +572,6 @@ func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
 	return
