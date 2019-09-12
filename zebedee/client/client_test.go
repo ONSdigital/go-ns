@@ -24,7 +24,6 @@ func TestUnitClient(t *testing.T) {
 	go mockZebedeeServer(portChan)
 
 	port := <-portChan
-	//rchttpCli := rchttp.NewClient()
 	cli := NewZebedeeClient(rchttp.NewClient(), fmt.Sprintf("http://localhost:%d", port))
 
 	ctx := context.Background()
