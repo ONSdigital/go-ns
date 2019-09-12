@@ -44,6 +44,12 @@ func New(url string) *Renderer {
 	}
 }
 
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		log.ErrorCtx(ctx, err, log.Data{"Message": "error closing http response body"})
+	}
+}
+
 // Healthcheck calls the healthcheck endpoint on the renderer and returns any errors
 func (r *Renderer) Healthcheck() (string, error) {
 	resp, err := r.client.Get(context.Background(), r.url+"/healthcheck")
@@ -67,8 +73,9 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 	}
 
 	uri := r.url + "/" + path
+	ctx := context.Background()
 
-	clientlog.Do(context.Background(), fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
+	clientlog.Do(ctx, fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
 		"method": "POST",
 	})
 
@@ -79,11 +86,11 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := r.client.Do(context.Background(), req)
+	resp, err := r.client.Do(ctx, req)
+	defer closeResponseBody(ctx, resp)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrInvalidRendererResponse{resp.StatusCode}
