@@ -17,7 +17,7 @@ import (
 
 var ctx = context.Background()
 
-const authToken = "123"
+const authToken = "iamatoken"
 
 var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
 	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
@@ -54,7 +54,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, "123", "2017", "1", authToken, v)
+			err := cli.PutVersion(ctx, authToken, "123", "2017", "1", v)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -83,7 +83,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, "123", "2017", "1", authToken, v)
+			err := cli.PutVersion(ctx, authToken, "123", "2017", "1", v)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -108,7 +108,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, "123", "2017", "1", authToken, v)
+			err := cli.PutVersion(ctx, authToken, "123", "2017", "1", v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Wrap(mockErr, "http client returned error while attempting to make request").Error())
@@ -134,10 +134,10 @@ func TestClient_PutVersion(t *testing.T) {
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, "123", "2017", "1", authToken, v)
+			err := cli.PutVersion(ctx, authToken, "123", "2017", "1", v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("incorrect http status, expected: 200, actual: 500, uri: http://localhost:8080/datasets/2017/editions/1/versions/123").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("incorrect http status, expected: 200, actual: 500, uri: http://localhost:8080/datasets/123/editions/2017/versions/1").Error())
 			})
 
 			Convey("and rchttpclient.do is called 1 time with the expected parameters", func() {
@@ -219,7 +219,7 @@ func TestClient_GetInstance(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstance is called", func() {
-			_, err := cli.GetInstance(ctx, "123", authToken)
+			_, err := cli.GetInstance(ctx, authToken, "123")
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -244,7 +244,7 @@ func TestClient_GetInstance(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstance is called", func() {
-			_, err := cli.GetInstance(ctx, "123", authToken)
+			_, err := cli.GetInstance(ctx, authToken, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me roight").Error())
