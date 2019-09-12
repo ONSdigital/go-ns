@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/go-ns/rchttp"
 )
 
 const service = "filter-api"
@@ -50,18 +50,22 @@ var _ error = ErrInvalidFilterAPIResponse{}
 
 // Client is a filter api client which can be used to make requests to the server
 type Client struct {
-	cli common.RCHTTPClienter
+	cli rchttp.Clienter
 	url string
 }
 
 // New creates a new instance of Client with a given filter api url
-func New(filterAPIURL, serviceToken, xDownloadServiceToken string) *Client {
+func New(filterAPIURL string) *Client {
 	return &Client{
-		cli: rchttp.ClientWithDownloadServiceToken(
-			rchttp.ClientWithServiceToken(nil, serviceToken),
-			xDownloadServiceToken,
-		),
+		cli: rchttp.NewClient(),
 		url: filterAPIURL,
+	}
+}
+
+// CloseResponseBody closes the response body and logs an error if unsuccessful
+func CloseResponseBody(ctx context.Context, resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
 	}
 }
 
@@ -82,138 +86,151 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // GetOutput returns a filter output job for a given filter output id
-func (c *Client) GetOutput(ctx context.Context, filterOutputID string) (m Model, err error) {
+func (c *Client) GetOutput(ctx context.Context, serviceAuthToken, downloadServiceToken, filterOutputID string) (Model, error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterOutputID)
-
+	var m Model
 	clientlog.Do(ctx, "retrieving filter output", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return m, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return m, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return
+		return m, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return m, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
-	return
+	return m, err
 }
 
 // GetDimension returns information on a requested dimension name for a given filterID
-func (c *Client) GetDimension(ctx context.Context, filterID, name string) (dim Dimension, err error) {
+func (c *Client) GetDimension(ctx context.Context, serviceAuthToken, filterID, name string) (Dimension, error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
-
+	var dim Dimension
 	clientlog.Do(ctx, "retrieving dimension information", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return dim, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return dim, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
 			err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 		}
-		return
+		return dim, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return dim, err
 	}
-	defer resp.Body.Close()
 
 	if err = json.Unmarshal(b, &dim); err != nil {
-		return
+		return dim, err
 	}
 
-	return
+	return dim, err
 }
 
 // GetDimensions will return the dimensions associated with the provided filter id
-func (c *Client) GetDimensions(ctx context.Context, filterID string) (dims []Dimension, err error) {
+func (c *Client) GetDimensions(ctx context.Context, serviceAuthToken, filterID string) ([]Dimension, error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.url, filterID)
-
+	var dims []Dimension
 	clientlog.Do(ctx, "retrieving all dimensions for given filter job", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return dims, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return dims, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return
+		return dims, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return dims, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &dims)
-	return
+	return dims, err
 }
 
 // GetDimensionOptions retrieves a list of the dimension options
-func (c *Client) GetDimensionOptions(ctx context.Context, filterID, name string) (opts []DimensionOption, err error) {
+func (c *Client) GetDimensionOptions(ctx context.Context, serviceAuthToken, filterID, name string) ([]DimensionOption, error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.url, filterID, name)
-
+	var opts []DimensionOption
 	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return opts, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return opts, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
 			err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 		}
-		return
+		return opts, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return opts, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &opts)
-	return
+	return opts, err
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
-func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, version string, names []string) (string, error) {
+func (c *Client) CreateBlueprint(ctx context.Context, serviceAuthToken, downloadServiceToken, datasetID, edition, version string, names []string) (string, error) {
 	ver, err := strconv.Atoi(version)
 	if err != nil {
 		return "", err
@@ -234,7 +251,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 	}
 
 	uri := c.url + "/filters"
-	clientlog.Do(ctx, "attemping to create filter blueprint", service, uri, log.Data{
+	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,
 		"edition":   edition,
@@ -246,15 +263,19 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 		return "", err
 	}
 
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return "", err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusCreated {
 		return "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
-	defer resp.Body.Close()
 
 	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -269,10 +290,10 @@ func (c *Client) CreateBlueprint(ctx context.Context, datasetID, edition, versio
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model
-func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool) (mdl Model, err error) {
+func (c *Client) UpdateBlueprint(ctx context.Context, serviceAuthToken, downloadServiceToken string, m Model, doSubmit bool) (Model, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
-		return
+		return m, err
 	}
 
 	uri := fmt.Sprintf("%s/filters/%s", c.url, m.FilterID)
@@ -288,25 +309,29 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool) (m
 
 	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
 	if err != nil {
-		return
+		return m, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return m, err
 	}
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusOK {
 		return m, ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
-	defer resp.Body.Close()
 	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return m, err
 	}
 
 	if err = json.Unmarshal(b, &m); err != nil {
-		return
+		return m, err
 	}
 
 	return m, nil
@@ -314,7 +339,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, m Model, doSubmit bool) (m
 
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and name
-func (c *Client) AddDimensionValue(ctx context.Context, filterID, name, value string) error {
+func (c *Client) AddDimensionValue(ctx context.Context, serviceAuthToken, filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
 
 	clientlog.Do(ctx, "adding dimension option to filter job", service, uri, log.Data{
@@ -327,10 +352,15 @@ func (c *Client) AddDimensionValue(ctx context.Context, filterID, name, value st
 		return err
 	}
 
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
+
 
 	if resp.StatusCode != http.StatusCreated {
 		return &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -340,7 +370,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, filterID, name, value st
 
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID
 // and name
-func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value string) error {
+func (c *Client) RemoveDimensionValue(ctx context.Context, serviceAuthToken, filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
 	req, err := http.NewRequest("DELETE", uri, nil)
 	if err != nil {
@@ -352,10 +382,14 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value
 		"value":  value,
 	})
 
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		return &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -364,7 +398,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, filterID, name, value
 }
 
 // RemoveDimension removes a given dimension from a filter job
-func (c *Client) RemoveDimension(ctx context.Context, filterID, name string) (err error) {
+func (c *Client) RemoveDimension(ctx context.Context, serviceAuthToken, filterID, name string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
 	clientlog.Do(ctx, "removing dimension from filter job", service, uri, log.Data{
@@ -374,24 +408,28 @@ func (c *Client) RemoveDimension(ctx context.Context, filterID, name string) (er
 
 	req, err := http.NewRequest("DELETE", uri, nil)
 	if err != nil {
-		return
+		return err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		err = &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
-		return
+		return err
 	}
 
-	return
+	return err
 }
 
 // AddDimension adds a new dimension to a filter job
-func (c *Client) AddDimension(ctx context.Context, id, name string) error {
+func (c *Client) AddDimension(ctx context.Context, serviceAuthToken, id, name string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name)
 	clientlog.Do(ctx, "adding dimension to filter job", service, uri, log.Data{
 		"method":    "POST",
@@ -403,10 +441,14 @@ func (c *Client) AddDimension(ctx context.Context, id, name string) error {
 		return err
 	}
 
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return errors.New("invalid status from filter api")
@@ -416,38 +458,42 @@ func (c *Client) AddDimension(ctx context.Context, id, name string) error {
 }
 
 // GetJobState will return the current state of the filter job
-func (c *Client) GetJobState(ctx context.Context, filterID string) (m Model, err error) {
+func (c *Client) GetJobState(ctx context.Context, serviceAuthToken, downloadServiceToken, filterID string) (Model, error) {
 	uri := fmt.Sprintf("%s/filters/%s", c.url, filterID)
-
+	var m Model
 	clientlog.Do(ctx, "retrieving filter job state", service, uri)
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return m, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return m, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return
+		return m, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return m, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &m)
-	return
+	return m, err
 }
 
 // AddDimensionValues adds many options to a filter job dimension
-func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, options []string) error {
+func (c *Client) AddDimensionValues(ctx context.Context, serviceAuthToken, filterID, name string, options []string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
 
 	clientlog.Do(ctx, "adding multiple dimension values to filter job", service, uri, log.Data{
@@ -471,10 +517,14 @@ func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, 
 		return err
 	}
 
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -484,9 +534,9 @@ func (c *Client) AddDimensionValues(ctx context.Context, filterID, name string, 
 }
 
 // GetPreview attempts to retrieve a preview for a given filterOutputID
-func (c *Client) GetPreview(ctx context.Context, filterOutputID string) (p Preview, err error) {
+func (c *Client) GetPreview(ctx context.Context, serviceAuthToken, downloadServiceToken, filterOutputID string) (Preview, error) {
 	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.url, filterOutputID)
-
+ 	var p Preview
 	clientlog.Do(ctx, "retrieving preview for filter output job", service, uri, log.Data{
 		"method":   "GET",
 		"filterID": filterOutputID,
@@ -494,13 +544,18 @@ func (c *Client) GetPreview(ctx context.Context, filterOutputID string) (p Previ
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return
+		return p, err
 	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return p, err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return p, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -508,10 +563,9 @@ func (c *Client) GetPreview(ctx context.Context, filterOutputID string) (p Previ
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return p, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &p)
-	return
+	return p, err
 }
