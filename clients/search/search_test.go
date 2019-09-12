@@ -8,14 +8,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/common/mock_common"
-	"github.com/ONSdigital/go-ns/rchttp"
+	"github.com/ONSdigital/dp-rchttp"
 	"github.com/golang/mock/gomock"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var ctx = context.Background()
+
+const clientErrText = "client threw an error"
 
 func TestSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -35,20 +36,23 @@ func TestSearchUnit(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 
-			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
-				&http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader(searchResp)),
-				}, nil,
-			)
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       ioutil.NopCloser(bytes.NewReader([]byte(searchResp))),
+					}, nil
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
+
 			ctx := context.Background()
+
 			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err, ShouldBeNil)
 			So(m.Count, ShouldEqual, 1)
@@ -71,55 +75,53 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
-
-			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
-				nil, errors.New("client threw an error"),
-			)
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return nil, errors.New(clientErrText)
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
 
 			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
-			So(err.Error(), ShouldEqual, "client threw an error")
+			So(err.Error(), ShouldEqual, clientErrText)
 			So(m, ShouldBeNil)
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
 
-			mockCli.EXPECT().Do(gomock.Any(), gomock.Any()).Return(
-				&http.Response{
-					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader(nil)),
-				}, nil,
-			)
+			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return nil, searchErr
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
 
 			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
-			So(err.Error(), ShouldEqual, "invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
-			So(err.(*ErrInvalidSearchAPIResponse).Code(), ShouldEqual, http.StatusBadRequest)
+			So(err, ShouldEqual, searchErr)
 			So(m, ShouldBeNil)
 		})
 	})
 
 	Convey("test Healthcheck method", t, func() {
 		Convey("test Healthcheck returns no error upon a 200 response from search api", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
-			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
-				&http.Response{
-					StatusCode: http.StatusOK,
-				}, nil,
-			)
+
+			mockClient := &rchttp.ClienterMock{
+				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+					return &http.Response{StatusCode:http.StatusOK}, nil
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
 
@@ -129,37 +131,40 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Healthcheck returns error from HTTPClient if it throws an error", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
-			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
-				nil, errors.New("client threw an error"),
-			)
+
+			mockClient := &rchttp.ClienterMock{
+				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+					return &http.Response{}, errors.New(clientErrText)
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
 
 			s, err := searchCli.Healthcheck()
-			So(err.Error(), ShouldEqual, "client threw an error")
+			So(err.Error(), ShouldEqual, clientErrText)
 			So(s, ShouldEqual, service)
 		})
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
-			mockCli := mock_common.NewMockRCHTTPClienter(mockCtrl)
-			mockCli.EXPECT().Get(ctx, "http://localhost:22000/healthcheck").Return(
-				&http.Response{
-					StatusCode: http.StatusInternalServerError,
-				}, nil,
-			)
+
+			errText := "invalid response from search api - should be: 200, got: 500, path: http://localhost:22000/healthcheck"
+
+			mockClient := &rchttp.ClienterMock{
+				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+					return nil, errors.New(errText)
+				},
+			}
 
 			searchCli := &Client{
-				cli: mockCli,
+				cli: mockClient,
 				url: "http://localhost:22000",
 			}
 
 			s, err := searchCli.Healthcheck()
-			So(err.Error(), ShouldEqual, "invalid response from search api - should be: 200, got: 500, path: http://localhost:22000/healthcheck")
-			So(err.(*ErrInvalidSearchAPIResponse).Code(), ShouldEqual, http.StatusInternalServerError)
+			So(err.Error(), ShouldEqual, errText)
 			So(s, ShouldEqual, service)
 		})
 	})

@@ -4,14 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	rchttp "github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/log.go/log"
+	"io"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/ONSdigital/go-ns/clients/clientlog"
-	"github.com/ONSdigital/go-ns/rchttp"
 )
 
 const service = "code-list-api"
+
+var _ error = ErrInvalidCodelistAPIResponse{}
+
+// Client is a codelist api client which can be used to make requests to the server
+type Client struct {
+	cli rchttp.Clienter
+	url string
+}
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
 // with a valid status
@@ -35,18 +44,10 @@ func (e ErrInvalidCodelistAPIResponse) Code() int {
 	return e.actualCode
 }
 
-var _ error = ErrInvalidCodelistAPIResponse{}
-
-// Client is a codelist api client which can be used to make requests to the server
-type Client struct {
-	cli *rchttp.Client
-	url string
-}
-
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
 	return &Client{
-		cli: rchttp.DefaultClient,
+		cli: rchttp.NewClient(),
 		url: codelistAPIURL,
 	}
 }
@@ -66,52 +67,57 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // GetValues returns dimension values from the codelist api
-func (c *Client) GetValues(id string) (vals DimensionValues, err error) {
+func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id string) (DimensionValues, error) {
+	var vals DimensionValues
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	clientlog.Do(context.Background(), "retrieving codes from codelist", service, uri)
+	log.Event(ctx, "retrieving codes from codelist", log.Data{
+		"method":  "GET",
+		"uri":     uri,
+		"service": service,
+	})
 
-	resp, err := c.cli.Get(context.Background(), uri)
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
-		return
+		return vals, err
 	}
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return
+		return vals, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return vals, err
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(b, &vals)
-	return
+	return vals, err
 }
 
 // GetIDNameMap returns dimension values in the form of an id name map
-func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
+func (c *Client) GetIDNameMap(ctx context.Context, serviceAuthToken string, id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
-	resp, err := c.cli.Get(context.Background(), uri)
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
 		return nil, err
 	}
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		err = &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
-		return nil, err
+		return nil, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	var vals DimensionValues
-	if err = json.Unmarshal(b, &vals); err != nil {
+	if err = json.Unmarshal(body, &vals); err != nil {
 		return nil, err
 	}
 
@@ -124,107 +130,165 @@ func (c *Client) GetIDNameMap(id string) (map[string]string, error) {
 }
 
 //GetGeographyCodeLists returns the geography codelists
-func (c *Client) GetGeographyCodeLists() (results CodeListResults, err error) {
+func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken string) (CodeListResults, error) {
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
-	resp, err := c.cli.Get(context.Background(), uri)
+	var results CodeListResults
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
 	if err != nil {
-		return
+		return results, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return results, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return results, err
 	}
 
 	err = json.Unmarshal(b, &results)
 	if err != nil {
-		return
+		return results, err
 	}
 	return results, nil
 }
 
 //GetCodeListEditions returns the editions for a codelist
-func (c *Client) GetCodeListEditions(codeListID string) (editions EditionsListResults, err error) {
+func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
 	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
-	resp, err := c.cli.Get(context.Background(), url)
+	var editionsList EditionsListResults
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return editionsList, err
 	}
-	defer resp.Body.Close()
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != 200 {
+		return editionsList, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return editionsList, err
 	}
 
-	err = json.Unmarshal(b, &editions)
+	err = json.Unmarshal(b, &editionsList)
 	if err != nil {
-		return
+		return editionsList, err
 	}
-	return editions, nil
+
+	return editionsList, nil
 }
 
 //GetCodes returns the codes for a specific edition of a code list
-func (c *Client) GetCodes(codeListID string, edition string) (codes CodesResults, err error) {
+func (c *Client) GetCodes(ctx context.Context, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
+	var codes CodesResults
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return codes, err
 	}
-	defer resp.Body.Close()
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return codes, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return codes, err
 	}
 
 	err = json.Unmarshal(b, &codes)
 	if err != nil {
-		return
+		return codes, err
 	}
+
 	return codes, nil
 }
 
-// GetCodeByID returns informtion about a code
-func (c *Client) GetCodeByID(codeListID string, edition string, codeID string) (code CodeResult, err error) {
+// GetCodeByID returns information about a code
+func (c *Client) GetCodeByID(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
+	var code CodeResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return code, err
 	}
 
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return code, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return code, err
 	}
 
 	err = json.Unmarshal(b, &code)
 	if err != nil {
-		return
+		return code, err
 	}
+
 	return code, nil
 }
 
-func (c *Client) GetDatasetsByCode(codeListID string, edition string, codeID string) (datasets DatasetsResult, err error) {
+// GetDatasetsByCode returns datasets containing the codelist codeID.
+func (c *Client) GetDatasetsByCode(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
+	var datasets DatasetsResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
-	resp, err := c.cli.Get(context.Background(), url)
+
+	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
 	if err != nil {
-		return
+		return datasets, err
 	}
 
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return datasets, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return datasets, err
 	}
 
 	err = json.Unmarshal(b, &datasets)
 	if err != nil {
-		return
+		return datasets, err
 	}
 	return datasets, nil
+}
+
+// doRequestWithServiceAuthHeader executes clienter.Do setting the service authentication token as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doRequestWithServiceAuthHeader(ctx context.Context, serviceAuthToken string, method string, uri string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, uri, body)
+	if err != nil {
+		return nil, err
+	}
+
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }
