@@ -124,7 +124,7 @@ func (c *Client) Get(ctx context.Context, id, serviceToken string) (m Model, err
 }
 
 // GetByPath returns dataset level information for a given dataset path
-func (c *Client) GetByPath(ctx context.Context, path, serviceToken string) (m Model, err error) {
+func (c *Client) GetByPath(ctx context.Context, serviceToken, path string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
 
 	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
@@ -213,7 +213,7 @@ func (c *Client) GetDatasets(ctx context.Context, serviceToken string) (m ModelC
 }
 
 // GetEdition retrieves a single edition document from a given datasetID and edition label
-func (c *Client) GetEdition(ctx context.Context, datasetID, edition, serviceToken string) (m Edition, err error) {
+func (c *Client) GetEdition(ctx context.Context, serviceToken, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
@@ -260,7 +260,7 @@ func (c *Client) GetEdition(ctx context.Context, datasetID, edition, serviceToke
 }
 
 // GetEditions returns all editions for a dataset
-func (c *Client) GetEditions(ctx context.Context, id, serviceToken string) (m []Edition, err error) {
+func (c *Client) GetEditions(ctx context.Context, serviceToken, id string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
@@ -317,7 +317,7 @@ func (c *Client) GetEditions(ctx context.Context, id, serviceToken string) (m []
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, id, edition, serviceToken, downloadServiceToken string) (m []Version, err error) {
+func (c *Client) GetVersions(ctx context.Context, serviceToken, id, edition, downloadServiceToken string) (m []Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
@@ -359,7 +359,7 @@ func (c *Client) GetVersions(ctx context.Context, id, edition, serviceToken, dow
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, id, edition, version, serviceToken, downloadServiceToken string) (m Version, err error) {
+func (c *Client) GetVersion(ctx context.Context, serviceToken, id, edition, version, downloadServiceToken string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -396,7 +396,7 @@ func (c *Client) GetVersion(ctx context.Context, id, edition, version, serviceTo
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(ctx context.Context, instanceID, serviceToken string) (m Instance, err error) {
+func (c *Client) GetInstance(ctx context.Context, serviceToken, instanceID string) (m Instance, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -431,7 +431,7 @@ func (c *Client) GetInstance(ctx context.Context, instanceID, serviceToken strin
 }
 
 // PutVersion update the version
-func (c *Client) PutVersion(ctx context.Context, datasetID, edition, version, serviceToken string, v Version) error {
+func (c *Client) PutVersion(ctx context.Context, serviceToken, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 	clientlog.Do(ctx, "updating version", service, uri)
 
@@ -468,7 +468,7 @@ func (c *Client) GetMetadataURL(id, edition, version string) string {
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
-func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, serviceToken string) (m Metadata, err error) {
+func (c *Client) GetVersionMetadata(ctx context.Context, serviceToken, id, edition, version string) (m Metadata, err error) {
 	uri := c.GetMetadataURL(id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version metadata", service, uri)
@@ -503,7 +503,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, s
 }
 
 // GetDimensions will return a versions dimensions
-func (c *Client) GetDimensions(ctx context.Context, id, edition, version, serviceToken string) (m Dimensions, err error) {
+func (c *Client) GetDimensions(ctx context.Context, serviceToken, id, edition, version string) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)
@@ -543,7 +543,7 @@ func (c *Client) GetDimensions(ctx context.Context, id, edition, version, servic
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, id, edition, version, dimension, serviceToken string) (m Options, err error) {
+func (c *Client) GetOptions(ctx context.Context, serviceToken, id, edition, version, dimension string) (m Options, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
 
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)

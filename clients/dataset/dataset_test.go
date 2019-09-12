@@ -17,7 +17,7 @@ import (
 
 var ctx = context.Background()
 
-const authToken = "iamatoken"
+const authToken = "123"
 
 var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
 	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
@@ -137,7 +137,7 @@ func TestClient_PutVersion(t *testing.T) {
 			err := cli.PutVersion(ctx, "123", "2017", "1", authToken, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("incorrect http status, expected: 200, actual: 500, uri: http://localhost:8080/datasets/123/editions/2017/versions/1").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("incorrect http status, expected: 200, actual: 500, uri: http://localhost:8080/datasets/2017/editions/1/versions/123").Error())
 			})
 
 			Convey("and rchttpclient.do is called 1 time with the expected parameters", func() {
