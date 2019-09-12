@@ -75,7 +75,7 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // GetRoot returns the root hierarchy response from the hierarchy API
-func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (m Model, err error) {
+func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (Model, error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
@@ -88,7 +88,7 @@ func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (m Model,
 }
 
 // GetChild returns a child of a given hierarchy and code
-func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (m Model, err error) {
+func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (Model, error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s/%s", instanceID, name, code)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
@@ -101,16 +101,16 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (m
 	return c.getHierarchy(path, ctx)
 }
 
-func (c *Client) getHierarchy(path string, ctx context.Context) (m Model, err error) {
-
+func (c *Client) getHierarchy(path string, ctx context.Context) (Model, error) {
+	var m Model
 	req, err := http.NewRequest("GET", c.url + path, nil)
 	if err != nil {
-		return
+		return m, err
 	}
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return
+		return m, err
 	}
 
 	defer closeResponseBody(ctx, resp)
@@ -121,9 +121,9 @@ func (c *Client) getHierarchy(path string, ctx context.Context) (m Model, err er
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return m, err
 	}
 
 	err = json.Unmarshal(b, &m)
-	return
+	return m, err
 }
