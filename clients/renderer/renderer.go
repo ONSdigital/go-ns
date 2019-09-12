@@ -87,10 +87,10 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := r.client.Do(ctx, req)
-	defer closeResponseBody(ctx, resp)
 	if err != nil {
 		return nil, err
 	}
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrInvalidRendererResponse{resp.StatusCode}
