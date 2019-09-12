@@ -359,6 +359,9 @@ func (c *Client) AddDimensionValue(ctx context.Context, serviceAuthToken, filter
 		return err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
+
 	if resp.StatusCode != http.StatusCreated {
 		return &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
@@ -386,6 +389,8 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, serviceAuthToken, fil
 		return err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusNoContent {
 		return &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
 	}
@@ -412,6 +417,8 @@ func (c *Client) RemoveDimension(ctx context.Context, serviceAuthToken, filterID
 	if err != nil {
 		return err
 	}
+
+	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		err = &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -441,6 +448,8 @@ func (c *Client) AddDimension(ctx context.Context, serviceAuthToken, id, name st
 		return err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusCreated {
 		return errors.New("invalid status from filter api")
 	}
@@ -467,6 +476,8 @@ func (c *Client) GetJobState(ctx context.Context, serviceAuthToken, downloadServ
 		return m, err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 		return m, err
@@ -476,7 +487,6 @@ func (c *Client) GetJobState(ctx context.Context, serviceAuthToken, downloadServ
 	if err != nil {
 		return m, err
 	}
-	defer CloseResponseBody(ctx, resp)
 
 	err = json.Unmarshal(b, &m)
 	return m, err
@@ -514,6 +524,8 @@ func (c *Client) AddDimensionValues(ctx context.Context, serviceAuthToken, filte
 		return err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusCreated {
 		return &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
@@ -543,6 +555,8 @@ func (c *Client) GetPreview(ctx context.Context, serviceAuthToken, downloadServi
 		return p, err
 	}
 
+	defer CloseResponseBody(ctx, resp)
+
 	if resp.StatusCode != http.StatusOK {
 		return p, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
@@ -551,7 +565,6 @@ func (c *Client) GetPreview(ctx context.Context, serviceAuthToken, downloadServi
 	if err != nil {
 		return p, err
 	}
-	defer CloseResponseBody(ctx, resp)
 
 	err = json.Unmarshal(b, &p)
 	return p, err
