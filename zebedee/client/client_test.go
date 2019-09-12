@@ -11,10 +11,13 @@ import (
 
 	rchttp "github.com/ONSdigital/dp-rchttp"
 
+	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+var testAccessToken = "test-access-token"
 
 func TestUnitClient(t *testing.T) {
 	portChan := make(chan int)
@@ -24,7 +27,6 @@ func TestUnitClient(t *testing.T) {
 	//rchttpCli := rchttp.NewClient()
 	cli := NewZebedeeClient(rchttp.NewClient(), fmt.Sprintf("http://localhost:%d", port))
 
-	testAccessToken := "test-access-token"
 	ctx := context.Background()
 
 	Convey("test get()", t, func() {
@@ -119,6 +121,12 @@ func mockZebedeeServer(port chan int) {
 
 func d(w http.ResponseWriter, req *http.Request) {
 	uri := req.URL.Query().Get("uri")
+
+	serviceAuthToken := req.Header.Get(common.FlorenceHeaderKey)
+	if serviceAuthToken != testAccessToken {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("401 - No access token header set!"))
+	}
 
 	switch uri {
 	case "foo":
