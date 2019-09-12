@@ -64,6 +64,7 @@ func (c *Client) Healthcheck() (string, error) {
 	if err != nil {
 		return service, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return service, NewDatasetAPIResponse(resp, "/healthcheck")
@@ -485,7 +486,6 @@ func (c *Client) GetVersionMetadata(ctx context.Context, id, edition, version, s
 	if err != nil {
 		return
 	}
-
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -589,7 +589,6 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
-		defer resp.Body.Close()
 		e.body = string(b)
 	}
 	return

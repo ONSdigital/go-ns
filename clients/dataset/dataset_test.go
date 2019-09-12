@@ -4,27 +4,32 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
-	"github.com/pkg/errors"
-	. "github.com/smartystreets/goconvey/convey"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/pkg/errors"
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/go-ns/common"
 )
 
 var ctx = context.Background()
 
 const authToken = "iamatoken"
 
-
+var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
+	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
+	So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+authToken)
+}
 
 func TestClient_PutVersion(t *testing.T) {
 
 	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedVersion Version) {
-		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
-		So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+authToken)
-		
+
+		checkResponseBase(mockRCHTTPCli)
+
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
 
 		var actualVersion Version
@@ -194,6 +199,59 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 						So(k, ShouldNotEqual, "Collection-Id")
 					}
 				})
+			})
+		})
+	})
+}
+
+func TestClient_GetInstance(t *testing.T) {
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstance is called", func() {
+			_, err := cli.GetInstance(ctx, "123", authToken)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me roight"))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstance is called", func() {
+			_, err := cli.GetInstance(ctx, "123", authToken)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me roight").Error())
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli)
 			})
 		})
 	})
