@@ -3,7 +3,7 @@ package identity
 import (
 	"net/http"
 
-	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/request"
 	"github.com/ONSdigital/go-ns/common"
