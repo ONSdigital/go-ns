@@ -10,6 +10,16 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func newWithPort(h http.Handler) (string, *Server) {
+	port, err := freeport.Get()
+	So(err, ShouldBeNil)
+	So(port, ShouldBeGreaterThan, 0)
+
+	sPort := fmt.Sprintf(":%d", port)
+
+	return sPort, New(sPort, h)
+}
+
 func TestNew(t *testing.T) {
 	Convey("New should return a new server with sensible defaults", t, func() {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {})
@@ -94,12 +104,12 @@ func TestNew(t *testing.T) {
 	Convey("ListenAndServeTLS", t, func() {
 		Convey("ListenAndServeTLS should set CertFile/KeyFile", func() {
 			h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {})
-			s := New(":0", h)
 
+			sPort, s := newWithPort(h)
 			go func() {
 				s.ListenAndServeTLS("testdata/certFile", "testdata/keyFile")
 			}()
-			time.Sleep(time.Millisecond * 20)
+			http.Get("http://localhost" + sPort) // ensure above is responding before we check below
 			So(s.CertFile, ShouldEqual, "testdata/certFile")
 			So(s.KeyFile, ShouldEqual, "testdata/keyFile")
 		})
@@ -126,13 +136,7 @@ func TestNew(t *testing.T) {
 	Convey("ListenAndServe starts a working HTTP server", t, func() {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {})
 
-		port, err := freeport.Get()
-		So(err, ShouldBeNil)
-		So(port, ShouldBeGreaterThan, 0)
-
-		sPort := fmt.Sprintf(":%d", port)
-		s := New(sPort, h)
-
+		sPort, s := newWithPort(h)
 		go func() {
 			s.ListenAndServe()
 		}()
