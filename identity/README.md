@@ -37,7 +37,7 @@ or, put less portably:
     req.Header.Add("User-Identity", "UserA")
 ```
 
-But most of this should be done by `go-ns/rchttp` and `go-ns/clients/...`.
+But most of this should be done by `go-ns/rchttp` and `dp-api-clients-go/...`.
 
 ### Testing
 
