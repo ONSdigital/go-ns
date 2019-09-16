@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 )
 
 // healthcheckClient is an implementation of Client that can be used to call the healthcheck endpoint of any service
@@ -14,8 +14,6 @@ type healthcheckClient struct {
 	url     string
 	service string
 }
-
-//go:generate moq -out mock_healthcheck/mock_httpclient.go -pkg mock_healthcheck . HttpClient
 
 // httpClient has a get method. Implemented by http.Client etc.
 type HttpClient interface {

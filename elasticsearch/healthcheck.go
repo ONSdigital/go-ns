@@ -1,18 +1,19 @@
 package elasticsearch
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/healthcheck"
-	"github.com/ONSdigital/go-ns/rhttp"
 
 	"net/http"
 	"net/url"
 
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/smartystreets/go-aws-auth"
+	awsauth "github.com/smartystreets/go-aws-auth"
 )
 
 // ensure the elasticsearchClient satisfies the Client interface.
@@ -29,7 +30,7 @@ const unhealthy = "red"
 
 // HealthCheckClient provides a healthcheck.Client implementation for health checking elasticsearch.
 type HealthCheckClient struct {
-	cli          *rhttp.Client
+	cli          *rchttp.Client
 	path         string
 	serviceName  string
 	signRequests bool
@@ -44,7 +45,7 @@ type ClusterHealth struct {
 func NewHealthCheckClient(url string, signRequests bool) *HealthCheckClient {
 
 	return &HealthCheckClient{
-		cli:          rhttp.DefaultClient,
+		cli:          rchttp.DefaultClient,
 		path:         url + "/_cluster/health",
 		serviceName:  "elasticsearch",
 		signRequests: signRequests,
@@ -75,7 +76,7 @@ func (elasticsearch *HealthCheckClient) Healthcheck() (string, error) {
 		awsauth.Sign(req)
 	}
 
-	resp, err := elasticsearch.cli.Do(req)
+	resp, err := elasticsearch.cli.Do(context.Background(), req)
 	if err != nil {
 		log.ErrorC("failed to call elasticsearch", err, logData)
 		return elasticsearch.serviceName, err

@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/pkg/errors"

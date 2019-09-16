@@ -1,13 +1,14 @@
 package healthcheck
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/go-ns/healthcheck/mock_healthcheck"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -36,11 +37,15 @@ func TestUnitHealthcheck(t *testing.T) {
 	})
 
 	Convey("given external service errors, when MonitorExternal is called", t, func() {
-		mcli := mock_healthcheck.NewMockClient(mockCtrl)
-		mcli.EXPECT().Healthcheck().Return("my-external-service", errors.New("bad healthcheck - sad face"))
+		mcli := rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{StatusCode: http.StatusInternalServerError}, errors.New("bad healthcheck - sad face")
+			},
+		}
+		hcli := NewClient("my-external-service", "0:80", &mcli)
 
 		startTime := time.Now()
-		MonitorExternal(mcli)
+		MonitorExternal(hcli)
 
 		Convey("then Do returns status 500", func() {
 
@@ -63,11 +68,15 @@ func TestUnitHealthcheck(t *testing.T) {
 	})
 
 	Convey("given no external service errors, when MonitorExternal is called", t, func() {
-		mcli := mock_healthcheck.NewMockClient(mockCtrl)
-		mcli.EXPECT().Healthcheck().Return("", nil)
+		mcli := rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{StatusCode: http.StatusOK}, nil
+			},
+		}
+		hcli := NewClient("my-external-service", "0:80", &mcli)
 
 		startTime := time.Now()
-		MonitorExternal(mcli)
+		MonitorExternal(hcli)
 
 		Convey("then Do returns status 200", func() {
 

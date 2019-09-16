@@ -1,6 +1,6 @@
 package data
 
-// Dataset represents a datase response from zebedee
+// Dataset represents a dataset response from zebedee
 type Dataset struct {
 	Type               string              `json:"type"`
 	URI                string              `json:"uri"`
