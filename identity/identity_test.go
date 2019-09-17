@@ -419,3 +419,31 @@ func TestHandler_bothTokens(t *testing.T) {
 		})
 	})
 }
+
+func TestGetFlorenceTokenFromRequest(t *testing.T) {
+	expectedToken := "666"
+
+	Convey("should return florence token from request header", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		req.Header.Set(common.FlorenceHeaderKey, expectedToken)
+
+		actual := getFlorenceTokenFromRequest(nil, req)
+
+		So(actual, ShouldEqual, expectedToken)
+	})
+
+	Convey("should return access token from request cookie", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
+
+		actual := getFlorenceTokenFromRequest(nil, req)
+
+		So(actual, ShouldEqual, expectedToken)
+	})
+
+	Convey("should return empty token if no header or cookie is set", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		actual := getFlorenceTokenFromRequest(nil, req)
+		So(actual, ShouldBeEmpty)
+	})
+}
