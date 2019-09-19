@@ -9,12 +9,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"io"
+
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"io"
 )
 
 const (
@@ -34,7 +35,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{}
+		httpClient := &rchttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -74,8 +75,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, errors.New("broken")
 			},
@@ -124,8 +124,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
@@ -176,8 +175,7 @@ func TestHandler_florenceToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: userIdentifier}
@@ -240,8 +238,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(bytes.NewBufferString("{ invalid JSON"))
@@ -299,7 +296,7 @@ func TestHandler_authToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: serviceIdentifier}
@@ -366,8 +363,7 @@ func TestHandler_bothTokens(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: userIdentifier}
