@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"io"
 	"math"
+	"reflect"
 
 	"bytes"
 
-	"github.com/johnnadratowski/golang-neo4j-bolt-driver/errors"
-	"github.com/johnnadratowski/golang-neo4j-bolt-driver/structures"
+	"github.com/ONSdigital/golang-neo4j-bolt-driver/errors"
+	"github.com/ONSdigital/golang-neo4j-bolt-driver/structures"
 )
 
 const (
@@ -207,6 +208,16 @@ func (e Encoder) encode(iVal interface{}) error {
 	case structures.Structure:
 		err = e.encodeStructure(val)
 	default:
+		// arbitrary slice types
+		if reflect.TypeOf(iVal).Kind() == reflect.Slice {
+			s := reflect.ValueOf(iVal)
+			newSlice := make([]interface{}, s.Len())
+			for i := 0; i < s.Len(); i++ {
+				newSlice[i] = s.Index(i).Interface()
+			}
+			return e.encodeSlice(newSlice)
+		}
+
 		return errors.New("Unrecognized type when encoding data for Bolt transport: %T %+v", val, val)
 	}
 
