@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/common/commontest"
@@ -426,29 +427,36 @@ func TestGetFlorenceToken(t *testing.T) {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		req.Header.Set(common.FlorenceHeaderKey, expectedToken)
 
-		actual := getFlorenceToken(nil, req)
+		actual, err := getFlorenceToken(nil, req)
 
 		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("should return access token from request cookie", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
 
-		actual := getFlorenceToken(nil, req)
+		actual, err := getFlorenceToken(nil, req)
 
 		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("should return empty token if no header or cookie is set", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		actual := getFlorenceToken(nil, req)
+
+		actual, err := getFlorenceToken(nil, req)
+
 		So(actual, ShouldBeEmpty)
+		So(err, ShouldBeNil)
 	})
 
-	Convey("should return empty token if get header returns an error that is not ErrHeaderNotFound", t, func() {
-		actual := getFlorenceToken(nil, nil)
+	Convey("should return empty token and error if get header returns an error that is not ErrHeaderNotFound", t, func() {
+		actual, err := getFlorenceToken(nil, nil)
+
 		So(actual, ShouldBeEmpty)
+		So(err, ShouldResemble, headers.ErrRequestNil)
 	})
 }
 
@@ -459,15 +467,46 @@ func TestGetFlorenceTokenFromCookie(t *testing.T) {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
 
-		actual := getFlorenceTokenFromCookie(nil, req)
+		actual, err := getFlorenceTokenFromCookie(nil, req)
 
 		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("should return empty token if token cookie not found", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		actual := getFlorenceTokenFromCookie(nil, req)
+
+		actual, err := getFlorenceTokenFromCookie(nil, req)
 
 		So(actual, ShouldBeEmpty)
+		So(err, ShouldBeNil)
+	})
+}
+
+func TestGetServiceAuthToken(t *testing.T) {
+	Convey("should return error if not equal to headers.ErrHeaderNotFound", t, func() {
+		token, err := getServiceAuthToken(nil, nil)
+
+		So(token, ShouldBeEmpty)
+		So(err, ShouldResemble, headers.ErrRequestNil)
+	})
+
+	Convey("should return empty token if error equals headers.ErrHeaderNotFound", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+
+		token, err := getServiceAuthToken(nil, req)
+
+		So(token, ShouldBeEmpty)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("should return token if heade found", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		headers.SetServiceAuthToken(req, "666")
+
+		token, err := getServiceAuthToken(nil, req)
+
+		So(token, ShouldEqual, "666")
+		So(err, ShouldBeNil)
 	})
 }
