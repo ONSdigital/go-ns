@@ -420,6 +420,105 @@ func TestHandler_bothTokens(t *testing.T) {
 	})
 }
 
+func TestHandler_GetTokenError(t *testing.T) {
+
+	Convey("Given getting the user auth token from the request returns an error", t, func() {
+
+		httpClient := &commontest.RCHTTPClienterMock{}
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+
+		handlerCalled := false
+		wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		getUserTokenCalls := 0
+		getUserTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getUserTokenCalls++
+			return "", errors.New("bork bork bork")
+		}
+
+		getServiceTokenCalls := 0
+		getServiceTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getServiceTokenCalls++
+			return "", nil
+		}
+
+		identityHandler := handlerForHTTPClient(idClient, getUserTokenFunc, getServiceTokenFunc)(wrappedHandler)
+
+		Convey("when a request is received", func() {
+			req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
+			resp := httptest.NewRecorder()
+
+			identityHandler.ServeHTTP(resp, req)
+
+			Convey("then a status 500 internal server error response is returned", func() {
+				So(resp.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+
+			Convey("and get getUserTokenFunc is called 1 time", func() {
+				So(getUserTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and the request is not processed any further", func() {
+				So(getServiceTokenCalls, ShouldEqual, 0)
+				So(httpClient.DoCalls(), ShouldHaveLength, 0)
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given getting the service auth token from the request returns an error", t, func() {
+
+		httpClient := &commontest.RCHTTPClienterMock{}
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+
+		handlerCalled := false
+		wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		getUserTokenCalls := 0
+		getUserTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getUserTokenCalls++
+			return "1234", nil
+		}
+
+		getServiceTokenCalls := 0
+		getServiceTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getServiceTokenCalls++
+			return "", errors.New("aaaaaaaallllll righty then")
+		}
+
+		identityHandler := handlerForHTTPClient(idClient, getUserTokenFunc, getServiceTokenFunc)(wrappedHandler)
+
+		Convey("when a request is received", func() {
+			req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
+			resp := httptest.NewRecorder()
+
+			identityHandler.ServeHTTP(resp, req)
+
+			Convey("then a status 500 internal server error response is returned", func() {
+				So(resp.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+
+			Convey("and get getUserTokenFunc is called 1 time", func() {
+				So(getUserTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and get getServiceTokenFunc is called 1 time", func() {
+				So(getServiceTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and the request is not processed any further", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 0)
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+
+}
+
 func TestGetFlorenceToken(t *testing.T) {
 	expectedToken := "666"
 
@@ -509,4 +608,10 @@ func TestGetServiceAuthToken(t *testing.T) {
 		So(token, ShouldEqual, "666")
 		So(err, ShouldBeNil)
 	})
+}
+
+func getTokenFunc(token string, err error) getTokenFromReqFunc {
+	return func(ctx context.Context, r *http.Request) (string, error) {
+		return token, err
+	}
 }
