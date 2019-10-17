@@ -2,6 +2,7 @@ package identity
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"net/http"
 
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
@@ -23,7 +24,7 @@ func HandlerForHTTPClient(cli *clientsidentity.Client) func(http.Handler) http.H
 			ctx := req.Context()
 			log.Event(ctx, "executing identity check middleware")
 
-			florenceToken := getFlorenceTokenFromRequest(ctx, req)
+			florenceToken := getFlorenceToken(ctx, req)
 			serviceAuthToken := req.Header.Get(common.AuthHeaderKey)
 
 			ctx, statusCode, authFailure, err := cli.CheckRequest(req, florenceToken, serviceAuthToken)
@@ -51,24 +52,33 @@ func HandlerForHTTPClient(cli *clientsidentity.Client) func(http.Handler) http.H
 	}
 }
 
-func getFlorenceTokenFromRequest(ctx context.Context, req *http.Request) string {
+func getFlorenceToken(ctx context.Context, req *http.Request) string {
 	var florenceToken string
 
-	florenceToken = req.Header.Get(common.FlorenceHeaderKey)
-	if len(florenceToken) >= 1 {
-		log.Event(ctx, "florence access token header found")
-		return florenceToken
+	token, err := headers.GetUserAuthToken(req)
+	if err == nil {
+		florenceToken = token
+	} else if headers.IsErrNotFound(err) {
+		log.Event(ctx, "florence access token header not found attempting to find access token cookie")
+		florenceToken = getFlorenceTokenFromCookie(ctx, req)
+	} else {
+		log.Event(ctx, "error getting florence access token header", log.Error(err))
 	}
 
-	log.Event(ctx, "florence access token header not found attempting to find access token cookie")
+	return florenceToken
+}
+
+func getFlorenceTokenFromCookie(ctx context.Context, req *http.Request) string {
+	var florenceToken string
+
 	c, err := req.Cookie(common.FlorenceCookieKey)
-	if err != nil {
+	if err == nil {
+		florenceToken = c.Value
+	} else if err == http.ErrNoCookie {
+		log.Event(ctx, "florence access token cookie not found", log.Error(err))
+	} else {
 		log.Event(ctx, "error getting florence access token cookie from request", log.Error(err))
-		return florenceToken
 	}
-
-	log.Event(ctx, "found request access token cookie")
-	florenceToken = c.Value
 
 	return florenceToken
 }
