@@ -21,6 +21,7 @@ func Handler(zebedeeURL string) func(http.Handler) http.Handler {
 
 // HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
 func HandlerForHTTPClient(cli *clientsidentity.Client) func(http.Handler) http.Handler {
+	// maintain the public interface to endure its backwards compatible a
 	return handlerForHTTPClient(cli, getFlorenceToken, getServiceAuthToken)
 }
 
@@ -32,17 +33,13 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 
 			florenceToken, err := getFlorenceToken(ctx, req)
 			if err != nil {
-				log.Event(ctx, "error getting florence access token from request returning status 500", log.Error(err))
-				request.DrainBody(req)
-				w.WriteHeader(http.StatusInternalServerError)
+				handleFailedRequest(ctx, w, req, http.StatusInternalServerError, "error getting florence access token from request", err, nil)
 				return
 			}
 
 			serviceAuthToken, err := getServiceToken(ctx, req)
 			if err != nil {
-				log.Event(ctx, "error getting service access token from request returning status 500", log.Error(err))
-				request.DrainBody(req)
-				w.WriteHeader(http.StatusInternalServerError)
+				handleFailedRequest(ctx, w, req, http.StatusInternalServerError, "error getting service access token from request", err, nil)
 				return
 			}
 
@@ -50,16 +47,13 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 			logData := log.Data{"auth_status_code": statusCode}
 
 			if err != nil {
-				log.Event(ctx, "identity client check request returned an error", log.Error(err), logData)
-				request.DrainBody(req)
-				w.WriteHeader(statusCode)
+				handleFailedRequest(ctx, w, req, statusCode, "identity client check request returned an error", err, logData)
 				return
 			}
 
 			if authFailure != nil {
+				handleFailedRequest(ctx, w, req, statusCode, "identity client check request returned an auth error", authFailure, logData)
 				log.Event(ctx, "identity client check request returned an auth error", log.Error(authFailure), logData)
-				request.DrainBody(req)
-				w.WriteHeader(statusCode)
 				return
 			}
 
@@ -69,6 +63,13 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 			h.ServeHTTP(w, req)
 		})
 	}
+}
+
+// handleFailedRequest adhering to the DRY principle - clean up for failed identity requests, log the error, drain the request body and write the status code.
+func handleFailedRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, status int, event string, err error, data log.Data) {
+	log.Event(ctx, event, log.Error(err), data)
+	request.DrainBody(r)
+	w.WriteHeader(status)
 }
 
 func getFlorenceToken(ctx context.Context, req *http.Request) (string, error) {
