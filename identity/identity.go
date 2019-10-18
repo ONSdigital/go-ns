@@ -21,7 +21,7 @@ func Handler(zebedeeURL string) func(http.Handler) http.Handler {
 
 // HandlerForHTTPClient allows a handler to be created that uses the given HTTP client
 func HandlerForHTTPClient(cli *clientsidentity.Client) func(http.Handler) http.Handler {
-	// maintain the public interface to ensure backwards compatible and allow the get X token functions to be pass into the handler func.
+	// maintain the public interface to ensure backwards compatible and allow the get X token functions to be passed into the handler func.
 	return handlerForHTTPClient(cli, getFlorenceToken, getServiceAuthToken)
 }
 
