@@ -4,17 +4,21 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
-	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/common/commontest"
-	"github.com/pkg/errors"
-	. "github.com/smartystreets/goconvey/convey"
-	"io"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"io"
+
+	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
+	rchttp "github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/pkg/errors"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 const (
@@ -34,7 +38,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{}
+		httpClient := &rchttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -74,8 +78,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, errors.New("broken")
 			},
@@ -124,8 +127,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
@@ -176,8 +178,7 @@ func TestHandler_florenceToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: userIdentifier}
@@ -240,8 +241,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(bytes.NewBufferString("{ invalid JSON"))
@@ -299,7 +299,7 @@ func TestHandler_authToken(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: serviceIdentifier}
@@ -334,7 +334,7 @@ func TestHandler_authToken(t *testing.T) {
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
 				So(len(zebedeeReq.Header[common.UserHeaderKey]), ShouldEqual, 0)
 				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 1)
-				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, upstreamAuthToken)
+				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, "Bearer "+upstreamAuthToken)
 
 			})
 
@@ -366,8 +366,7 @@ func TestHandler_bothTokens(t *testing.T) {
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				response := &common.IdentityResponse{Identifier: userIdentifier}
@@ -424,7 +423,7 @@ func TestHandler_GetTokenError(t *testing.T) {
 
 	Convey("Given getting the user auth token from the request returns an error", t, func() {
 
-		httpClient := &commontest.RCHTTPClienterMock{}
+		httpClient := &rchttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -470,7 +469,7 @@ func TestHandler_GetTokenError(t *testing.T) {
 
 	Convey("Given getting the service auth token from the request returns an error", t, func() {
 
-		httpClient := &commontest.RCHTTPClienterMock{}
+		httpClient := &rchttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -599,7 +598,7 @@ func TestGetServiceAuthToken(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 
-	Convey("should return token if heade found", t, func() {
+	Convey("should return token if header found", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		headers.SetServiceAuthToken(req, "666")
 
