@@ -63,7 +63,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 	} else {
 		sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 	}
-	// END of hack fix	sdlp.DatasetLandingPage.NextRelease = dlp.Description.NextRelease
+	// END of hack fix
 
 	sdlp.DatasetLandingPage.DatasetID = dlp.Description.DatasetID
 	sdlp.DatasetLandingPage.Notes = dlp.Section.Markdown
