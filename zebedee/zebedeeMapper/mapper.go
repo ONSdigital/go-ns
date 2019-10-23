@@ -57,6 +57,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 		releaseDateInTimeFormat, err := time.Parse(time.RFC3339, dlp.Description.ReleaseDate)
 		if err != nil{
 			log.Error(err, nil)
+			sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 		}
 		sdlp.DatasetLandingPage.ReleaseDate = releaseDateInTimeFormat.Add(1 * time.Hour).Format("02 January 2006")
 
