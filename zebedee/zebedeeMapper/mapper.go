@@ -60,12 +60,11 @@ func MapZebedeeDatasetLandingPageToFrontendModel(dlp data.DatasetLandingPage, bc
 			sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 		}
 		sdlp.DatasetLandingPage.ReleaseDate = releaseDateInTimeFormat.Add(1 * time.Hour).Format("02 January 2006")
-
 	} else {
 		sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 	}
 	// END of hack fix
-
+    sdlp.DatasetLandingPage.NextRelease = dlp.Description.NextRelease
 	sdlp.DatasetLandingPage.DatasetID = dlp.Description.DatasetID
 	sdlp.DatasetLandingPage.Notes = dlp.Section.Markdown
 
