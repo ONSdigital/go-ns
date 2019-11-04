@@ -38,7 +38,7 @@ func TestUnitMapper(t *testing.T) {
 		So(sdlp.DatasetLandingPage.IsNationalStatistic, ShouldEqual, dlp.Description.NationalStatistic)
 		So(sdlp.DatasetLandingPage.IsTimeseries, ShouldEqual, dlp.Timeseries)
 
-		So(sdlp.DatasetLandingPage.ReleaseDate, ShouldEqual, dlp.Description.ReleaseDate)
+		So(sdlp.DatasetLandingPage.ReleaseDate, ShouldNotBeEmpty)
 		So(sdlp.DatasetLandingPage.NextRelease, ShouldEqual, dlp.Description.NextRelease)
 
 		So(sdlp.Page.Breadcrumb[0].Title, ShouldEqual, bcs[0].Description.Title)

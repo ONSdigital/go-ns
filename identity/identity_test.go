@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+
+	"github.com/ONSdigital/dp-api-clients-go/headers"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -331,7 +334,7 @@ func TestHandler_authToken(t *testing.T) {
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
 				So(len(zebedeeReq.Header[common.UserHeaderKey]), ShouldEqual, 0)
 				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 1)
-				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, upstreamAuthToken)
+				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, "Bearer "+upstreamAuthToken)
 
 			})
 
@@ -416,30 +419,198 @@ func TestHandler_bothTokens(t *testing.T) {
 	})
 }
 
-func TestGetFlorenceTokenFromRequest(t *testing.T) {
+func TestHandler_GetTokenError(t *testing.T) {
+
+	Convey("Given getting the user auth token from the request returns an error", t, func() {
+
+		httpClient := &rchttp.ClienterMock{}
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+
+		handlerCalled := false
+		wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		getUserTokenCalls := 0
+		getUserTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getUserTokenCalls++
+			return "", errors.New("bork bork bork")
+		}
+
+		getServiceTokenCalls := 0
+		getServiceTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getServiceTokenCalls++
+			return "", nil
+		}
+
+		identityHandler := handlerForHTTPClient(idClient, getUserTokenFunc, getServiceTokenFunc)(wrappedHandler)
+
+		Convey("when a request is received", func() {
+			req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
+			resp := httptest.NewRecorder()
+
+			identityHandler.ServeHTTP(resp, req)
+
+			Convey("then a status 500 internal server error response is returned", func() {
+				So(resp.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+
+			Convey("and get getUserTokenFunc is called 1 time", func() {
+				So(getUserTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and the request is not processed any further", func() {
+				So(getServiceTokenCalls, ShouldEqual, 0)
+				So(httpClient.DoCalls(), ShouldHaveLength, 0)
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given getting the service auth token from the request returns an error", t, func() {
+
+		httpClient := &rchttp.ClienterMock{}
+		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
+
+		handlerCalled := false
+		wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalled = true
+		})
+
+		getUserTokenCalls := 0
+		getUserTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getUserTokenCalls++
+			return "1234", nil
+		}
+
+		getServiceTokenCalls := 0
+		getServiceTokenFunc := func(ctx context.Context, r *http.Request) (string, error) {
+			getServiceTokenCalls++
+			return "", errors.New("aaaaaaaallllll righty then")
+		}
+
+		identityHandler := handlerForHTTPClient(idClient, getUserTokenFunc, getServiceTokenFunc)(wrappedHandler)
+
+		Convey("when a request is received", func() {
+			req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
+			resp := httptest.NewRecorder()
+
+			identityHandler.ServeHTTP(resp, req)
+
+			Convey("then a status 500 internal server error response is returned", func() {
+				So(resp.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+
+			Convey("and get getUserTokenFunc is called 1 time", func() {
+				So(getUserTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and get getServiceTokenFunc is called 1 time", func() {
+				So(getServiceTokenCalls, ShouldEqual, 1)
+			})
+
+			Convey("and the request is not processed any further", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 0)
+				So(handlerCalled, ShouldBeFalse)
+			})
+		})
+	})
+
+}
+
+func TestGetFlorenceToken(t *testing.T) {
 	expectedToken := "666"
 
 	Convey("should return florence token from request header", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		req.Header.Set(common.FlorenceHeaderKey, expectedToken)
 
-		actual := getFlorenceTokenFromRequest(nil, req)
+		actual, err := getFlorenceToken(nil, req)
 
 		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("should return access token from request cookie", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
 		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
 
-		actual := getFlorenceTokenFromRequest(nil, req)
+		actual, err := getFlorenceToken(nil, req)
 
 		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("should return empty token if no header or cookie is set", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		actual := getFlorenceTokenFromRequest(nil, req)
+
+		actual, err := getFlorenceToken(nil, req)
+
 		So(actual, ShouldBeEmpty)
+		So(err, ShouldBeNil)
 	})
+
+	Convey("should return empty token and error if get header returns an error that is not ErrHeaderNotFound", t, func() {
+		actual, err := getFlorenceToken(nil, nil)
+
+		So(actual, ShouldBeEmpty)
+		So(err, ShouldResemble, headers.ErrRequestNil)
+	})
+}
+
+func TestGetFlorenceTokenFromCookie(t *testing.T) {
+	expectedToken := "666"
+
+	Convey("should return florence token from request cookie", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
+
+		actual, err := getFlorenceTokenFromCookie(nil, req)
+
+		So(actual, ShouldEqual, expectedToken)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("should return empty token if token cookie not found", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+
+		actual, err := getFlorenceTokenFromCookie(nil, req)
+
+		So(actual, ShouldBeEmpty)
+		So(err, ShouldBeNil)
+	})
+}
+
+func TestGetServiceAuthToken(t *testing.T) {
+	Convey("should return error if not equal to headers.ErrHeaderNotFound", t, func() {
+		token, err := getServiceAuthToken(nil, nil)
+
+		So(token, ShouldBeEmpty)
+		So(err, ShouldResemble, headers.ErrRequestNil)
+	})
+
+	Convey("should return empty token if error equals headers.ErrHeaderNotFound", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+
+		token, err := getServiceAuthToken(nil, req)
+
+		So(token, ShouldBeEmpty)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("should return token if header found", t, func() {
+		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
+		headers.SetServiceAuthToken(req, "666")
+
+		token, err := getServiceAuthToken(nil, req)
+
+		So(token, ShouldEqual, "666")
+		So(err, ShouldBeNil)
+	})
+}
+
+func getTokenFunc(token string, err error) getTokenFromReqFunc {
+	return func(ctx context.Context, r *http.Request) (string, error) {
+		return token, err
+	}
 }
