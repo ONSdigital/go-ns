@@ -43,8 +43,8 @@ type Dataset struct {
 	URI                string              `json:"uri"`
 	HasVersions        bool                `json:"has_versions"`
 	SupplementaryFiles []SupplementaryFile `json:"supplementary_files"`
-
-	IsLast bool `json:"is_last"`
+	VersionLabel       string              `json:"version_label"`
+	IsLast             bool                `json:"is_last"`
 }
 
 //Download has the details for the an individual dataset's downloadable files
