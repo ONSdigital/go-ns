@@ -1,6 +1,8 @@
 package kafkatest
 
 import (
+	"sync"
+
 	"github.com/ONSdigital/go-ns/kafka"
 )
 
@@ -11,6 +13,7 @@ type Message struct {
 	data      []byte
 	committed bool
 	offset    int64
+	mu        sync.Mutex
 }
 
 // NewMessage returns a new mock message containing the given data.
@@ -27,11 +30,15 @@ func (m *Message) GetData() []byte {
 
 // Commit captures the fact that the method was called.
 func (m *Message) Commit() {
+	m.mu.Lock()
 	m.committed = true
+	m.mu.Unlock()
 }
 
 // Committed returns true if commit was called on this message.
 func (m *Message) Committed() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.committed
 }
 
