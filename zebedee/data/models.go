@@ -86,6 +86,7 @@ type Description struct {
 	Unit              string   `json:"unit"`
 	PreUnit           string   `json:"preUnit"`
 	Source            string   `json:"source"`
+	VersionLabel      string   `json:"versionLabel"`
 }
 
 // Contact represents a contact within dataset landing page
