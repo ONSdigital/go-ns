@@ -13,6 +13,12 @@ The following library changes have been made as part of deprecating this repo:
 * The `healthcheck` library has been moved to a new repo [dp-healthcheck](https://github.com/ONSdigital/dp-healthcheck) and updated inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md). All apps should be updated to use the new health check implementation.
 * The `healthcheck` client has been reimplemented inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md) in [dp-api-clients-go/health](https://github.com/ONSdigital/dp-api-clients-go/tree/master/health). All clients in `dp-api-clients-go` have been updated to use this new library so all apps should be updated to use these new clients.
 * The `healthcheck` handler has been reimplemented inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md) in [dp-healthcheck](https://github.com/ONSdigital/dp-healthcheck). All `/healthcheck` routes should be changed to `/health` and updated to use this new handler.
+* The `elasticsearch` client has been moved to [dp-elasticsearch](https://github.com/ONSdigital/dp-elasticsearch). All imports should be updated accordingly.
+* The `kafka` client has been moved to [dp-kafka](https://github.com/ONSdigital/dp-kafka). All imports should be updated accordingly.
+* The `mongo` client has been moved to [dp-mongodb](https://github.com/ONSdigital/dp-mongodb). All imports should be updated accordingly.
+* The `neo4j` client has been moved to [dp-graph](https://github.com/ONSdigital/dp-graph). All usages of the old `neo4j` library should be replaced with `dp-graph` using the `neo4jdriver`.
+* The `s3` client has been moved to [dp-s3](https://github.com/ONSdigital/dp-s3). All imports should be updated accordingly.
+* The `vault` client has been moved to [dp-vault](https://github.com/ONSdigital/dp-vault). All imports should be updated accordingly.
 
 ---
 
