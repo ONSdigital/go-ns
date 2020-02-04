@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/unrolled/render"
 )
 
@@ -22,7 +22,7 @@ func init() {
 			}},
 		})
 
-		log.Debug("creating default unrolled renderer", nil)
+		log.Event(nil, "creating default unrolled renderer")
 	}
 }
 

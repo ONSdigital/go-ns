@@ -2,8 +2,9 @@ package identity
 
 import (
 	"context"
-	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"net/http"
+
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/common"

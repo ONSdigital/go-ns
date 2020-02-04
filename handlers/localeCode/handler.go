@@ -2,11 +2,10 @@ package localeCode
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 // CheckHeaderValueAndForwardWithRequestContext is a wrapper which adds a localeCode from the request header to context if one does not yet exist
@@ -33,7 +32,7 @@ func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 			req = req.WithContext(context.WithValue(req.Context(), common.LocaleHeaderKey, localeCode))
 		} else {
 			if err != http.ErrNoCookie {
-				log.ErrorCtx(req.Context(), errors.New("unexpected error while extracting language from cookie"), nil)
+				log.Event(req.Context(), "unexpected error while extracting language from cookie", log.Error(err))
 			}
 		}
 

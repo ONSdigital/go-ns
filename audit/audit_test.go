@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -85,9 +85,9 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 
 		select {
 		case results = <-output:
-			log.Info("output received", nil)
+			log.Event(ctx, "output received")
 		case <-time.After(time.Second * 5):
-			log.Debug("failing test due to timeout, expected output channel to receive event but none", nil)
+			log.Event(ctx, "failing test due to timeout, expected output channel to receive event but none")
 			t.FailNow()
 		}
 
@@ -96,7 +96,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		var actualEvent Event
 		err = EventSchema.Unmarshal(results, &actualEvent)
 		if err != nil {
-			log.ErrorC("avro unmarshal error", err, nil)
+			log.Event(ctx, "avro unmarshal error", log.Error(err))
 			t.FailNow()
 		}
 
@@ -131,9 +131,9 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 
 		select {
 		case results = <-output:
-			log.Info("output received", nil)
+			log.Event(ctx, "output received")
 		case <-time.After(time.Second * 5):
-			log.Debug("failing test due to timeout, expected output channel to receive event but none", nil)
+			log.Event(ctx, "failing test due to timeout, expected output channel to receive event but none")
 			t.FailNow()
 		}
 
@@ -142,7 +142,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		var actualEvent Event
 		err = EventSchema.Unmarshal(results, &actualEvent)
 		if err != nil {
-			log.ErrorC("avro unmarshal error", err, nil)
+			log.Event(ctx, "avro unmarshal error", log.Error(err))
 			t.FailNow()
 		}
 
@@ -233,12 +233,12 @@ func Test_newAuditError(t *testing.T) {
 }
 
 func TestToLogData(t *testing.T) {
-	Convey("should return nil if audit parameters is nil", t, func() {
-		So(ToLogData(nil), ShouldBeNil)
+	Convey("should return empty log.Data if audit parameters is nil", t, func() {
+		So(ToLogData(nil), ShouldResemble, log.Data{})
 	})
 
-	Convey("should return nil if audit parameters empty nil", t, func() {
-		So(ToLogData(common.Params{}), ShouldBeNil)
+	Convey("should return empty log.Data if audit parameters empty", t, func() {
+		So(ToLogData(common.Params{}), ShouldResemble, log.Data{})
 	})
 
 	Convey("should return expected value for non empty audit parameters", t, func() {

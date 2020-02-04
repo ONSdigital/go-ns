@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/schema"
 )
 
@@ -62,7 +62,7 @@ func (fv FormValidator) Validate(req *http.Request, s interface{}) error {
 		fieldVal := getValue(v.Field(i).Interface())
 
 		if tag == "" {
-			log.Debug("field missing schema tag", log.Data{"field": v.Type().Field(i).Name})
+			log.Event(req.Context(), "field missing schema tag", log.Data{"field": v.Type().Field(i).Name})
 			continue
 		}
 

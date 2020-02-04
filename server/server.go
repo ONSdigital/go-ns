@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/ONSdigital/go-ns/handlers/requestID"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/justinas/alice"
 )
 
@@ -33,7 +34,7 @@ type Server struct {
 func New(bindAddr string, router http.Handler) *Server {
 	middleware := map[string]alice.Constructor{
 		RequestIDHandlerKey: requestID.Handler(16),
-		LogHandlerKey:       log.Handler,
+		LogHandlerKey:       log.Middleware,
 	}
 
 	return &Server{
@@ -136,14 +137,14 @@ func (s *Server) listenAndServeAsync() {
 	if len(s.CertFile) > 0 || len(s.KeyFile) > 0 {
 		go func() {
 			if err := s.Server.ListenAndServeTLS(s.CertFile, s.KeyFile); err != nil {
-				log.Error(err, nil)
+				log.Event(nil, "http server returned error", log.Error(err))
 				os.Exit(1)
 			}
 		}()
 	} else {
 		go func() {
 			if err := s.Server.ListenAndServe(); err != nil {
-				log.Error(err, nil)
+				log.Event(nil, "http server returned error", log.Error(err))
 				os.Exit(1)
 			}
 		}()

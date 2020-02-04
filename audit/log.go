@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
 
@@ -29,14 +29,7 @@ func LogActionFailure(ctx context.Context, auditedAction string, auditedResult s
 func LogError(ctx context.Context, err error, data log.Data) {
 	data = addLogData(ctx, data)
 
-	log.ErrorCtx(ctx, err, data)
-}
-
-// LogInfo creates a structured info message when auditing succeeds
-func LogInfo(ctx context.Context, message string, data log.Data) {
-	data = addLogData(ctx, data)
-
-	log.InfoCtx(ctx, message, data)
+	log.Event(ctx, "auditing failed", log.Error(err), data)
 }
 
 func addLogData(ctx context.Context, data log.Data) log.Data {

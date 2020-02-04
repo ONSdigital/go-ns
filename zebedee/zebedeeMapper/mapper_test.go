@@ -1,6 +1,7 @@
 package zebedeeMapper
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ONSdigital/go-ns/zebedee/data"
@@ -9,12 +10,13 @@ import (
 
 func TestUnitMapper(t *testing.T) {
 	Convey("test MapZebedeeDatasetLandingPageToFrontendModel", t, func() {
+		ctx := context.Background()
 		dlp := getTestDatasetLandingPage()
 		bcs := getTestBreadcrumbs()
 		ds := getTestDatsets()
 		lang := "cy"
 
-		sdlp := MapZebedeeDatasetLandingPageToFrontendModel(dlp, bcs, ds, lang)
+		sdlp := MapZebedeeDatasetLandingPageToFrontendModel(ctx, dlp, bcs, ds, lang)
 		So(sdlp, ShouldNotBeEmpty)
 
 		So(sdlp.Type, ShouldEqual, dlp.Type)
