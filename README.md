@@ -10,6 +10,9 @@ The following library changes have been made as part of deprecating this repo:
 * The `rhttp` client has been removed and should no longer be used.  Any usage of `rhttp` should be replaced by `rchttp`.
 * The `rchttp` client has been moved to a new repo [dp-rchttp](https://github.com/ONSdigital/dp-rchttp).  All imports should be updated accordingly.
 * The API clients have been moved to a new repo [dp-api-clients-go](https://github.com/ONSdigital/dp-api-clients-go/).  All imports should be updated accordingly.
+* The `healthcheck` library has been moved to a new repo [dp-healthcheck](https://github.com/ONSdigital/dp-healthcheck) and updated inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md). All apps should be updated to use the new health check implementation.
+* The `healthcheck` client has been reimplemented inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md) in [dp-api-clients-go/health](https://github.com/ONSdigital/dp-api-clients-go/tree/master/health). All clients in `dp-api-clients-go` have been updated to use this new library so all apps should be updated to use these new clients.
+* The `healthcheck` handler has been reimplemented inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md) in [dp-healthcheck](https://github.com/ONSdigital/dp-healthcheck). All `/healthcheck` routes should be changed to `/health` and updated to use this new handler.
 
 ---
 
