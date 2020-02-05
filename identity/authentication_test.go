@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"bytes"
+	"io"
+
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/audit/auditortest"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
-	"io"
 )
 
 const (
@@ -410,42 +411,6 @@ func TestCaller_emptyCallerIdentity(t *testing.T) {
 
 			Convey("Then the response is empty", func() {
 				So(caller, ShouldEqual, "")
-			})
-		})
-	})
-}
-
-func TestAddUserHeader(t *testing.T) {
-
-	Convey("Given a request", t, func() {
-
-		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
-
-		Convey("When AddUserHeader is called", func() {
-
-			user := "someone@ons.gov.uk"
-			common.AddUserHeader(r, user)
-
-			Convey("Then the request has the user header set", func() {
-				So(r.Header.Get(common.UserHeaderKey), ShouldEqual, user)
-			})
-		})
-	})
-}
-
-func TestAddServiceTokenHeader(t *testing.T) {
-
-	Convey("Given a request", t, func() {
-
-		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
-
-		Convey("When AddServiceTokenHeader is called", func() {
-
-			serviceToken := "123"
-			common.AddServiceTokenHeader(r, serviceToken)
-
-			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+serviceToken)
 			})
 		})
 	})

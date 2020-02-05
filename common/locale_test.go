@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -56,7 +57,9 @@ func TestSetLocaleCode(t *testing.T) {
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangEN)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangEN)
 			})
 
 		})
@@ -65,7 +68,9 @@ func TestSetLocaleCode(t *testing.T) {
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'cy'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangCY)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangCY)
 			})
 		})
 	})
@@ -77,7 +82,9 @@ func TestSetLocaleCode(t *testing.T) {
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangEN)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangEN)
 			})
 
 		})
@@ -86,7 +93,9 @@ func TestSetLocaleCode(t *testing.T) {
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'cy'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangCY)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangCY)
 			})
 		})
 	})
@@ -96,7 +105,9 @@ func TestSetLocaleCode(t *testing.T) {
 		Convey(" And no cookie set", func() {
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'cy'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangCY)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangCY)
 			})
 		})
 	})
@@ -106,7 +117,9 @@ func TestSetLocaleCode(t *testing.T) {
 		Convey(" And no cookie set", func() {
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangEN)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangEN)
 			})
 		})
 	})
@@ -118,7 +131,9 @@ func TestSetLocaleCode(t *testing.T) {
 			req.AddCookie(&cookie)
 			req = SetLocaleCode(req)
 			Convey("Then lang returns a string 'en'", func() {
-				So(req.Header.Get("LocaleCode"), ShouldEqual, LangEN)
+				localeCode, err := headers.GetLocaleCode(req)
+				So(err, ShouldBeNil)
+				So(localeCode, ShouldEqual, LangEN)
 			})
 		})
 	})

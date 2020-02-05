@@ -1,4 +1,4 @@
 package common
 
-const CollectionIDHeaderKey = "Collection-Id"
+const CollectionIDContextKey = "Collection-Id"
 const CollectionIDCookieKey = "collection"

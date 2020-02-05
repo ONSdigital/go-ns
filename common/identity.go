@@ -13,18 +13,7 @@ type ContextKey string
 
 // A list of common constants used across go-ns packages
 const (
-	FlorenceHeaderKey        = "X-Florence-Token"
-	DownloadServiceHeaderKey = "X-Download-Service-Token"
-
 	FlorenceCookieKey = "access_token"
-
-	AuthHeaderKey    = "Authorization"
-	UserHeaderKey    = "User-Identity"
-	RequestHeaderKey = "X-Request-Id"
-
-	DeprecatedAuthHeader = "Internal-Token"
-	LegacyUser           = "legacyUser"
-	BearerPrefix         = "Bearer "
 
 	UserIdentityKey     = ContextKey("User-Identity")
 	CallerIdentityKey   = ContextKey("Caller-Identity")
@@ -55,25 +44,6 @@ func IsFlorenceIdentityPresent(ctx context.Context) bool {
 	return florenceID != nil && florenceID != ""
 }
 
-// AddUserHeader sets the given user ID on the given request
-func AddUserHeader(r *http.Request, user string) {
-	r.Header.Add(UserHeaderKey, user)
-}
-
-// AddServiceTokenHeader sets the given service token on the given request
-func AddServiceTokenHeader(r *http.Request, serviceToken string) {
-	if len(serviceToken) > 0 {
-		r.Header.Add(AuthHeaderKey, BearerPrefix+serviceToken)
-	}
-}
-
-// AddDownloadServiceTokenHeader sets the given download service token on the given request
-func AddDownloadServiceTokenHeader(r *http.Request, serviceToken string) {
-	if len(serviceToken) > 0 {
-		r.Header.Add(DownloadServiceHeaderKey, serviceToken)
-	}
-}
-
 // User gets the user identity from the context
 func User(ctx context.Context) string {
 	userIdentity, _ := ctx.Value(UserIdentityKey).(string)
@@ -88,35 +58,6 @@ func SetUser(ctx context.Context, user string) context.Context {
 // SetFlorenceIdentity sets the florence identity for authentication
 func SetFlorenceIdentity(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, FlorenceIdentityKey, user)
-}
-
-// SetFlorenceHeader sets a florence Header if the corresponding Identity key is in context
-func SetFlorenceHeader(ctx context.Context, r *http.Request) {
-	if IsFlorenceIdentityPresent(ctx) {
-		r.Header.Set(FlorenceHeaderKey, ctx.Value(FlorenceIdentityKey).(string))
-	}
-}
-
-// AddFlorenceHeader sets the given user access token (florence token) token on the given request
-func AddFlorenceHeader(r *http.Request, userAccessToken string) {
-	if len(userAccessToken) > 0 {
-		r.Header.Add(FlorenceHeaderKey, userAccessToken)
-	}
-}
-
-// AddAuthHeaders sets authentication headers for request
-func AddAuthHeaders(ctx context.Context, r *http.Request, serviceToken string) {
-	if IsUserPresent(ctx) {
-		AddUserHeader(r, User(ctx))
-	}
-	AddServiceTokenHeader(r, serviceToken)
-}
-
-// AddDeprecatedHeader sets the deprecated header on the given request
-func AddDeprecatedHeader(r *http.Request, token string) {
-	if len(token) > 0 {
-		r.Header.Add(DeprecatedAuthHeader, token)
-	}
 }
 
 // IsCallerPresent determines if an identity is present on the given context.
@@ -150,13 +91,6 @@ func GetRequestId(ctx context.Context) string {
 // WithRequestId sets the correlation id on the context
 func WithRequestId(ctx context.Context, correlationId string) context.Context {
 	return context.WithValue(ctx, RequestIdKey, correlationId)
-}
-
-// AddRequestIdHeader add header for given correlation ID
-func AddRequestIdHeader(r *http.Request, token string) {
-	if len(token) > 0 {
-		r.Header.Add(RequestHeaderKey, token)
-	}
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

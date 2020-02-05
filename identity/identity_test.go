@@ -73,9 +73,7 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns an error", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
+		headers.SetUserAuthToken(req, florenceToken)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -122,9 +120,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns a non-200 response", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
+		headers.SetUserAuthToken(req, florenceToken)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -173,9 +169,7 @@ func TestHandler_florenceToken(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns 200", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
+		headers.SetUserAuthToken(req, florenceToken)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -211,7 +205,9 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, err := headers.GetUserAuthToken(zebedeeReq)
+				So(err, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -236,9 +232,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns invalid response JSON", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-		}
+		headers.SetUserAuthToken(req, florenceToken)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -269,7 +263,9 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, err := headers.GetUserAuthToken(zebedeeReq)
+				So(err, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the response code is set as expected", func() {
@@ -293,10 +289,8 @@ func TestHandler_authToken(t *testing.T) {
 	Convey("Given a request with an auth token, and mock client that returns 200", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.AuthHeaderKey: {upstreamAuthToken},
-			common.UserHeaderKey: {userIdentifier},
-		}
+		headers.SetServiceAuthToken(req, upstreamAuthToken)
+		headers.SetUserIdentity(req, userIdentifier)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -332,10 +326,12 @@ func TestHandler_authToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(len(zebedeeReq.Header[common.UserHeaderKey]), ShouldEqual, 0)
-				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 1)
-				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, "Bearer "+upstreamAuthToken)
-
+				userIdentity, err := headers.GetUserIdentity(zebedeeReq)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(userIdentity, ShouldBeBlank)
+				serviceToken, err := headers.GetServiceAuthToken(req)
+				So(err, ShouldBeNil)
+				So(serviceToken, ShouldEqual, upstreamAuthToken)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -360,10 +356,8 @@ func TestHandler_bothTokens(t *testing.T) {
 	Convey("Given a request with both a florence token and service token", t, func() {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey:    {florenceToken},
-			common.DeprecatedAuthHeader: {upstreamAuthToken},
-		}
+		headers.SetServiceAuthToken(req, upstreamAuthToken)
+		headers.SetUserAuthToken(req, florenceToken)
 		responseRecorder := httptest.NewRecorder()
 
 		httpClient := &rchttp.ClienterMock{
@@ -399,7 +393,9 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, err := headers.GetUserAuthToken(zebedeeReq)
+				So(err, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -523,7 +519,7 @@ func TestGetFlorenceToken(t *testing.T) {
 
 	Convey("should return florence token from request header", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		req.Header.Set(common.FlorenceHeaderKey, expectedToken)
+		headers.SetUserAuthToken(req, expectedToken)
 
 		actual, err := getFlorenceToken(nil, req)
 

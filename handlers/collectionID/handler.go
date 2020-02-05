@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -13,10 +14,9 @@ func CheckHeader(h http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-		collectionID := req.Header.Get(common.CollectionIDHeaderKey)
-
-		if collectionID != "" {
-			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+		collectionID, err := headers.GetCollectionID(req)
+		if err == nil && collectionID != "" {
+			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDContextKey, collectionID))
 		}
 
 		h.ServeHTTP(w, req)
@@ -31,7 +31,7 @@ func CheckCookie(h http.Handler) http.Handler {
 		collectionIDCookie, err := req.Cookie(common.CollectionIDCookieKey)
 		if err == nil {
 			collectionID := collectionIDCookie.Value
-			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
+			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDContextKey, collectionID))
 		} else {
 			if err != http.ErrNoCookie {
 				log.Event(req.Context(), "unexpected error while extracting collection ID from cookie", log.Error(err))
