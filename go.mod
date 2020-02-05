@@ -3,9 +3,9 @@ module github.com/ONSdigital/go-ns
 go 1.13
 
 require (
-	github.com/ONSdigital/dp-api-clients-go v1.1.0
+	github.com/ONSdigital/dp-api-clients-go v1.1.1-0.20200205203135-9cae9f93ecf1
 	github.com/ONSdigital/dp-frontend-models v1.1.0
-	github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8
+	github.com/ONSdigital/dp-rchttp v0.0.0-20200205184530-552e4acbde03
 	github.com/ONSdigital/log.go v1.0.0
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9
 	github.com/go-avro/avro v0.0.0-20171219232920-444163702c11

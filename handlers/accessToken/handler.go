@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -11,8 +12,8 @@ import (
 // CheckHeaderValueAndForwardWithRequestContext is a wrapper which adds a accessToken from the request header to context if one does not yet exist
 func CheckHeaderValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		accessToken := req.Header.Get(common.FlorenceHeaderKey)
-		if accessToken != "" {
+		accessToken, err := headers.GetUserAuthToken(req)
+		if err == nil {
 			req = addUserAccessTokenToRequestContext(accessToken, req)
 		}
 

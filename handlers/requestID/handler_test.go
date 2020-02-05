@@ -1,12 +1,12 @@
 package requestID
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"context"
-
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -27,7 +27,9 @@ func TestHandler(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		So(req.Header.Get(common.RequestHeaderKey), ShouldBeEmpty)
+		requestID, err := headers.GetRequestID(req)
+		So(err, ShouldResemble, headers.ErrHeaderNotFound)
+		So(requestID, ShouldBeEmpty)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -35,7 +37,8 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get(common.RequestHeaderKey)
+		header, err := headers.GetRequestID(req)
+		So(err, ShouldBeNil)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 20)
 	})
@@ -46,9 +49,10 @@ func TestHandler(t *testing.T) {
 			t.Fail()
 		}
 		w := httptest.NewRecorder()
-
-		req.Header.Set(common.RequestHeaderKey, "test")
-		So(req.Header.Get(common.RequestHeaderKey), ShouldNotBeEmpty)
+		expectedRequestID := "test"
+		headers.SetRequestID(req, expectedRequestID)
+		requestID, _ := headers.GetRequestID(req)
+		So(requestID, ShouldEqual, expectedRequestID)
 
 		handler := Handler(20)
 		wrapped := handler(dummyHandler)
@@ -56,10 +60,10 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get(common.RequestHeaderKey)
+		header, err := headers.GetRequestID(req)
+		So(err, ShouldBeNil)
 		So(header, ShouldNotBeEmpty)
-		So(header, ShouldHaveLength, 4)
-		So(header, ShouldEqual, "test")
+		So(header, ShouldEqual, expectedRequestID)
 	})
 
 	Convey("Length of requestID should be configurable", t, func() {
@@ -75,7 +79,8 @@ func TestHandler(t *testing.T) {
 		wrapped.ServeHTTP(w, req)
 		So(w.Code, ShouldEqual, 200)
 
-		header := req.Header.Get(common.RequestHeaderKey)
+		header, err := headers.GetRequestID(req)
+		So(err, ShouldBeNil)
 		So(header, ShouldNotBeEmpty)
 		So(header, ShouldHaveLength, 30)
 	})
@@ -110,7 +115,7 @@ func TestHandler(t *testing.T) {
 		if err != nil {
 			t.Fail()
 		}
-		req.Header.Set(common.RequestHeaderKey, "666")
+		headers.SetRequestID(req, "666")
 
 		var reqCtx context.Context
 		var captureContextHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

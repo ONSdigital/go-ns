@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -78,42 +79,6 @@ func TestUser_emptyUserIdentity(t *testing.T) {
 	})
 }
 
-func TestAddUserHeader(t *testing.T) {
-
-	Convey("Given a request", t, func() {
-
-		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
-
-		Convey("When AddUserHeader is called", func() {
-
-			user := "someone@ons.gov.uk"
-			AddUserHeader(r, user)
-
-			Convey("Then the request has the user header set", func() {
-				So(r.Header.Get(UserHeaderKey), ShouldEqual, user)
-			})
-		})
-	})
-}
-
-func TestAddServiceTokenHeader(t *testing.T) {
-
-	Convey("Given a request", t, func() {
-
-		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
-
-		Convey("When AddServiceTokenHeader is called", func() {
-
-			serviceToken := "123"
-			AddServiceTokenHeader(r, serviceToken)
-
-			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
-			})
-		})
-	})
-}
-
 func TestAddAuthHeaders(t *testing.T) {
 
 	Convey("Given a fresh request", t, func() {
@@ -125,8 +90,13 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, "")
 
 			Convey("Then the request has no auth headers set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldBeBlank)
-				So(r.Header.Get(UserHeaderKey), ShouldBeBlank)
+				userIdentityHeader, err := headers.GetUserIdentity(r)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(userIdentityHeader, ShouldBeBlank)
+
+				serviceAuthToken, err := headers.GetServiceAuthToken(r)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(serviceAuthToken, ShouldBeBlank)
 			})
 		})
 		Convey("When AddAuthHeaders is called with a service token", func() {
@@ -138,8 +108,13 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
-				So(r.Header.Get(UserHeaderKey), ShouldBeBlank)
+				userIdentityHeader, err := headers.GetUserIdentity(r)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(userIdentityHeader, ShouldBeBlank)
+
+				serviceAuthToken, err := headers.GetServiceAuthToken(r)
+				So(err, ShouldBeNil)
+				So(serviceAuthToken, ShouldEqual, serviceToken)
 			})
 		})
 
@@ -153,8 +128,13 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldEqual, BearerPrefix+serviceToken)
-				So(r.Header.Get(UserHeaderKey), ShouldEqual, userID)
+				userIdentityHeader, err := headers.GetUserIdentity(r)
+				So(err, ShouldBeNil)
+				So(userIdentityHeader, ShouldEqual, userID)
+
+				serviceAuthToken, err := headers.GetServiceAuthToken(r)
+				So(err, ShouldBeNil)
+				So(serviceAuthToken, ShouldEqual, serviceToken)
 			})
 		})
 
@@ -167,26 +147,13 @@ func TestAddAuthHeaders(t *testing.T) {
 			AddAuthHeaders(ctx, r, "")
 
 			Convey("Then the request has the user header set", func() {
-				So(r.Header.Get(AuthHeaderKey), ShouldBeBlank)
-				So(r.Header.Get(UserHeaderKey), ShouldEqual, userID)
-			})
-		})
-	})
-}
+				userIdentityHeader, err := headers.GetUserIdentity(r)
+				So(err, ShouldBeNil)
+				So(userIdentityHeader, ShouldEqual, userID)
 
-func TestAddRequestIdHeader(t *testing.T) {
-
-	Convey("Given a request", t, func() {
-
-		r, _ := http.NewRequest("POST", "http://localhost:21800/jobs", nil)
-
-		Convey("When AddRequestIdHeader is called", func() {
-
-			reqId := "123"
-			AddRequestIdHeader(r, reqId)
-
-			Convey("Then the request has the correct header set", func() {
-				So(r.Header.Get(RequestHeaderKey), ShouldEqual, reqId)
+				serviceAuthToken, err := headers.GetServiceAuthToken(r)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(serviceAuthToken, ShouldBeBlank)
 			})
 		})
 	})

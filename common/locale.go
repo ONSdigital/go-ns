@@ -3,6 +3,8 @@ package common
 import (
 	"net/http"
 	"strings"
+
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 )
 
 const (
@@ -11,11 +13,11 @@ const (
 
 	DefaultLang = LangEN
 
-	LocaleCookieKey = "lang"
-	LocaleHeaderKey = "LocaleCode"
+	LocaleCookieKey  = "lang"
+	LocaleContextKey = "LocaleCode"
 )
-var SupportedLanguages = [2]string{LangEN, LangCY}
 
+var SupportedLanguages = [2]string{LangEN, LangCY}
 
 // SetLocaleCode sets the Locale code used to set the language
 func SetLocaleCode(req *http.Request) *http.Request {
@@ -25,7 +27,7 @@ func SetLocaleCode(req *http.Request) *http.Request {
 	if c, err := req.Cookie(LocaleCookieKey); err == nil && len(c.Value) > 0 {
 		localeCode = GetLangFromCookieOrDefault(c)
 	}
-	req.Header.Set(LocaleHeaderKey, localeCode)
+	headers.SetLocaleCode(req, localeCode)
 
 	return req
 }

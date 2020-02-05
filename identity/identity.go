@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/request"

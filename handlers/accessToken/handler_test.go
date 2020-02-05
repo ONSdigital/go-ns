@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -25,7 +26,7 @@ func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func TestCheckHeaderValueAndForwardWithRequestContext(t *testing.T) {
 	Convey("given the request with a florence access token header ", t, func() {
 		r := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		r.Header.Set(common.FlorenceHeaderKey, testToken)
+		headers.SetUserAuthToken(r, testToken)
 		w := httptest.NewRecorder()
 
 		mockHandler := &mockHandler{

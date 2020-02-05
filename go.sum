@@ -1,5 +1,7 @@
 github.com/ONSdigital/dp-api-clients-go v1.1.0 h1:j2zmSFcWWRbHs58m0+LltmijHBqbnOJivqBHWPaVgoI=
 github.com/ONSdigital/dp-api-clients-go v1.1.0/go.mod h1:9lqor0I7caCnRWr04gU/r7x5dqxgoODob8L48q+cE4E=
+github.com/ONSdigital/dp-api-clients-go v1.1.1-0.20200205203135-9cae9f93ecf1 h1:RipAEaz8VKACgj/vndJew56exHzmUkSuTVlLiTLJ3s0=
+github.com/ONSdigital/dp-api-clients-go v1.1.1-0.20200205203135-9cae9f93ecf1/go.mod h1:TUvEbfl+Nwt8sKThb3a6Yl/oTyeLLtEUQJ/43ixy0e4=
 github.com/ONSdigital/dp-frontend-models v1.1.0 h1:dpVTBIqyJqk4q0DJlj9xEv56HDxebC/cHQPbO5OduLw=
 github.com/ONSdigital/dp-frontend-models v1.1.0/go.mod h1:TT96P7Mi69N3Tc/jFNdbjiwG4GAaMjP26HLotFQ6BPw=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
@@ -7,7 +9,10 @@ github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9/go.mod h1:Bc
 github.com/ONSdigital/dp-rchttp v0.0.0-20190919143000-bb5699e6fd59/go.mod h1:KkW68U3FPuivW4ogi9L8CPKNj9ZxGko4qcUY7KoAAkQ=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8 h1:MWIHCr/ud5ur9elhfvKtSjMJInqf3iUY8F4J27qGQPA=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8/go.mod h1:821jZtK0oBsV8hjIkNr8vhAWuv0FxJBPJuAHa2B70Gk=
+github.com/ONSdigital/dp-rchttp v0.0.0-20200205184530-552e4acbde03 h1:hLtt1ZyeP9hxPPDq6yUFUa6E2Es9d/DEjJe05I8PTns=
+github.com/ONSdigital/dp-rchttp v0.0.0-20200205184530-552e4acbde03/go.mod h1:3ApQ66OQoOAExxWCOjlTwtiiAzSgqIVyoF7oRYn4YHQ=
 github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58/go.mod h1:iWos35il+NjbvDEqwtB736pyHru0MPFE/LqcwkV1wDc=
+github.com/ONSdigital/go-ns v0.0.0-20200205202732-b9da725375d5/go.mod h1:2JUptWbbOXjX4ukLDIWv/lKZgh8cY290JfrG29n2sdY=
 github.com/ONSdigital/log.go v0.0.0-20191127134126-2a610b254f20/go.mod h1:BD7D8FWP1fzwUWsrCopEG72jl9cchCaVNIGSz6YvL+Y=
 github.com/ONSdigital/log.go v0.0.0-20200128163509-ddbd03a854d6 h1:Ibj6Rz06bzTqP5n39NoEl46Q5AYCuthtX5ZojautVxo=
 github.com/ONSdigital/log.go v0.0.0-20200128163509-ddbd03a854d6/go.mod h1:UnGu9Q14gNC+kz0DOkdnLYGoqugCvnokHBRBxFRpVoQ=

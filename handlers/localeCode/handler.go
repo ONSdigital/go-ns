@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -12,10 +13,9 @@ import (
 func CheckHeaderValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-		localeCode := req.Header.Get(common.LocaleHeaderKey)
-
-		if localeCode != "" {
-			req = req.WithContext(context.WithValue(req.Context(), common.LocaleHeaderKey, localeCode))
+		localeCode, err := headers.GetLocaleCode(req)
+		if err == nil && localeCode != "" {
+			req = req.WithContext(context.WithValue(req.Context(), common.LocaleContextKey, localeCode))
 		}
 
 		h.ServeHTTP(w, req)
@@ -29,7 +29,7 @@ func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 		localeCodeCookie, err := req.Cookie(common.LocaleCookieKey)
 		if err == nil {
 			localeCode := localeCodeCookie.Value
-			req = req.WithContext(context.WithValue(req.Context(), common.LocaleHeaderKey, localeCode))
+			req = req.WithContext(context.WithValue(req.Context(), common.LocaleContextKey, localeCode))
 		} else {
 			if err != http.ErrNoCookie {
 				log.Event(req.Context(), "unexpected error while extracting language from cookie", log.Error(err))
