@@ -2,11 +2,14 @@ package healthcheck
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/ONSdigital/go-ns/log"
+	"github.com/pkg/errors"
 )
 
 // Client represents the methods required to healthcheck a client
@@ -57,6 +60,14 @@ func MonitorExternal(clients ...Client) {
 	wg.Add(len(clients))
 	for _, client := range clients {
 		go func(client Client) {
+			defer func() {
+				if x := recover(); x != nil {
+					// Capture run time panic's in the log ...
+					log.Error(errors.New(fmt.Sprintf("PANIC: %+v", x)), nil)
+					os.Exit(1)
+				}
+			}()
+
 			if name, err := client.Healthcheck(); err != nil {
 				log.ErrorC("unsuccessful healthcheck", err, log.Data{"external_service": name})
 				errs <- externalError{name, err}

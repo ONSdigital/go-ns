@@ -1,6 +1,9 @@
 package healthcheck
 
 import (
+	"errors"
+	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -65,6 +68,14 @@ func NewTickerWithAlerts(
 
 	// main goroutine to run MonitorExternal at intervals, and send any health state changes
 	go func() {
+		defer func() {
+			if x := recover(); x != nil {
+				// Capture run time panic's in the log ...
+				log.Error(errors.New(fmt.Sprintf("PANIC: %+v", x)), nil)
+				os.Exit(1)
+			}
+		}()
+
 		defer close(ticker.closed)
 		for {
 			// block until closing, or a check is due (either ticker chan) or requested
@@ -106,6 +117,13 @@ func NewTickerWithAlerts(
 
 				// run check in the background,  mutexChecking.Lock() applies
 				go func() {
+					defer func() {
+						if x := recover(); x != nil {
+							// Capture run time panic's in the log ...
+							log.Error(errors.New(fmt.Sprintf("PANIC: %+v", x)), nil)
+							os.Exit(1)
+						}
+					}()
 
 					log.Debug("conducting service healthcheck", nil)
 					MonitorExternal(clients...)
