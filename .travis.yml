@@ -2,7 +2,7 @@
 
 language: go
 go:
-  - 1.12
+  - 1.13
   - tip
 script:
   - export GO111MODULE="on"
