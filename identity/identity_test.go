@@ -15,8 +15,7 @@ import (
 	"io"
 
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
-	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -38,7 +37,7 @@ func TestHandler_NoHeaders(t *testing.T) {
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{}
+		httpClient := &nethttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -74,11 +73,11 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
+			nethttp.FlorenceHeaderKey: {florenceToken},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, errors.New("broken")
 			},
@@ -123,11 +122,11 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
+			nethttp.FlorenceHeaderKey: {florenceToken},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
@@ -174,14 +173,14 @@ func TestHandler_florenceToken(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
+			nethttp.FlorenceHeaderKey: {florenceToken},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
-				response := &common.IdentityResponse{Identifier: userIdentifier}
+				response := &nethttp.IdentityResponse{Identifier: userIdentifier}
 
 				body, _ := json.Marshal(response)
 				readCloser := ioutil.NopCloser(bytes.NewBuffer(body))
@@ -211,7 +210,7 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[nethttp.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -219,8 +218,8 @@ func TestHandler_florenceToken(t *testing.T) {
 			})
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
-				So(handlerReq.Context().Value(common.CallerIdentityKey), ShouldEqual, userIdentifier)
-				So(handlerReq.Context().Value(common.UserIdentityKey), ShouldEqual, userIdentifier)
+				So(handlerReq.Context().Value(nethttp.CallerIdentityKey), ShouldEqual, userIdentifier)
+				So(handlerReq.Context().Value(nethttp.UserIdentityKey), ShouldEqual, userIdentifier)
 			})
 
 			Convey("Then the request body has not been drained", func() {
@@ -237,11 +236,11 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
+			nethttp.FlorenceHeaderKey: {florenceToken},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
 				readCloser := ioutil.NopCloser(bytes.NewBufferString("{ invalid JSON"))
@@ -269,7 +268,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[nethttp.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the response code is set as expected", func() {
@@ -294,15 +293,15 @@ func TestHandler_authToken(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.AuthHeaderKey: {upstreamAuthToken},
-			common.UserHeaderKey: {userIdentifier},
+			nethttp.AuthHeaderKey: {upstreamAuthToken},
+			nethttp.UserHeaderKey: {userIdentifier},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
-				response := &common.IdentityResponse{Identifier: serviceIdentifier}
+				response := &nethttp.IdentityResponse{Identifier: serviceIdentifier}
 
 				body, _ := json.Marshal(response)
 				readCloser := ioutil.NopCloser(bytes.NewBuffer(body))
@@ -332,9 +331,9 @@ func TestHandler_authToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(len(zebedeeReq.Header[common.UserHeaderKey]), ShouldEqual, 0)
-				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 1)
-				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, "Bearer "+upstreamAuthToken)
+				So(len(zebedeeReq.Header[nethttp.UserHeaderKey]), ShouldEqual, 0)
+				So(len(zebedeeReq.Header[nethttp.AuthHeaderKey]), ShouldEqual, 1)
+				So(zebedeeReq.Header[nethttp.AuthHeaderKey][0], ShouldEqual, "Bearer "+upstreamAuthToken)
 
 			})
 
@@ -343,8 +342,8 @@ func TestHandler_authToken(t *testing.T) {
 			})
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
-				So(common.Caller(handlerReq.Context()), ShouldEqual, serviceIdentifier)
-				So(common.User(handlerReq.Context()), ShouldEqual, userIdentifier)
+				So(nethttp.Caller(handlerReq.Context()), ShouldEqual, serviceIdentifier)
+				So(nethttp.User(handlerReq.Context()), ShouldEqual, userIdentifier)
 			})
 
 			Convey("Then the request body has not been drained", func() {
@@ -361,15 +360,15 @@ func TestHandler_bothTokens(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, bytes.NewBufferString("some body content"))
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey:    {florenceToken},
-			common.DeprecatedAuthHeader: {upstreamAuthToken},
+			nethttp.FlorenceHeaderKey:    {florenceToken},
+			nethttp.DeprecatedAuthHeader: {upstreamAuthToken},
 		}
 		responseRecorder := httptest.NewRecorder()
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &nethttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 
-				response := &common.IdentityResponse{Identifier: userIdentifier}
+				response := &nethttp.IdentityResponse{Identifier: userIdentifier}
 
 				body, _ := json.Marshal(response)
 				readCloser := ioutil.NopCloser(bytes.NewBuffer(body))
@@ -399,7 +398,7 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[nethttp.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler is called", func() {
@@ -407,8 +406,8 @@ func TestHandler_bothTokens(t *testing.T) {
 			})
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {
-				So(handlerReq.Context().Value(common.UserIdentityKey), ShouldEqual, userIdentifier)
-				So(handlerReq.Context().Value(common.CallerIdentityKey), ShouldEqual, userIdentifier)
+				So(handlerReq.Context().Value(nethttp.UserIdentityKey), ShouldEqual, userIdentifier)
+				So(handlerReq.Context().Value(nethttp.CallerIdentityKey), ShouldEqual, userIdentifier)
 			})
 
 			Convey("Then the request body has not been drained", func() {
@@ -423,7 +422,7 @@ func TestHandler_GetTokenError(t *testing.T) {
 
 	Convey("Given getting the user auth token from the request returns an error", t, func() {
 
-		httpClient := &rchttp.ClienterMock{}
+		httpClient := &nethttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -469,7 +468,7 @@ func TestHandler_GetTokenError(t *testing.T) {
 
 	Convey("Given getting the service auth token from the request returns an error", t, func() {
 
-		httpClient := &rchttp.ClienterMock{}
+		httpClient := &nethttp.ClienterMock{}
 		idClient := clientsidentity.NewAPIClient(httpClient, zebedeeURL)
 
 		handlerCalled := false
@@ -523,7 +522,7 @@ func TestGetFlorenceToken(t *testing.T) {
 
 	Convey("should return florence token from request header", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		req.Header.Set(common.FlorenceHeaderKey, expectedToken)
+		req.Header.Set(nethttp.FlorenceHeaderKey, expectedToken)
 
 		actual, err := getFlorenceToken(nil, req)
 
@@ -533,7 +532,7 @@ func TestGetFlorenceToken(t *testing.T) {
 
 	Convey("should return access token from request cookie", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
+		req.AddCookie(&http.Cookie{Name: nethttp.FlorenceCookieKey, Value: expectedToken})
 
 		actual, err := getFlorenceToken(nil, req)
 
@@ -563,7 +562,7 @@ func TestGetFlorenceTokenFromCookie(t *testing.T) {
 
 	Convey("should return florence token from request cookie", t, func() {
 		req := httptest.NewRequest("GET", "http://localhost:8080", nil)
-		req.AddCookie(&http.Cookie{Name: common.FlorenceCookieKey, Value: expectedToken})
+		req.AddCookie(&http.Cookie{Name: nethttp.FlorenceCookieKey, Value: expectedToken})
 
 		actual, err := getFlorenceTokenFromCookie(nil, req)
 

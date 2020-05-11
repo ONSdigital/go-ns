@@ -7,7 +7,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
-	"github.com/ONSdigital/go-ns/common"
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/request"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -91,7 +91,7 @@ func getFlorenceTokenFromCookie(ctx context.Context, req *http.Request) (string,
 	var florenceToken string
 	var err error
 
-	c, err := req.Cookie(common.FlorenceCookieKey)
+	c, err := req.Cookie(nethttp.FlorenceCookieKey)
 	if err == nil {
 		florenceToken = c.Value
 	} else if err == http.ErrNoCookie {

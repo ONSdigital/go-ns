@@ -7,12 +7,14 @@ import (
 	"testing"
 
 	"bytes"
+	"io"
+
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/audit/auditortest"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
-	"io"
 )
 
 const (
@@ -70,7 +72,7 @@ func TestCheck_emptyIdentity(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
-		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "")
+		ctx := context.WithValue(req.Context(), nethttp.CallerIdentityKey, "")
 		req = req.WithContext(ctx)
 
 		So(err, ShouldBeNil)
@@ -113,7 +115,7 @@ func TestCheck_identityProvided(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
-		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
+		ctx := context.WithValue(req.Context(), nethttp.CallerIdentityKey, testCallerIdentity)
 		req = req.WithContext(ctx)
 
 		So(err, ShouldBeNil)
@@ -149,7 +151,7 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
-		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, testCallerIdentity)
+		ctx := context.WithValue(req.Context(), nethttp.CallerIdentityKey, testCallerIdentity)
 		req = req.WithContext(ctx)
 
 		So(err, ShouldBeNil)
@@ -189,7 +191,7 @@ func TestCheck_AuditFailure(t *testing.T) {
 
 		req, err := http.NewRequest("POST", "http://localhost:21800/jobs", bytes.NewBufferString("some body content"))
 
-		ctx := context.WithValue(req.Context(), common.CallerIdentityKey, "")
+		ctx := context.WithValue(req.Context(), nethttp.CallerIdentityKey, "")
 		req = req.WithContext(ctx)
 
 		So(err, ShouldBeNil)
@@ -231,11 +233,11 @@ func TestIsPresent_withIdentity(t *testing.T) {
 
 	Convey("Given a context with an identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, testCallerIdentity)
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, testCallerIdentity)
 
 		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsCallerPresent(ctx)
+			identityIsPresent := nethttp.IsCallerPresent(ctx)
 
 			Convey("Then the response is true", func() {
 				So(identityIsPresent, ShouldBeTrue)
@@ -252,7 +254,7 @@ func TestIsPresent_withNoIdentity(t *testing.T) {
 
 		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsCallerPresent(ctx)
+			identityIsPresent := nethttp.IsCallerPresent(ctx)
 
 			Convey("Then the response is false", func() {
 				So(identityIsPresent, ShouldBeFalse)
@@ -264,11 +266,11 @@ func TestIsPresent_withNoIdentity(t *testing.T) {
 func TestIsPresent_withEmptyIdentity(t *testing.T) {
 	Convey("Given a context with an empty identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "")
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, "")
 
 		Convey("When IsCallerPresent is called with the context", func() {
 
-			identityIsPresent := common.IsCallerPresent(ctx)
+			identityIsPresent := nethttp.IsCallerPresent(ctx)
 
 			Convey("Then the response is false", func() {
 				So(identityIsPresent, ShouldBeFalse)
@@ -286,10 +288,10 @@ func TestSetUser(t *testing.T) {
 		Convey("When SetUser is called", func() {
 
 			user := "someone@ons.gov.uk"
-			ctx = common.SetUser(ctx, user)
+			ctx = nethttp.SetUser(ctx, user)
 
 			Convey("Then the response had the caller identity", func() {
-				So(ctx.Value(common.UserIdentityKey), ShouldEqual, user)
+				So(ctx.Value(nethttp.UserIdentityKey), ShouldEqual, user)
 			})
 		})
 	})
@@ -299,11 +301,11 @@ func TestUser(t *testing.T) {
 
 	Convey("Given a context with a user identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.UserIdentityKey, "Frederico")
+		ctx := context.WithValue(context.Background(), nethttp.UserIdentityKey, "Frederico")
 
 		Convey("When User is called with the context", func() {
 
-			user := common.User(ctx)
+			user := nethttp.User(ctx)
 
 			Convey("Then the response had the user identity", func() {
 				So(user, ShouldEqual, "Frederico")
@@ -320,7 +322,7 @@ func TestUser_noUserIdentity(t *testing.T) {
 
 		Convey("When User is called with the context", func() {
 
-			user := common.User(ctx)
+			user := nethttp.User(ctx)
 
 			Convey("Then the response is empty", func() {
 				So(user, ShouldEqual, "")
@@ -333,11 +335,11 @@ func TestUser_emptyUserIdentity(t *testing.T) {
 
 	Convey("Given a context with an empty user identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.UserIdentityKey, "")
+		ctx := context.WithValue(context.Background(), nethttp.UserIdentityKey, "")
 
 		Convey("When User is called with the context", func() {
 
-			user := common.User(ctx)
+			user := nethttp.User(ctx)
 
 			Convey("Then the response is empty", func() {
 				So(user, ShouldEqual, "")
@@ -350,11 +352,11 @@ func TestCaller(t *testing.T) {
 
 	Convey("Given a context with a caller identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "Frederico")
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, "Frederico")
 
 		Convey("When Caller is called with the context", func() {
 
-			caller := common.Caller(ctx)
+			caller := nethttp.Caller(ctx)
 
 			Convey("Then the response had the caller identity", func() {
 				So(caller, ShouldEqual, "Frederico")
@@ -372,10 +374,10 @@ func TestSetCaller(t *testing.T) {
 		Convey("When SetCaller is called", func() {
 
 			caller := "dp-dataset-api"
-			ctx = common.SetCaller(ctx, caller)
+			ctx = nethttp.SetCaller(ctx, caller)
 
 			Convey("Then the response had the caller identity", func() {
-				So(ctx.Value(common.CallerIdentityKey), ShouldEqual, caller)
+				So(ctx.Value(nethttp.CallerIdentityKey), ShouldEqual, caller)
 			})
 		})
 	})
@@ -389,7 +391,7 @@ func TestCaller_noCallerIdentity(t *testing.T) {
 
 		Convey("When Caller is called with the context", func() {
 
-			caller := common.Caller(ctx)
+			caller := nethttp.Caller(ctx)
 
 			Convey("Then the response is empty", func() {
 				So(caller, ShouldEqual, "")
@@ -402,11 +404,11 @@ func TestCaller_emptyCallerIdentity(t *testing.T) {
 
 	Convey("Given a context with an empty caller identity", t, func() {
 
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "")
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, "")
 
 		Convey("When Caller is called with the context", func() {
 
-			caller := common.Caller(ctx)
+			caller := nethttp.Caller(ctx)
 
 			Convey("Then the response is empty", func() {
 				So(caller, ShouldEqual, "")
@@ -424,10 +426,10 @@ func TestAddUserHeader(t *testing.T) {
 		Convey("When AddUserHeader is called", func() {
 
 			user := "someone@ons.gov.uk"
-			common.AddUserHeader(r, user)
+			nethttp.AddUserHeader(r, user)
 
 			Convey("Then the request has the user header set", func() {
-				So(r.Header.Get(common.UserHeaderKey), ShouldEqual, user)
+				So(r.Header.Get(nethttp.UserHeaderKey), ShouldEqual, user)
 			})
 		})
 	})
@@ -442,10 +444,10 @@ func TestAddServiceTokenHeader(t *testing.T) {
 		Convey("When AddServiceTokenHeader is called", func() {
 
 			serviceToken := "123"
-			common.AddServiceTokenHeader(r, serviceToken)
+			nethttp.AddServiceTokenHeader(r, serviceToken)
 
 			Convey("Then the request has the service token header set", func() {
-				So(r.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+serviceToken)
+				So(r.Header.Get(nethttp.AuthHeaderKey), ShouldEqual, nethttp.BearerPrefix+serviceToken)
 			})
 		})
 	})

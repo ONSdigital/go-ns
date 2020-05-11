@@ -3,7 +3,7 @@ package audit
 import (
 	"context"
 
-	"github.com/ONSdigital/go-ns/common"
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
@@ -37,11 +37,11 @@ func addLogData(ctx context.Context, data log.Data) log.Data {
 		data = log.Data{}
 	}
 
-	if user := common.User(ctx); user != "" {
+	if user := nethttp.User(ctx); user != "" {
 		data[reqUser] = user
 	}
 
-	if caller := common.Caller(ctx); caller != "" {
+	if caller := nethttp.Caller(ctx); caller != "" {
 		data[reqCaller] = caller
 	}
 

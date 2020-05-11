@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -24,7 +25,7 @@ func TestGetParameters(t *testing.T) {
 	})
 
 	Convey("Given a context with a caller identity and no path variables", t, func() {
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "gerald")
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, "gerald")
 		path := "/jobs"
 
 		Convey("When GetParameters is called with the context and path", func() {
@@ -182,7 +183,7 @@ func TestGetParameters(t *testing.T) {
 	})
 
 	Convey("Given a context with a caller identity and path parameters for a unique option against a dataset", t, func() {
-		ctx := context.WithValue(context.Background(), common.CallerIdentityKey, "harold")
+		ctx := context.WithValue(context.Background(), nethttp.CallerIdentityKey, "harold")
 		path := "/datasets/999/editions/2018/versions/3/dimensions/gender/options/male"
 		vars := map[string]string{
 			"id":        "999",

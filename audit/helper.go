@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 )
 
@@ -19,7 +20,7 @@ var pathIDs = map[string]string{
 func GetParameters(ctx context.Context, path string, vars map[string]string) common.Params {
 	auditParams := common.Params{}
 
-	callerIdentity := common.Caller(ctx)
+	callerIdentity := nethttp.Caller(ctx)
 	if callerIdentity != "" {
 		auditParams["caller_identity"] = callerIdentity
 	}

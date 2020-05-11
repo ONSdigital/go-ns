@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -97,8 +98,8 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 	}()
 
 	//NOTE: for now we are only auditing user actions - this may be subject to change
-	user := common.User(ctx)
-	service := common.Caller(ctx)
+	user := nethttp.User(ctx)
+	service := nethttp.Caller(ctx)
 
 	if user == "" && service == "" {
 		err = NewAuditError("expected user or caller identity but none found", attemptedAction, actionResult, params)
@@ -128,7 +129,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		Params:          params,
 	}
 
-	e.RequestID = common.GetRequestId(ctx)
+	e.RequestID = nethttp.GetRequestId(ctx)
 
 	avroBytes, err := a.marshalToAvro(e)
 	if err != nil {

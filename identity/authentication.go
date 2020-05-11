@@ -3,8 +3,8 @@ package identity
 import (
 	"net/http"
 
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/audit"
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/request"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
@@ -31,7 +31,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 		}
 
 		// just checking if an identity exists until permissions are being provided.
-		if !common.IsCallerPresent(ctx) {
+		if !nethttp.IsCallerPresent(ctx) {
 			log.Event(ctx, "no identity found in context of request", log.HTTP(r, 0, 0, nil, nil), logData)
 
 			if auditErr := auditor.Record(ctx, action, audit.Unsuccessful, auditParams); auditErr != nil {

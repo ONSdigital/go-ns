@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ONSdigital/go-ns/common"
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -21,14 +21,14 @@ func TestAddLogData(t *testing.T) {
 	})
 
 	Convey("context with user", t, func() {
-		contextWithUser := context.WithValue(ctx, common.UserIdentityKey, "user email")
+		contextWithUser := context.WithValue(ctx, nethttp.UserIdentityKey, "user email")
 		data := addLogData(contextWithUser, nil)
 
 		So(data, ShouldResemble, log.Data{reqUser: "user email"})
 	})
 
 	Convey("context with caller id", t, func() {
-		contextWithCaller := context.WithValue(ctx, common.CallerIdentityKey, "api service")
+		contextWithCaller := context.WithValue(ctx, nethttp.CallerIdentityKey, "api service")
 		data := addLogData(contextWithCaller, nil)
 
 		So(data, ShouldResemble, log.Data{reqCaller: "api service"})
@@ -46,8 +46,8 @@ func TestAddLogData(t *testing.T) {
 }
 
 func getContextWithCallerUserAndRequestIDcontext() context.Context {
-	ctx := common.WithRequestId(context.Background(), "request id")
-	ctx = context.WithValue(ctx, common.UserIdentityKey, "user email")
-	ctx = context.WithValue(ctx, common.CallerIdentityKey, "api service")
+	ctx := nethttp.WithRequestId(context.Background(), "request id")
+	ctx = context.WithValue(ctx, nethttp.UserIdentityKey, "user email")
+	ctx = context.WithValue(ctx, nethttp.CallerIdentityKey, "api service")
 	return ctx
 }

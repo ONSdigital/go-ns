@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	nethttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
@@ -39,7 +40,7 @@ func TestAuditor_RecordNoUser(t *testing.T) {
 		auditor := New(producer, service)
 
 		// record the audit event
-		ctx := common.SetCaller(context.Background(), "Lucky The Donkey")
+		ctx := nethttp.SetCaller(context.Background(), "Lucky The Donkey")
 		err := auditor.Record(ctx, auditAction, Successful, nil)
 
 		So(err, ShouldBeNil)
@@ -125,7 +126,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		var results []byte
 
 		// record the audit event
-		ctx := common.WithRequestId(setUpContext(), "666")
+		ctx := nethttp.WithRequestId(setUpContext(), "666")
 		err := auditor.Record(ctx, auditAction, Successful, common.Params{"ID": "12345"})
 		So(err, ShouldBeNil)
 
@@ -259,7 +260,7 @@ func TestToLogData(t *testing.T) {
 }
 
 func setUpContext() context.Context {
-	ctx := common.SetCaller(context.Background(), service)
-	ctx = common.SetUser(ctx, user)
+	ctx := nethttp.SetCaller(context.Background(), service)
+	ctx = nethttp.SetUser(ctx, user)
 	return ctx
 }

@@ -24,10 +24,10 @@ Wrap authenticated endpoints using the `identity.Check(handler)` function to che
 Add required headers to outbound requests to other services
 
 ```
-    import "github.com/ONSdigital/go-ns/common"
+    import nethttp "github.com/ONSdigital/dp-net/http"
 
-    common.AddServiceTokenHeader(req, api.AuthToken)
-    common.AddUserHeader(req, "UserA")
+    nethttp.AddServiceTokenHeader(req, api.AuthToken)
+    nethttp.AddUserHeader(req, "UserA")
 ```
 
 or, put less portably:
@@ -37,7 +37,7 @@ or, put less portably:
     req.Header.Add("User-Identity", "UserA")
 ```
 
-But most of this should be done by `go-ns/rchttp` and `dp-api-clients-go/...`.
+But most of this should be done by `dp-net/http` and `dp-api-clients-go/...`.
 
 ### Testing
 
@@ -46,8 +46,9 @@ If you need to use the middleware component in unit tests you can call the const
 ```
 import clientsidentity "github.com/ONSdigital/go-ns/clients/identity"
 import "github.com/ONSdigital/go-ns/common/commontest"
+import nethttp "github.com/ONSdigital/dp-net/http"
 
-httpClient := &rchttp.ClienterMock{
+httpClient := &nethttp.ClienterMock{
     DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
         return &http.Response{
             StatusCode: http.StatusOK,
