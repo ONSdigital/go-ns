@@ -7,3 +7,5 @@ go:
 script:
   - export GO111MODULE="on"
   - go test -race -cover ./...
+
+  
