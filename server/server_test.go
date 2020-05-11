@@ -109,7 +109,12 @@ func TestNew(t *testing.T) {
 			go func() {
 				s.ListenAndServeTLS("testdata/certFile", "testdata/keyFile")
 			}()
-			http.Get("http://localhost" + sPort) // ensure above is responding before we check below
+			for {
+				_, err := http.Get("http://localhost" + sPort) // ensure above is responding before we check below
+				if err == nil {
+					break
+				}
+			}
 			So(s.CertFile, ShouldEqual, "testdata/certFile")
 			So(s.KeyFile, ShouldEqual, "testdata/keyFile")
 		})
