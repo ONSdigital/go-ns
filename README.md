@@ -20,8 +20,9 @@ The following library changes have been made as part of deprecating this repo:
 * The `s3` client has been moved to [dp-s3](https://github.com/ONSdigital/dp-s3). All imports should be updated accordingly.
 * The `vault` client has been moved to [dp-vault](https://github.com/ONSdigital/dp-vault). All imports should be updated accordingly.
 * The `log` library has been replaced by [log.go](https://github.com/ONSdigital/log.go) which has been implemented in line with the new [logging standards](https://github.com/ONSdigital/dp/blob/master/standards/LOGGING_STANDARDS.md). A [script is provided](https://github.com/ONSdigital/log.go/blob/master/scripts/edit-logs.sh) to automate the replacement of the log library in most common usages.
-* The `common` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
+* The `common` library has been moved to [dp-net/request](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `server` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
+* The `request` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `handlers` library has been moved to [dp-net/handlers](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 
 ---
