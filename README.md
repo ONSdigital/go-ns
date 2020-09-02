@@ -24,6 +24,7 @@ The following library changes have been made as part of deprecating this repo:
 * The `server` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `request` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `handlers` library has been moved to [dp-net/handlers](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
+* The `identity` library has been moved to [dp-net/handlers](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 
 ---
 
