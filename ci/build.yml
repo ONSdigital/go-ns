@@ -1,0 +1,16 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.15
+
+inputs:
+  - name: go-ns
+    path: go-ns
+
+run:
+  path: go-ns/ci/scripts/build.sh
