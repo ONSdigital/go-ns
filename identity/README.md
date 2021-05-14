@@ -1,6 +1,9 @@
 Identity middleware
 ===================
 
+### **_DEPRECATED_**
+#### **No longer used**
+
 Middleware component that authenticates requests against zebedee.
 
 The identity and permissions returned from the identity endpoint are added to the request context.
