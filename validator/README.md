@@ -1,5 +1,7 @@
 ### Validator
 
+### **_DEPRECATED_**
+### **_No longer used_**
 A Go library for the validation of HTML forms on the server side. Requires user
 to define validation logic of form fields in a JSON file to allow potential
 validation sharing with the client side.
