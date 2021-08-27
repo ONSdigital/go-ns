@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -85,9 +85,9 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 
 		select {
 		case results = <-output:
-			log.Event(ctx, "output received")
+			log.Info(ctx, "output received")
 		case <-time.After(time.Second * 5):
-			log.Event(ctx, "failing test due to timeout, expected output channel to receive event but none")
+			log.Info(ctx, "failing test due to timeout, expected output channel to receive event but none")
 			t.FailNow()
 		}
 
@@ -96,7 +96,7 @@ func TestAuditor_RecordSuccess(t *testing.T) {
 		var actualEvent Event
 		err = EventSchema.Unmarshal(results, &actualEvent)
 		if err != nil {
-			log.Event(ctx, "avro unmarshal error", log.Error(err))
+			log.Error(ctx, "avro unmarshal error", err)
 			t.FailNow()
 		}
 
@@ -131,9 +131,9 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 
 		select {
 		case results = <-output:
-			log.Event(ctx, "output received")
+			log.Info(ctx, "output received")
 		case <-time.After(time.Second * 5):
-			log.Event(ctx, "failing test due to timeout, expected output channel to receive event but none")
+			log.Info(ctx, "failing test due to timeout, expected output channel to receive event but none")
 			t.FailNow()
 		}
 
@@ -142,7 +142,7 @@ func TestAuditor_RecordRequestIDInContext(t *testing.T) {
 		var actualEvent Event
 		err = EventSchema.Unmarshal(results, &actualEvent)
 		if err != nil {
-			log.Event(ctx, "avro unmarshal error", log.Error(err))
+			log.Error(ctx, "avro unmarshal error", err)
 			t.FailNow()
 		}
 

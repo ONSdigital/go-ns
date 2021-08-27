@@ -6,7 +6,7 @@ import (
 	"github.com/ONSdigital/go-ns/audit"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 )
 
@@ -22,7 +22,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 		auditParams := audit.GetParameters(ctx, r.URL.EscapedPath(), vars)
 		logData := audit.ToLogData(auditParams)
 
-		log.Event(ctx, "checking for an identity in request context", log.HTTP(r, 0, 0, nil, nil), logData)
+		log.Info(ctx, "checking for an identity in request context", log.HTTP(r, 0, 0, nil, nil), logData)
 
 		if err := auditor.Record(ctx, action, audit.Attempted, auditParams); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -32,7 +32,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 
 		// just checking if an identity exists until permissions are being provided.
 		if !common.IsCallerPresent(ctx) {
-			log.Event(ctx, "no identity found in context of request", log.HTTP(r, 0, 0, nil, nil), logData)
+			log.Info(ctx, "no identity found in context of request", log.HTTP(r, 0, 0, nil, nil), logData)
 
 			if auditErr := auditor.Record(ctx, action, audit.Unsuccessful, auditParams); auditErr != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)
@@ -45,7 +45,7 @@ func Check(auditor Auditor, action string, handle func(http.ResponseWriter, *htt
 			return
 		}
 
-		log.Event(ctx, "identity found in request context, calling downstream handler", log.HTTP(r, 0, 0, nil, nil), logData)
+		log.Info(ctx, "identity found in request context, calling downstream handler", log.HTTP(r, 0, 0, nil, nil), logData)
 
 		// The request has been authenticated, now run the clients request
 		handle(w, r)

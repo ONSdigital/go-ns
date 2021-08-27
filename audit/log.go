@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +29,7 @@ func LogActionFailure(ctx context.Context, auditedAction string, auditedResult s
 func LogError(ctx context.Context, err error, data log.Data) {
 	data = addLogData(ctx, data)
 
-	log.Event(ctx, "auditing failed", log.Error(err), data)
+	log.Error(ctx, "auditing failed", err, data)
 }
 
 func addLogData(ctx context.Context, data log.Data) log.Data {

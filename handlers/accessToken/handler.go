@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // CheckHeaderValueAndForwardWithRequestContext is a wrapper which adds a accessToken from the request header to context if one does not yet exist
@@ -26,7 +26,7 @@ func CheckCookieValueAndForwardWithRequestContext(h http.Handler) http.Handler {
 		accessTokenCookie, err := req.Cookie(common.FlorenceCookieKey)
 		if err != nil {
 			if err != http.ErrNoCookie {
-				log.Event(req.Context(), "unexpected error while extracting user Florence access token from cookie", log.Error(err))
+				log.Error(req.Context(), "unexpected error while extracting user Florence access token from cookie", err)
 			}
 		} else {
 			req = addUserAccessTokenToRequestContext(accessTokenCookie.Value, req)

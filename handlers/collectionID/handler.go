@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // CheckHeader is a wrapper which adds a CollectionID from the request header to context if one does not yet exist
@@ -34,7 +34,7 @@ func CheckCookie(h http.Handler) http.Handler {
 			req = req.WithContext(context.WithValue(req.Context(), common.CollectionIDHeaderKey, collectionID))
 		} else {
 			if err != http.ErrNoCookie {
-				log.Event(req.Context(), "unexpected error while extracting collection ID from cookie", log.Error(err))
+				log.Error(req.Context(), "unexpected error while extracting collection ID from cookie", err)
 			}
 		}
 

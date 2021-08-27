@@ -2,11 +2,12 @@
 package render
 
 import (
+	"context"
 	"html/template"
 	"io"
 	"sync"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/unrolled/render"
 )
 
@@ -22,7 +23,7 @@ func init() {
 			}},
 		})
 
-		log.Event(nil, "creating default unrolled renderer")
+		log.Info(context.Background(), "creating default unrolled renderer")
 	}
 }
 

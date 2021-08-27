@@ -9,7 +9,7 @@ import (
 	clientsidentity "github.com/ONSdigital/dp-api-clients-go/identity"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 type getTokenFromReqFunc func(ctx context.Context, r *http.Request) (string, error)
@@ -30,7 +30,7 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
-			log.Event(ctx, "executing identity check middleware")
+			log.Info(ctx, "executing identity check middleware")
 
 			florenceToken, err := getFlorenceToken(ctx, req)
 			if err != nil {
@@ -54,11 +54,11 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 
 			if authFailure != nil {
 				handleFailedRequest(ctx, w, req, statusCode, "identity client check request returned an auth error", authFailure, logData)
-				log.Event(ctx, "identity client check request returned an auth error", log.Error(authFailure), logData)
+				log.Error(ctx, "identity client check request returned an auth error", authFailure, logData)
 				return
 			}
 
-			log.Event(ctx, "identity client check request completed successfully invoking downstream http handler")
+			log.Info(ctx, "identity client check request completed successfully invoking downstream http handler")
 
 			req = req.WithContext(ctx)
 			h.ServeHTTP(w, req)
@@ -68,7 +68,7 @@ func handlerForHTTPClient(cli *clientsidentity.Client, getFlorenceToken, getServ
 
 // handleFailedRequest adhering to the DRY principle - clean up for failed identity requests, log the error, drain the request body and write the status code.
 func handleFailedRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, status int, event string, err error, data log.Data) {
-	log.Event(ctx, event, log.Error(err), data)
+	log.Error(ctx, event, err, data)
 	request.DrainBody(r)
 	w.WriteHeader(status)
 }
@@ -80,7 +80,7 @@ func getFlorenceToken(ctx context.Context, req *http.Request) (string, error) {
 	if err == nil {
 		florenceToken = token
 	} else if headers.IsErrNotFound(err) {
-		log.Event(ctx, "florence access token header not found attempting to find access token cookie")
+		log.Info(ctx, "florence access token header not found attempting to find access token cookie")
 		florenceToken, err = getFlorenceTokenFromCookie(ctx, req)
 	}
 
@@ -96,7 +96,7 @@ func getFlorenceTokenFromCookie(ctx context.Context, req *http.Request) (string,
 		florenceToken = c.Value
 	} else if err == http.ErrNoCookie {
 		err = nil // we don't consider this scenario an error so we set err to nil and return an empty token
-		log.Event(ctx, "florence access token cookie not found in request")
+		log.Info(ctx, "florence access token cookie not found in request")
 	}
 
 	return florenceToken, err
@@ -110,7 +110,7 @@ func getServiceAuthToken(ctx context.Context, req *http.Request) (string, error)
 		authToken = token
 	} else if headers.IsErrNotFound(err) {
 		err = nil // we don't consider this scenario an error so we set err to nil and return an empty token
-		log.Event(ctx, "service auth token request header is not found")
+		log.Info(ctx, "service auth token request header is not found")
 	}
 
 	return authToken, err

@@ -9,7 +9,7 @@ import (
 	"github.com/ONSdigital/dp-frontend-models/model"
 	"github.com/ONSdigital/dp-frontend-models/model/datasetLandingPageStatic"
 	"github.com/ONSdigital/go-ns/zebedee/data"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // StaticDatasetLandingPage is a StaticDatasetLandingPage representation
@@ -57,7 +57,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(ctx context.Context, dlp data.D
 	if strings.Contains(dlp.Description.ReleaseDate, "T23:00:00") {
 		releaseDateInTimeFormat, err := time.Parse(time.RFC3339, dlp.Description.ReleaseDate)
 		if err != nil {
-			log.Event(ctx, "failed to parse release date", log.Error(err), log.Data{"release_date": dlp.Description.ReleaseDate})
+			log.Error(ctx, "failed to parse release date", err, log.Data{"release_date": dlp.Description.ReleaseDate})
 			sdlp.DatasetLandingPage.ReleaseDate = dlp.Description.ReleaseDate
 		}
 		sdlp.DatasetLandingPage.ReleaseDate = releaseDateInTimeFormat.Add(1 * time.Hour).Format("02 January 2006")
@@ -110,7 +110,7 @@ func MapZebedeeDatasetLandingPageToFrontendModel(ctx context.Context, dlp data.D
 	for _, value := range dlp.Alerts {
 		switch value.Type {
 		default:
-			log.Event(ctx, "Unrecognised alert type", log.Data{"alert": value})
+			log.Info(ctx, "Unrecognised alert type", log.Data{"alert": value})
 			fallthrough
 		case "alert":
 			sdlp.DatasetLandingPage.Notices = append(sdlp.DatasetLandingPage.Notices, datasetLandingPageStatic.Message{

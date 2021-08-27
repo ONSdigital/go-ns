@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // DrainBody drains the body of the given of the given HTTP request.
@@ -17,11 +17,11 @@ func DrainBody(r *http.Request) {
 
 	_, err := io.Copy(ioutil.Discard, r.Body)
 	if err != nil {
-		log.Event(r.Context(), "error draining request body", log.Error(err))
+		log.Error(r.Context(), "error draining request body", err)
 	}
 
 	err = r.Body.Close()
 	if err != nil {
-		log.Event(r.Context(), "error closing request body", log.Error(err))
+		log.Error(r.Context(), "error closing request body", err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // List of audit messages
@@ -69,7 +69,7 @@ func (a *NopAuditor) Record(ctx context.Context, attemptedAction string, actionR
 
 //New creates a new Auditor with the namespace, producer and token provided.
 func New(producer OutboundProducer, namespace string) *Auditor {
-	log.Event(nil, "auditing enabled for service")
+	log.Info(context.Background(), "auditing enabled for service")
 	return &Auditor{
 		producer:      producer,
 		service:       namespace,
@@ -88,11 +88,11 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 		if err != nil {
 			logData := log.Data{"auditAction": attemptedAction, "auditResult": actionResult}
 			addLogData(ctx, logData)
-			log.Event(ctx, "error capturing audit event", log.Error(err), logData)
+			log.Error(ctx, "error capturing audit event", err, logData)
 		} else {
 			logData := log.Data{"auditEvent": e}
 			addLogData(ctx, logData)
-			log.Event(ctx, "captured audit event", logData)
+			log.Info(ctx, "captured audit event", logData)
 		}
 	}()
 
@@ -106,7 +106,7 @@ func (a *Auditor) Record(ctx context.Context, attemptedAction string, actionResu
 	}
 
 	if user == "" {
-		log.Event(ctx, "not user attempted action: skipping audit event")
+		log.Info(ctx, "not user attempted action: skipping audit event")
 		return
 	}
 
