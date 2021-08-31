@@ -80,7 +80,7 @@ func getFlorenceToken(ctx context.Context, req *http.Request) (string, error) {
 	if err == nil {
 		florenceToken = token
 	} else if headers.IsErrNotFound(err) {
-		log.Info(ctx, "florence access token header not found attempting to find access token cookie")
+		log.Warn(ctx, "florence access token header not found attempting to find access token cookie")
 		florenceToken, err = getFlorenceTokenFromCookie(ctx, req)
 	}
 
@@ -110,7 +110,7 @@ func getServiceAuthToken(ctx context.Context, req *http.Request) (string, error)
 		authToken = token
 	} else if headers.IsErrNotFound(err) {
 		err = nil // we don't consider this scenario an error so we set err to nil and return an empty token
-		log.Info(ctx, "service auth token request header is not found")
+		log.Warn(ctx, "service auth token request header is not found")
 	}
 
 	return authToken, err
