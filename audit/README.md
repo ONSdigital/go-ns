@@ -1,5 +1,8 @@
 ## Auditing
 
+### **_DEPRECATED_**
+#### **No longer used**
+
 ### Creating an auditor
 
 To create a new auditor simply provide a Kafka producer (see go-ns/kafka) for the topic you wish to send your audit 
