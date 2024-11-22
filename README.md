@@ -15,6 +15,7 @@ The following library changes have been made as part of deprecating this repo:
 * The `healthcheck` handler has been reimplemented inline with the [latest spec](https://github.com/ONSdigital/dp/blob/master/standards/HEALTH_CHECK_SPECIFICATION.md) in [dp-healthcheck](https://github.com/ONSdigital/dp-healthcheck). All `/healthcheck` routes should be changed to `/health` and updated to use this new handler.
 * The `elasticsearch` client has been moved to [dp-elasticsearch](https://github.com/ONSdigital/dp-elasticsearch). All imports should be updated accordingly.
 * The `kafka` client has been moved to [dp-kafka](https://github.com/ONSdigital/dp-kafka). All imports should be updated accordingly.
+* The `avro` library has been moved to [dp-kafka/avro](https://github.com/ONSdigital/dp-kafka). All imports should be updated accordingly.
 * The `mongo` client has been moved to [dp-mongodb](https://github.com/ONSdigital/dp-mongodb). All imports should be updated accordingly.
 * The `neo4j` client has been moved to [dp-graph](https://github.com/ONSdigital/dp-graph). All usages of the old `neo4j` library should be replaced with `dp-graph` using the `neo4jdriver`.
 * The `s3` client has been moved to [dp-s3](https://github.com/ONSdigital/dp-s3). All imports should be updated accordingly.
@@ -25,6 +26,13 @@ The following library changes have been made as part of deprecating this repo:
 * The `request` library has been moved to [dp-net/http](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `handlers` library has been moved to [dp-net/handlers](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
 * The `identity` library has been moved to [dp-net/handlers](https://github.com/ONSdigital/dp-net). All imports should be updated accordingly.
+
+TODO:
+- Replace remaining uses of `avro`, `common` and `server` packages throughout apps
+- Once new rendering strategy is realized `render` can be deprecated
+- `handlers/requestID` can be removed once all uses of `server` package have been update AND the new rendering strategy exists
+- `handlers/reverseProxy` can be removed once updated in Florence and Frontend Router
+
 
 ---
 
